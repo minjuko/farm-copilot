@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { FaEdit, FaTrash } from 'react-icons/fa';
 
 const Container = styled.div`
   display: flex;
@@ -18,8 +19,8 @@ const Title = styled.h1`
 `;
 
 const PostList = styled.div`
-  display: grid;
-  gap: 1rem;
+  width: 100%;
+  max-width: 1200px;
 `;
 
 const Table = styled.table`
@@ -52,6 +53,7 @@ const TableCell = styled.td`
   font-size: 14px;
   color: ${(props) => (props.header ? "aliceblue" : "black")};
   text-align: left;
+  width: ${(props) => props.width || "auto"};
 `;
 
 const StyledLink = styled(Link)`
@@ -70,17 +72,19 @@ const PostTitle = styled.span`
   text-overflow: ellipsis;
 `;
 
-const Button = styled.button`
-  padding: 8px 16px;
-  margin: 4px;
+const IconButton = styled.button`
+  padding: 6px;
+  margin: 0;
   font-size: 14px;
-  color: white;
-  background-color: #4aaa87;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
+
   &:hover {
-    background-color: #6dc4b0;
+    color: #4aaa87;
+  }
+
+  &:focus {
+    outline: none;
   }
 `;
 
@@ -147,11 +151,11 @@ const MyPostTemplate = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableCell header>제목</TableCell>
-              <TableCell header>작성자</TableCell>
-              <TableCell header>작성일</TableCell>
-              <TableCell header>수정</TableCell>
-              <TableCell header>삭제</TableCell>
+              <TableCell header width="40%">제목</TableCell>
+              <TableCell header width="20%">작성자</TableCell>
+              <TableCell header width="20%">작성일</TableCell>
+              <TableCell header width="10%">수정</TableCell>
+              <TableCell header width="10%">삭제</TableCell>
             </TableRow>
           </TableHeader>
           <tbody>
@@ -164,8 +168,16 @@ const MyPostTemplate = () => {
                 </TableCell>
                 <TableCell>{post.user_id}</TableCell>
                 <TableCell>{new Date(post.creation_date).toLocaleDateString()}</TableCell>
-                <TableCell><Button onClick={() => handleEdit(post.id)}>수정</Button></TableCell>
-                <TableCell><Button onClick={() => handleDelete(post.id)}>삭제</Button></TableCell>
+                <TableCell>
+                  <IconButton onClick={() => handleEdit(post.id)}>
+                    <FaEdit />
+                  </IconButton>
+                </TableCell>
+                <TableCell>
+                  <IconButton onClick={() => handleDelete(post.id)}>
+                    <FaTrash />
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </tbody>
