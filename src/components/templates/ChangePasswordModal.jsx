@@ -1,8 +1,8 @@
-// ChangePasswordModal.js
 import React, { useState } from "react";
 import axios from "axios";
 import Modal from "react-modal";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 
 const customStyles = {
   content: {
@@ -12,14 +12,14 @@ const customStyles = {
     bottom: "auto",
     marginRight: "-50%",
     transform: "translate(-50%, -50%)",
+    width: "70%",
   },
 };
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 400px;
+  width: 80%;
   padding: 24px;
 `;
 
@@ -49,8 +49,9 @@ const Input = styled.input`
 const Button = styled.button`
   padding: 12px 16px;
   font-size: 16px;
+  font-weight: bold;
   color: white;
-  background-color: #4aaa87;
+  background-color: #2faa9a;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -74,6 +75,7 @@ const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
   });
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,6 +89,10 @@ const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
       .then((response) => {
         setMessage("비밀번호가 성공적으로 변경되었습니다.");
         setError("");
+        alert("비밀번호 변겅 성공, 다시 로그인 필요")
+
+        // 비밀번호 변경 성공 시 로그인 페이지로 리디렉션
+        navigate('/login');
       })
       .catch((error) => {
         if (error.response) {
