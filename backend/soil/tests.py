@@ -66,10 +66,12 @@ class SoilServiceTests(TestCase):
     def test_soil_v2_success_parsing_and_parameter(self, mock_get):
         mock_get.return_value = Mock(status_code=200, content=b"""
             <response><header><Result_Code>200</Result_Code><Result_Msg>OK</Result_Msg></header>
-            <body><items><item><Stdg_Cd>1234567890</Stdg_Cd><ACID>6.5</ACID><PNU_Nm>sample</PNU_Nm></item></items></body></response>
+            <body><items><item><Stdg_Cd>1234567890</Stdg_Cd><ACID>6.5</ACID><ELCD>1.2</ELCD><PNU_Nm>sample</PNU_Nm></item></items></body></response>
         """)
         result = fetch_soil_exam("1234567890")
         self.assertEqual(result[0]["Stdg_Cd"], "1234567890")
+        self.assertEqual(result[0]["SELC"], "1.2")
+        self.assertNotIn("ELCD", result[0])
         self.assertEqual(mock_get.call_args.kwargs["params"]["STDG_CD"], "1234567890")
         self.assertNotIn("BJD_Code", mock_get.call_args.kwargs["params"])
 
@@ -98,7 +100,10 @@ class SoilServiceTests(TestCase):
         self.assertEqual(result[0]["crop_Code"], "01001")
         self.assertNotIn("serviceKey", filtered)
         self.assertNotIn("PNU_Code", filtered)
+        self.assertNotIn("selc", filtered)
         self.assertEqual(mock_get.call_args.kwargs["params"]["PNU_Code"], "1234567890100100000")
+        self.assertEqual(mock_get.call_args.kwargs["params"]["crop_Code"], "01001")
+        self.assertNotIn("selc", mock_get.call_args.kwargs["params"])
         self.assertEqual(mock_get.call_args.kwargs["params"]["serviceKey"], "encoded+key")
         self.assertEqual(mock_get.call_args.args[0], "https://apis.data.go.kr/1390802/SoilEnviron_FrtlzrUse_V2/getSoilFrtlzrExamInfo")
 

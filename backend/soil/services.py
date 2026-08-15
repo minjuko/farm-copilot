@@ -153,7 +153,10 @@ def fetch_soil_exam(stdg_code):
     # Preserve the original frontend contract: SoilResults reads the public API's
     # field names (for example PNU_Nm, ACID and POSIFERT_K) directly.
     result = [
-        {child.tag: child.text for child in item}
+        {
+            ("SELC" if child.tag == "ELCD" else child.tag): child.text
+            for child in item
+        }
         for item in items.findall("item")
     ]
     if not result:
@@ -184,7 +187,6 @@ def fetch_fertilizer(crop_name, soil_values, pnu_code=None):
         "posifert_Ca": _bounded(soil_values.get("posifert_Ca"), 0.1, 30),
         "posifert_Mg": _bounded(soil_values.get("posifert_Mg"), 0.1, 20),
         "vldsia": _bounded(soil_values.get("vldsia"), 5, 1500),
-        "selc": _bounded(soil_values.get("selc"), 0, 10),
         "animix_Ratio_Cattl": "28",
         "animix_Ratio_Pig": "22",
         "animix_Ratio_Chick": "19",
