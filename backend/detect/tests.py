@@ -7,6 +7,10 @@ from . import views
 
 
 class OptionalDetectionRuntimeTests(SimpleTestCase):
+    def test_backend_root_template_renders(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+
     def tearDown(self):
         views._yolo_model = None
 
