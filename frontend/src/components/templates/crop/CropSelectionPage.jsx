@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTrash, FaEdit, FaPlus } from 'react-icons/fa';
 import { getCropList, deleteCrop, updateSessionName } from '../../../apis/crop';
@@ -50,11 +50,7 @@ const CropSelectionPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await getCropList();
@@ -68,7 +64,11 @@ const CropSelectionPage = () => {
       setError('세션 정보를 불러오는 중 오류가 발생했습니다.');
     }
     setIsLoading(false);
-  };
+  }, [setIsLoading]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
   const handleDelete = async () => {
     setIsLoading(true);

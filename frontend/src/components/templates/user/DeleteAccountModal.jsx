@@ -105,6 +105,8 @@ const DeleteAccountModal = ({ isOpen, onRequestClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
+
     setIsLoading(true);
     try {
       await deleteAccount(password);
@@ -129,7 +131,7 @@ const DeleteAccountModal = ({ isOpen, onRequestClose }) => {
       style={customStyles}
       contentLabel="Delete Account Modal"
     >
-      <CloseButton onClick={onRequestClose}><FaTimes /></CloseButton>
+      <CloseButton onClick={onRequestClose} aria-label="회원 탈퇴 창 닫기"><FaTimes /></CloseButton>
       <Form onSubmit={handleSubmit}>
         <h2>회원 탈퇴</h2>
         <WarningMessage>
@@ -149,7 +151,9 @@ const DeleteAccountModal = ({ isOpen, onRequestClose }) => {
         </InputGroup>
         {error && <ErrorMessage>{error}</ErrorMessage>}
         {message && <div>{message}</div>}
-        <Button type="submit">탈퇴하기</Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "처리 중..." : "탈퇴하기"}
+        </Button>
       </Form>
     </Modal>
   );

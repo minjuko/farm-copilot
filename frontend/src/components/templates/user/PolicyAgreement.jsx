@@ -207,6 +207,7 @@ const PolicyAgreement = () => {
   });
   const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
+  const { ageCheck, usingListCheck } = isAgreed;
 
   useEffect(() => {
     if (localStorage.getItem("isLoggedIn") === "true") {
@@ -215,10 +216,11 @@ const PolicyAgreement = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const { ageCheck, usingListCheck } = isAgreed;
     const allChecked = ageCheck && usingListCheck;
-    setIsAgreed(prev => ({ ...prev, allChecked }));
-  }, [isAgreed.ageCheck, isAgreed.usingListCheck]);
+    setIsAgreed(prev => prev.allChecked === allChecked
+      ? prev
+      : { ...prev, allChecked });
+  }, [ageCheck, usingListCheck]);
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;

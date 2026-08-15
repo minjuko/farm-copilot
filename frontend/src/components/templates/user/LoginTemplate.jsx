@@ -157,8 +157,11 @@ const LoginTemplate = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isLoading) return;
+
     const { email, password } = formData;
 
+    setLoginError("");
     setIsLoading(true);
     loginUser(email, password)
       .then((response) => {
@@ -234,7 +237,10 @@ const LoginTemplate = () => {
           />
           {passwordError && <ErrorMessage>{passwordError}</ErrorMessage>}
         </InputGroup>
-        <Button type="submit" disabled={isButtonDisabled}>로그인</Button>
+        {loginError && <ErrorMessage role="alert">{loginError}</ErrorMessage>}
+        <Button type="submit" disabled={isButtonDisabled || isLoading}>
+          {isLoading ? "로그인 중..." : "로그인"}
+        </Button>
         <LinksContainer>
           <StyledLink to="/signup">회원가입</StyledLink>
           <StyledLink to="/password_reset">비밀번호 찾기</StyledLink>
