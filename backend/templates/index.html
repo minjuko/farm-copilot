@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Page</title>
+    <link rel="stylesheet" href="{% static 'index.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- Login Button -->
+        <a id="loginButton" class="login-button" href="{% url 'login:login' %}">Login</a>
+        <!-- Signup Button -->
+        <a id="signupButton" class="signup-button" href="{% url 'login:signup' %}">Sign Up</a>
+        <!-- Community Button -->
+        <a id="communityButton" class="community-button" href="{% url 'community:post_list' %}">Community</a>
+        <a id="chatbotButton" class="chatbot-button" href="{% url 'selfchatbot:chatbot' %}">Chat with GPT</a>
+        <a id="predictButton" class="predict-button" href="{% url 'prediction:predict_income' %}">Predict Income (수익 예측)</a>
+  <a id="uploadButton" class="upload-button" href="{% url 'upload_image' %}">Upload Image (병해충 진단)</a>
+
+
+    </div>
+</body>
+</html>

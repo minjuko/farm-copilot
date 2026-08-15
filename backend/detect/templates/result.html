@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pest Detection Result</title>
+</head>
+<body>
+    <h1>Detection Result</h1>
+    {% if pest_name %}
+        <div>
+            <h2>Detected Pest: {{ pest_name }}</h2>
+            <p><strong>Occurrence Environment:</strong> {{ occurrence_environment }}</p>
+            <p><strong>Symptom Description:</strong> {{ symptom_description }}</p>
+            <p><strong>Prevention Methods:</strong> {{ prevention_methods }}</p>
+            <p><strong>Pesticide Name:</strong> {{ pesticide_name }}</p>
+            <p><strong>Confidence:</strong> {{ confidence }}%</p>
+            <img src="{{ image_url }}" alt="Detected Pest Image" style="max-width: 500px;">
+        </div>
+    {% else %}
+        <p>No pest detected or there was an error in processing. Displaying default pest information.</p>
+    {% endif %}
+    <a href="{% url 'upload_image' %}">Try another image</a>
+</body>
+</html>
