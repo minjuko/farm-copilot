@@ -56,3 +56,6 @@ temp/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Local historical refactoring reference
+farm-copilot_reference/
