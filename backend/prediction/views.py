@@ -11,8 +11,10 @@ from sklearn.metrics import r2_score, mean_squared_error
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from aivle_big.decorators import login_required
-from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, UnauthorizedError
+from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, UnauthorizedError, ServiceUnavailableError
 from .models import PredictionSession, PredictionResult
+from .services import fetch_market_prices as request_market_prices
+from .services import fetch_weather_data as request_weather_data
 from django.db import transaction
 import json
 import logging
@@ -71,82 +73,10 @@ def fetch_crop_data(crop_name, df, land_area, crop_ratio):
 
 def fetch_market_prices(crop_name, region, start_date, end_date):
     price_code = pd.read_csv(CSV_FILE_PATH_1, encoding='utf-8')
-    itemcategorycode = int(price_code.loc[price_code['품목명'] == crop_name, '부류코드'].values[0])
-    itemcode = int(price_code.loc[price_code['품목명'] == crop_name, '품목코드'].values[0])
-    countrycode = re[region][0]
-    params = {
-        'action': 'periodProductList',
-        'p_productclscode': '02',
-        'p_startday': start_date,
-        'p_endday': end_date,
-        'p_itemcategorycode': itemcategorycode,
-        'p_itemcode': itemcode,
-        'p_kindcode': '',
-        'p_productrankcode': '',
-        'p_countrycode': countrycode,
-        'p_convert_kg_yn': 'Y',
-        'p_cert_key': os.getenv('KAMIS_CERT_KEY', ''),
-        'p_cert_id': os.getenv('KAMIS_CERT_ID', ''),
-        'p_returntype': 'xml'
-    }
-    response = requests.get('http://www.kamis.or.kr/service/price/xml.do', params=params)
-    if response.status_code == 200:
-        root = ET.fromstring(response.content)
-        data = []
-        for item in root.findall('.//item'):
-            row = {
-                'yyyy': item.find('yyyy').text if item.find('yyyy') is not None else None,
-                'regday': item.find('regday').text if item.find('regday') is not None else None,
-                'itemname': item.find('itemname').text if item.find('itemname') is not None else None,
-                'kindname' : item.find('kindname').text if item.find('kindname') is not None else None,
-                'price': item.find('price').text if item.find('price') is not None else None
-            }
-            data.append(row)
-        df_1 = pd.DataFrame(data)
-        df_1['regday'] = df_1['regday'].apply(lambda x: x.replace('/', '-') if x else '')
-        df_1['price'] = df_1['price'].replace('-', 'NaN').str.replace(',', '').astype(float)
-        df_1['tm'] = pd.to_datetime(df_1['yyyy'] + '-' + df_1['regday'])
-        df_1.drop(columns=['yyyy', 'regday'], inplace=True)
-        df_1.dropna(inplace=True)
-        df_1 = df_1.reset_index(drop=True)
-        kind_to_keep = df_1.loc[0, 'kindname']
-        df_1 = df_1[df_1['kindname'] == kind_to_keep]
-        df_1.drop(columns=['kindname'], inplace = True)
-        logger.debug(f"Fetched market prices for {crop_name}: {df_1}")
-        return df_1
-    else:
-        return None
+    return request_market_prices(crop_name, region, start_date, end_date, price_code, re)
 
 def fetch_weather_data(region):
-    stnIds = re[region][1]
-    date_2 = datetime.now() - timedelta(1)
-    date_2 = date_2.strftime("%Y%m%d")
-    date_1 = datetime.now() - timedelta(1) - timedelta(365)
-    date_1 = date_1.strftime("%Y%m%d")
-    params = {
-        'serviceKey': os.getenv('DATA_GO_KR_WEATHER_SERVICE_KEY', ''),
-        'pageNo': '1',
-        'numOfRows': '365',
-        'dataType': 'XML',
-        'dataCd': 'ASOS',
-        'dateCd': 'DAY',
-        'startDt': date_1,
-        'endDt': date_2,
-        'stnIds': stnIds
-    }
-    response = requests.get('http://apis.data.go.kr/1360000/AsosDalyInfoService/getWthrDataList', params=params)
-    if response.status_code == 200:
-        root = ET.fromstring(response.content)
-        columns = ['tm', 'avgRhm', 'minTa', 'maxTa', 'maxWs', 'avgTa', 'avgWs', 'sumRn', 'ddMes']
-        data = [{child.tag: child.text for child in item if child.tag in columns} for item in root.iter('item')]
-        df_2 = pd.DataFrame(data, columns=columns)
-        for col in columns[1:]:
-            df_2[col] = pd.to_numeric(df_2[col], errors='coerce')
-        df_2.fillna(0, inplace=True)
-        df_2['tm'] = pd.to_datetime(df_2['tm'])
-        return df_2
-    else:
-        return None
+    return request_weather_data(region, re)
 
 def predict_prices(merged_df, df_2):
     if 'price' not in merged_df:
@@ -300,6 +230,8 @@ def predict_income(request):
                 prediction_session.total_income = int(total_predicted_value)
                 prediction_session.save()
             
+        except (ValidationError, NotFoundError, ServiceUnavailableError):
+            raise
         except ValueError as ve:
             logger.error(f"ValueError: {ve}")
             return JsonResponse({'error': str(ve)}, status=400)
@@ -313,6 +245,8 @@ def predict_income(request):
             'r2_scores': r2_scores
         }, status=200)
 
+    except (ValidationError, NotFoundError, ServiceUnavailableError):
+        raise
     except json.JSONDecodeError:
         logger.error("JSON decoding failed")
         return JsonResponse({'error': 'Invalid JSON format'}, status=400)
