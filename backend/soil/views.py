@@ -6,6 +6,7 @@ import requests
 import xml.etree.ElementTree as ET
 import pandas as pd
 import json
+import os
 from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, BadRequestError, MissingPartError
 from .models import crop_data
 from django.utils import timezone
@@ -23,7 +24,7 @@ def get_crop_names(request):
 
 def get_b_code(address):
     url = 'https://dapi.kakao.com/v2/local/search/address.json'
-    headers = {'Authorization': 'KakaoAK c3899565939c467eee249e97805d28c1'}
+    headers = {'Authorization': f"KakaoAK {os.getenv('KAKAO_REST_API_KEY', '')}"}
     response = requests.get(url, headers=headers, params={'query': address})
     if response.status_code == 200:
         data = response.json()
@@ -38,7 +39,7 @@ def get_b_code(address):
 def get_soil_exam_data(b_code):
     url = 'http://apis.data.go.kr/1390802/SoilEnviron/SoilExam/getSoilExamList'
     response = requests.get(url, params={
-        'serviceKey': 'XMihbktoJgeXAASWbeYTDZaWDPRL08q/i+1Sml2083f1m3gcyPJ2T1YwIrbry0Fe+HA1R4EU0S+zNL4LjuGBbQ==', 'Page_Size': '200', 'Page_No': '1', 'BJD_Code': b_code
+        'serviceKey': os.getenv('DATA_GO_KR_SOIL_SERVICE_KEY', ''), 'Page_Size': '200', 'Page_No': '1', 'BJD_Code': b_code
     })
     if response.status_code == 200:
         try:
@@ -135,7 +136,7 @@ def get_soil_fertilizer_info(request):
         crop_code_value = str(crop_code_value).zfill(5)
 
         params = {
-            'serviceKey': '1/eYLkvnjZNKzzUpbpb+/VWWmZExnS0ave8VahtkI0X3CiletYaxBgBnlvunpx8tckfsXBogJJIQJayprpZbmA==',
+            'serviceKey': os.getenv('DATA_GO_KR_FERTILIZER_SERVICE_KEY', ''),
             'crop_Code': crop_code_value,
             'acid': validate_and_convert(data.get('acid'), 4, 9),
             'om': validate_and_convert(data.get('om'), 5, 300),

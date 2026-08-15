@@ -17,6 +17,7 @@ from django.db import transaction
 import json
 import logging
 import uuid
+import os
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 session_id = str(uuid.uuid4())
@@ -84,8 +85,8 @@ def fetch_market_prices(crop_name, region, start_date, end_date):
         'p_productrankcode': '',
         'p_countrycode': countrycode,
         'p_convert_kg_yn': 'Y',
-        'p_cert_key': '5d554929-4444-4cf8-9c58-618f30877777',
-        'p_cert_id': '4540',
+        'p_cert_key': os.getenv('KAMIS_CERT_KEY', ''),
+        'p_cert_id': os.getenv('KAMIS_CERT_ID', ''),
         'p_returntype': 'xml'
     }
     response = requests.get('http://www.kamis.or.kr/service/price/xml.do', params=params)
@@ -123,7 +124,7 @@ def fetch_weather_data(region):
     date_1 = datetime.now() - timedelta(1) - timedelta(365)
     date_1 = date_1.strftime("%Y%m%d")
     params = {
-        'serviceKey': '1/eYLkvnjZNKzzUpbpb+/VWWmZExnS0ave8VahtkI0X3CiletYaxBgBnlvunpx8tckfsXBogJJIQJayprpZbmA==',
+        'serviceKey': os.getenv('DATA_GO_KR_WEATHER_SERVICE_KEY', ''),
         'pageNo': '1',
         'numOfRows': '365',
         'dataType': 'XML',
