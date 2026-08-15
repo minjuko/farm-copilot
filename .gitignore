@@ -1,0 +1,58 @@
+# Environment
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node
+node_modules/
+.pnp
+.pnp.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+build/
+dist/
+
+# Runtime DB / media
+*.sqlite
+*.sqlite3
+*.db
+backend/database/
+media/
+backend/media/
+
+# Logs / temporary
+*.log
+*.tmp
+*.temp
+*.swp
+.cache/
+tmp/
+temp/
+
+# Model artifacts
+*.pt
+*.pth
+*.onnx
+*.h5
+*.joblib
+*.pkl
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
