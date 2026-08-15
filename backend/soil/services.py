@@ -14,7 +14,7 @@ CROP_CODE_PATH = APP_DIR / "crop_code.csv"
 REQUEST_TIMEOUT_SECONDS = 10
 KAKAO_ADDRESS_URL = "https://dapi.kakao.com/v2/local/search/address.json"
 SOIL_EXAM_V2_URL = "https://apis.data.go.kr/1390802/SoilEnviron/SoilExam/V2/getSoilExamList"
-FERTILIZER_URL = "http://apis.data.go.kr/1390802/SoilEnviron/FrtlzrUseExp/getSoilFrtlzrExprnInfo"
+FERTILIZER_V2_URL = "https://apis.data.go.kr/1390802/SoilEnviron_FrtlzrUse_V2/getSoilFrtlzrExamInfo"
 
 
 def _required_env(name):
@@ -56,7 +56,31 @@ def get_crop_code(crop_name):
     return str(row["crop_code"].values[0]).zfill(5)
 
 
-def find_legal_district_code(address):
+def build_pnu_code(b_code, mountain_yn, main_address_no, sub_address_no=""):
+    b_code = str(b_code or "")
+    mountain_yn = str(mountain_yn or "").upper()
+    main_address_no = str(main_address_no or "")
+    sub_address_no = str(sub_address_no or "")
+    if not b_code.isdigit() or len(b_code) != 10:
+        raise ValidationError("Invalid legal district code for parcel lookup.")
+    if mountain_yn not in {"N", "Y"}:
+        raise ValidationError("Invalid mountain parcel flag.")
+    if not main_address_no.isdigit() or len(main_address_no) > 4:
+        raise ValidationError("Invalid main parcel number.")
+    if sub_address_no and (not sub_address_no.isdigit() or len(sub_address_no) > 4):
+        raise ValidationError("Invalid sub parcel number.")
+    pnu = (
+        b_code
+        + ("1" if mountain_yn == "N" else "2")
+        + main_address_no.zfill(4)
+        + (sub_address_no.zfill(4) if sub_address_no else "0000")
+    )
+    if len(pnu) != 19 or not pnu.isdigit():
+        raise ValidationError("Invalid parcel identifier.")
+    return pnu
+
+
+def find_address_codes(address):
     api_key = _required_env("KAKAO_REST_API_KEY")
     try:
         response = requests.get(
@@ -78,11 +102,23 @@ def find_legal_district_code(address):
         raise NotFoundError("No address search result was found.")
 
     for document in documents:
-        legal_code = (document.get("address") or {}).get("b_code")
+        parcel = document.get("address") or {}
+        legal_code = parcel.get("b_code")
         if legal_code:
-            # SoilExam V2 accepts the 10-digit legal district standard code.
-            return str(legal_code)[:10]
+            return {
+                "stdg_code": str(legal_code)[:10],
+                "pnu_code": build_pnu_code(
+                    legal_code,
+                    parcel.get("mountain_yn"),
+                    parcel.get("main_address_no"),
+                    parcel.get("sub_address_no"),
+                ),
+            }
     raise NotFoundError("No legal district code was found for the address.")
+
+
+def find_legal_district_code(address):
+    return find_address_codes(address)["stdg_code"]
 
 
 def fetch_soil_exam(stdg_code):
@@ -133,9 +169,13 @@ def _bounded(value, minimum, maximum):
     return str(max(minimum, min(number, maximum)))
 
 
-def fetch_fertilizer(crop_name, soil_values):
+def fetch_fertilizer(crop_name, soil_values, pnu_code=None):
+    pnu_code = pnu_code or soil_values.get("pnu_code")
+    if not pnu_code:
+        raise ValidationError("Parcel identifier is required for fertilizer recommendation.")
     params = {
-        "serviceKey": _public_api_key("DATA_GO_KR_FERTILIZER_SERVICE_KEY"),
+        "serviceKey": _public_api_key("DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY"),
+        "PNU_Code": pnu_code,
         "crop_Code": get_crop_code(crop_name),
         "acid": _bounded(soil_values.get("acid"), 4, 9),
         "om": _bounded(soil_values.get("om"), 5, 300),
@@ -145,14 +185,21 @@ def fetch_fertilizer(crop_name, soil_values):
         "posifert_Mg": _bounded(soil_values.get("posifert_Mg"), 0.1, 20),
         "vldsia": _bounded(soil_values.get("vldsia"), 5, 1500),
         "selc": _bounded(soil_values.get("selc"), 0, 10),
+        "animix_Ratio_Cattl": "28",
+        "animix_Ratio_Pig": "22",
+        "animix_Ratio_Chick": "19",
     }
     try:
-        response = requests.get(FERTILIZER_URL, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+        response = requests.get(FERTILIZER_V2_URL, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
     except requests.RequestException as exc:
         raise ServiceUnavailableError("Fertilizer service request failed.") from exc
 
     root = _parse_xml(response, "Fertilizer service")
-    result_code = _xml_text(root, "resultCode") or _xml_text(root, "Result_Code")
+    result_code = (
+        _xml_text(root, "resultCode")
+        or _xml_text(root, "Result_Code")
+        or _xml_text(root, "result_Code")
+    )
     if result_code and result_code not in {"00", "0", "200", "NORMAL_CODE"}:
         raise ServiceUnavailableError("Fertilizer service returned an API error.")
     if _xml_text(root, "returnAuthMsg") or _xml_text(root, "errMsg"):
@@ -167,5 +214,7 @@ def fetch_fertilizer(crop_name, soil_values):
     result = [{field: item.findtext(field) for field in fields} for item in items]
     if not result:
         raise NotFoundError("No fertilizer recommendation data was found.")
-    filtered_params = {key: value for key, value in params.items() if key not in {"serviceKey", "crop_Code"}}
+    filtered_params = {
+        key: value for key, value in params.items() if key not in {"serviceKey", "crop_Code", "PNU_Code"}
+    }
     return result, filtered_params

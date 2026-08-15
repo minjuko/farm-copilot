@@ -10,7 +10,7 @@ from aivle_big.decorators import login_required
 from aivle_big.exceptions import BadRequestError, MissingPartError, NotFoundError, ValidationError
 
 from .models import crop_data
-from .services import fetch_fertilizer, fetch_soil_exam, find_legal_district_code, get_crop_names as load_crop_names
+from .services import fetch_fertilizer, fetch_soil_exam, find_address_codes, find_legal_district_code, get_crop_names as load_crop_names
 
 
 def _json_body(request):
@@ -55,7 +55,8 @@ def get_soil_fertilizer_info(request):
     if not crop_name:
         raise MissingPartError("Missing crop code.")
 
-    fertilizer_data, filtered_params = fetch_fertilizer(crop_name, data)
+    address_codes = find_address_codes(data.get("address"))
+    fertilizer_data, filtered_params = fetch_fertilizer(crop_name, data, address_codes["pnu_code"])
     if not request.session.session_key:
         request.session.create()
 

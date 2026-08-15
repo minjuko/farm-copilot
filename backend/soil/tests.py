@@ -9,7 +9,8 @@ from django.urls import reverse
 from aivle_big.exceptions import NotFoundError, ServiceUnavailableError, ValidationError
 from login.models import User
 
-from .services import fetch_fertilizer, fetch_soil_exam, find_legal_district_code, get_crop_names
+from .models import crop_data
+from .services import build_pnu_code, fetch_fertilizer, fetch_soil_exam, find_address_codes, find_legal_district_code, get_crop_names
 
 
 class SoilServiceTests(TestCase):
@@ -30,9 +31,35 @@ class SoilServiceTests(TestCase):
     def test_kakao_code_is_normalized_for_soil_v2(self, mock_get):
         mock_get.return_value = Mock(
             status_code=200,
-            json=lambda: {"documents": [{"address": {"b_code": "123456789012345"}}]},
+            json=lambda: {"documents": [{"address": {"b_code": "1234567890", "mountain_yn": "N", "main_address_no": "12", "sub_address_no": "3"}}]},
         )
         self.assertEqual(find_legal_district_code("서울"), "1234567890")
+
+    def test_pnu_builder_normal_and_mountain_parcels(self):
+        self.assertEqual(build_pnu_code("1234567890", "N", "12", "3"), "1234567890100120003")
+        self.assertEqual(build_pnu_code("1234567890", "Y", "1", ""), "1234567890200010000")
+
+    def test_pnu_builder_validates_components(self):
+        self.assertEqual(build_pnu_code("1234567890", "N", "1"), "1234567890100010000")
+        with self.assertRaises(ValidationError):
+            build_pnu_code("123", "N", "1")
+        with self.assertRaises(ValidationError):
+            build_pnu_code("1234567890", "X", "1")
+        with self.assertRaises(ValidationError):
+            build_pnu_code("1234567890", "N", "10000")
+        with self.assertRaises(ValidationError):
+            build_pnu_code("1234567890", "N", "1", "10000")
+
+    @patch("soil.services.requests.get")
+    @patch.dict(os.environ, {"KAKAO_REST_API_KEY": "test-key"}, clear=True)
+    def test_kakao_address_codes_include_pnu(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {"documents": [{"address": {
+            "address_name": "sample", "b_code": "1234567890", "mountain_yn": "N",
+            "main_address_no": "12", "sub_address_no": "3",
+        }}]})
+        self.assertEqual(find_address_codes("sample"), {
+            "stdg_code": "1234567890", "pnu_code": "1234567890100120003",
+        })
 
     @patch("soil.services.requests.get")
     @patch.dict(os.environ, {"DATA_GO_KR_SOIL_SERVICE_KEY": "test-key"}, clear=True)
@@ -60,21 +87,48 @@ class SoilServiceTests(TestCase):
             fetch_soil_exam("1234567890")
 
     @patch("soil.services.requests.get")
-    @patch.dict(os.environ, {"DATA_GO_KR_FERTILIZER_SERVICE_KEY": "test-key"}, clear=True)
+    @patch.dict(os.environ, {"DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY": "encoded%2Bkey"}, clear=True)
     def test_fertilizer_response_parsing(self, mock_get):
         mock_get.return_value = Mock(status_code=200, content=b"""
             <response><header><resultCode>00</resultCode></header><body><items><item>
-            <crop_Code>00101</crop_Code><crop_Nm>sample</crop_Nm><pre_Fert_N>10</pre_Fert_N>
+            <crop_Code>01001</crop_Code><crop_Nm>sample</crop_Nm><pre_Fert_N>10</pre_Fert_N>
             </item></items></body></response>
         """)
-        result, filtered = fetch_fertilizer(get_crop_names()[0], {})
-        self.assertEqual(result[0]["crop_Code"], "00101")
+        result, filtered = fetch_fertilizer(get_crop_names()[0], {}, "1234567890100100000")
+        self.assertEqual(result[0]["crop_Code"], "01001")
         self.assertNotIn("serviceKey", filtered)
+        self.assertNotIn("PNU_Code", filtered)
+        self.assertEqual(mock_get.call_args.kwargs["params"]["PNU_Code"], "1234567890100100000")
+        self.assertEqual(mock_get.call_args.kwargs["params"]["serviceKey"], "encoded+key")
+        self.assertEqual(mock_get.call_args.args[0], "https://apis.data.go.kr/1390802/SoilEnviron_FrtlzrUse_V2/getSoilFrtlzrExamInfo")
+
+    @patch("soil.services.requests.get", side_effect=requests.Timeout)
+    @patch.dict(os.environ, {"DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY": "test-key"}, clear=True)
+    def test_fertilizer_timeout_is_controlled(self, _mock_get):
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_fertilizer(get_crop_names()[0], {}, "1234567890100100000")
+
+    @patch("soil.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY": "test-key"}, clear=True)
+    def test_fertilizer_api_error_and_empty_are_controlled(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, content=b"<response><Result_Code>500</Result_Code></response>")
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_fertilizer(get_crop_names()[0], {}, "1234567890100100000")
+        mock_get.return_value = Mock(status_code=200, content=b"<response><body><items /></body></response>")
+        with self.assertRaises(NotFoundError):
+            fetch_fertilizer(get_crop_names()[0], {}, "1234567890100100000")
+
+    @patch("soil.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY": "test-key"}, clear=True)
+    def test_fertilizer_malformed_response_is_controlled(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, content=b"<response>")
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_fertilizer(get_crop_names()[0], {}, "1234567890100100000")
 
     def test_invalid_crop_mapping_is_controlled(self):
-        with patch.dict(os.environ, {"DATA_GO_KR_FERTILIZER_SERVICE_KEY": "test-key"}, clear=True):
+        with patch.dict(os.environ, {"DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY": "test-key"}, clear=True):
             with self.assertRaises(ValidationError):
-                fetch_fertilizer("not-a-crop", {})
+                fetch_fertilizer("not-a-crop", {}, "1234567890100100000")
 
 
 class SoilEndpointTests(TestCase):
@@ -106,3 +160,17 @@ class SoilEndpointTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.json()), {"crop_name", "address", "soil_data"})
+
+    @patch("soil.views.find_address_codes", return_value={"stdg_code": "1234567890", "pnu_code": "1234567890100010000"})
+    @patch("soil.views.fetch_fertilizer", return_value=([{"crop_Code": "01001", "pre_Fert_N": "10"}], {"acid": "6"}))
+    def test_fertilizer_endpoint_preserves_frontend_contract(self, mock_fertilizer, mock_codes):
+        response = self.client.post(
+            reverse("soil:get_soil_fertilizer_info"),
+            data=json.dumps({"crop_code": "sample", "address": "sample", "acid": "6"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"data": [{"crop_Code": "01001", "pre_Fert_N": "10"}]})
+        mock_codes.assert_called_once_with("sample")
+        self.assertEqual(mock_fertilizer.call_args.args[2], "1234567890100010000")
+        self.assertEqual(crop_data.objects.filter(user_id=self.user.id).count(), 1)
