@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from .exceptions import (
     ValidationError, BadRequestError, MissingPartError, DuplicateResourceError,
     UnauthorizedError, AccessDeniedError, ForbiddenError, ResourceAccessForbiddenError,
-    NotFoundError, InternalServerError, InvalidRequestError
+    NotFoundError, InternalServerError, InvalidRequestError, ServiceUnavailableError
 )
 
 class CustomExceptionMiddleware:
@@ -99,6 +99,14 @@ class CustomExceptionMiddleware:
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, InternalServerError):
+            response_data = {
+                'status': 'error',
+                'message': exception.message,
+                'code': exception.error_code,
+                'status_code': exception.status_code
+            }
+            return JsonResponse(response_data, status=exception.status_code)
+        elif isinstance(exception, ServiceUnavailableError):
             response_data = {
                 'status': 'error',
                 'message': exception.message,

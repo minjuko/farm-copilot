@@ -88,6 +88,15 @@ class InternalServerError(Exception):
         self.error_code = code if code is not None else self.__class__.error_code
         super().__init__(self.message)
 
+class ServiceUnavailableError(Exception):
+    """Exception for optional or external services that are unavailable."""
+    status_code = 503
+    error_code = 2001
+    def __init__(self, message="Service unavailable", code=None):
+        self.message = message
+        self.error_code = code if code is not None else self.__class__.error_code
+        super().__init__(self.message)
+
 class InvalidRequestError(Exception):
     """Exception for invalid request method errors."""
     status_code = 405

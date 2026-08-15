@@ -1,25 +1,49 @@
 import os
 import tempfile
-import cv2
-import torch
-from ultralytics import YOLO
+from importlib import import_module
+from pathlib import Path
+from django.conf import settings
 from django.http import JsonResponse
 from django.utils import timezone
 from django.core.files.base import ContentFile
 from .models import Pest, PestDetection
 from aivle_big.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError
+from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, ServiceUnavailableError
 import logging
-from io import BytesIO
 from PIL import Image
 
 logger = logging.getLogger(__name__)
 
-model = YOLO('best.pt')
+MODEL_PATH = Path(os.getenv('YOLO_MODEL_PATH', settings.BASE_DIR / 'best.pt'))
+_yolo_model = None
+
+
+def get_yolo_model():
+    global _yolo_model
+
+    if _yolo_model is not None:
+        return _yolo_model
+
+    if not MODEL_PATH.exists():
+        raise ServiceUnavailableError(
+            'Image detection model is not available in this public repository.'
+        )
+
+    try:
+        yolo_class = import_module('ultralytics').YOLO
+        _yolo_model = yolo_class(str(MODEL_PATH))
+    except (ImportError, OSError, RuntimeError) as exc:
+        logger.warning('Image detection runtime is unavailable: %s', exc)
+        raise ServiceUnavailableError(
+            'Image detection runtime is not installed or failed to initialize.'
+        ) from exc
+
+    return _yolo_model
 
 def process_image(image_path):
     """Process the image and return predictions along with annotated image content."""
+    model = get_yolo_model()
     results = model(image_path)
     pest_id = 10
     confidence = 0.0
@@ -33,6 +57,12 @@ def process_image(image_path):
                     pest_id = int(box.cls.item())
                     confidence = float(box.conf.item()) * 100 
 
+                    try:
+                        cv2 = import_module('cv2')
+                    except (ImportError, OSError) as exc:
+                        raise ServiceUnavailableError(
+                            'Image detection optional dependencies are not installed.'
+                        ) from exc
                     annotated_image = best_result.plot()
                     is_success, buffer = cv2.imencode(".jpg", annotated_image)
                     result_image_content = ContentFile(buffer.tobytes(), name=os.path.basename(image_path))
@@ -99,6 +129,8 @@ def upload_image_for_detection(request):
 
         return JsonResponse(data, status=200)
 
+    except ServiceUnavailableError:
+        raise
     except Exception as e:
         logger.error(f"Unhandled exception during image processing: {str(e)}")
         raise InternalServerError('An unexpected error occurred.')
