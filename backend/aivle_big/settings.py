@@ -81,37 +81,45 @@ WSGI_APPLICATION = "aivle_big.wsgi.application"
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000')
-# 세션 및 CSRF 설정
-SESSION_COOKIE_SAMESITE = None
-CSRF_COOKIE_SAMESITE = None
-
 # 세션 설정
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # 기본 DB 기반 세션 저장
 SESSION_COOKIE_AGE = 1209600  # 2주
 #SESSION_SAVE_EVERY_REQUEST = True  # 매 요청마다 세션 갱신
 
 # 쿠키 보안 설정
-SESSION_COOKIE_SECURE = True  # 개발 시에는 False로 설정, 배포 시에는 True로 설정
-CSRF_COOKIE_SECURE = True  # 개발 시에는 False로 설정, 배포 시에는 True로 설정
+SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_SECURE = env_bool('CSRF_COOKIE_SECURE', not DEBUG)
+SESSION_COOKIE_SAMESITE = os.getenv(
+    'SESSION_COOKIE_SAMESITE', 'Lax' if DEBUG else 'None'
+)
+CSRF_COOKIE_SAMESITE = os.getenv(
+    'CSRF_COOKIE_SAMESITE', 'Lax' if DEBUG else 'None'
+)
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-from decouple import config
+USE_SQLITE = env_bool('DJANGO_USE_SQLITE', False)
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST'),
-        'PORT': os.getenv('DATABASE_PORT'),
-        'OPTIONS': {
-            'options': '-c client_encoding=UTF8',
+if USE_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': Path(os.getenv('SQLITE_DATABASE_PATH', BASE_DIR / 'db.sqlite3')),
         },
-    },
-}
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DATABASE_NAME'),
+            'USER': os.getenv('DATABASE_USER'),
+            'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+            'HOST': os.getenv('DATABASE_HOST'),
+            'PORT': os.getenv('DATABASE_PORT'),
+            'OPTIONS': {
+                'options': '-c client_encoding=UTF8',
+            },
+        },
+    }
 
 DATABASE_ROUTERS = ['aivle_big.routers.SchemaRouter']
 AUTH_USER_MODEL = 'login.User'
@@ -140,13 +148,14 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-import os
-from dotenv import load_dotenv
-load_dotenv()
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT'))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') == 'True'
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend' if DEBUG
+    else 'django.core.mail.backends.smtp.EmailBackend',
+)
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', True)
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
@@ -179,27 +188,31 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-# AWS settings
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}
-AWS_LOCATION = os.getenv('AWS_LOCATION', default='')
-AWS_DEFAULT_ACL = None
+USE_S3 = env_bool('DJANGO_USE_S3', False)
 
-
-# Static files settings
-STATIC_LOCATION = 'static'
-STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/'
-STATICFILES_STORAGE = 'aivle_big.storage_backends.StaticStorage'
-
-# Media files settings
-MEDIA_LOCATION = 'media'
-DEFAULT_FILE_STORAGE = 'aivle_big.storage_backends.MediaStorage'
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/'
+if USE_S3:
+    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+    AWS_LOCATION = os.getenv('AWS_LOCATION', '')
+    AWS_DEFAULT_ACL = None
+    STATIC_LOCATION = 'static'
+    MEDIA_LOCATION = 'media'
+    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/'
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/'
+    STORAGES = {
+        'default': {'BACKEND': 'aivle_big.storage_backends.MediaStorage'},
+        'staticfiles': {'BACKEND': 'aivle_big.storage_backends.StaticStorage'},
+    }
+else:
+    STORAGES = {
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        },
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
