@@ -33,21 +33,23 @@ const MenuLink = styled(Link)`
 
 const IconWrapper = styled.div`
   display: inline-block;
-  color: ${({ isActive }) => (isActive ? "#4AAA87" : "#9ca3af")};
+  color: ${({ $isActive }) => ($isActive ? "#4AAA87" : "#9ca3af")};
 `;
 
 const MenuText = styled.div`
   font-size: 12px;
   font-weight: bold;
-  color: ${({ isActive }) => (isActive ? "#4AAA87" : "#6b7280")};
+  color: ${({ $isActive }) => ($isActive ? "#4AAA87" : "#6b7280")};
 `;
 
-const ChatIconWrapper = styled.div`
+const ChatIconWrapper = styled.button`
   position: relative;
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: ${({ isActive }) => (isActive ? "#4AAA87" : "#4AAA87")};
+  background-color: #4AAA87;
+  border: 0;
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -78,20 +80,20 @@ export const GNB = () => {
     <Nav>
       <Wrapper>
         <MenuLink to="/main" className={currentPage === "/main" ? "active" : ""}>
-          <IconWrapper isActive={currentPage === "/main"}>
+          <IconWrapper $isActive={currentPage === "/main"}>
             <FaHome size={24} />
           </IconWrapper>
-          <MenuText isActive={currentPage === "/"}>홈</MenuText>
+          <MenuText $isActive={currentPage === "/main"}>홈</MenuText>
         </MenuLink>
         <MenuLink to="/diagnosislist" className={currentPage === "/diagnosislist" ? "active" : ""}>
-          <IconWrapper isActive={currentPage === "/diagnosislist"}>
+          <IconWrapper $isActive={currentPage === "/diagnosislist"}>
             <FaBug size={24} />
           </IconWrapper>
-          <MenuText isActive={currentPage === "/diagnosislist"}>병해충 진단</MenuText>
+          <MenuText $isActive={currentPage === "/diagnosislist"}>병해충 진단</MenuText>
         </MenuLink>
         <ChatIconWrapper
-          isActive={currentPage === "/chatlist"}
           onClick={handleChatIconClick}
+          aria-label="농업 GPT 열기"
         >
           <ChatIcon />
         </ChatIconWrapper>
@@ -99,19 +101,19 @@ export const GNB = () => {
           to="/cropselection"
           className={currentPage === "/cropselection" ? "active" : ""}
         >
-          <IconWrapper isActive={currentPage === "/cropselection"}>
+          <IconWrapper $isActive={currentPage === "/cropselection"}>
             <FaChartLine size={24} />
           </IconWrapper>
-          <MenuText isActive={currentPage === "/cropselection"}>수익 예측</MenuText>
+          <MenuText $isActive={currentPage === "/cropselection"}>수익 예측</MenuText>
         </MenuLink>
         <MenuLink
           to="/mypage"
           className={currentPage === "/mypage" ? "active" : ""}
         >
-          <IconWrapper isActive={currentPage === "/mypage"}>
+          <IconWrapper $isActive={currentPage === "/mypage"}>
             <FaUser size={24} />
           </IconWrapper>
-          <MenuText isActive={currentPage === "/mypage"}>MY</MenuText>
+          <MenuText $isActive={currentPage === "/mypage"}>MY</MenuText>
         </MenuLink>
       </Wrapper>
     </Nav>

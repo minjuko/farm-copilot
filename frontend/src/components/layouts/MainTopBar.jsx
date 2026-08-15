@@ -21,7 +21,7 @@ const TopBars = styled.nav`
 const LogoContainer = styled.div`
   display: flex;
   align-items: center;
-  cursor: ${({ disableClick }) => (disableClick ? "default" : "pointer")};
+  cursor: ${({ $disableClick }) => ($disableClick ? "default" : "pointer")};
 `;
 
 const LogoImage = styled.img`
@@ -133,7 +133,7 @@ const MainTopBar = () => {
 
   return (
     <TopBars>
-      <LogoContainer onClick={handleLogoClick} disableClick={isStartPage}>
+      <LogoContainer onClick={handleLogoClick} $disableClick={isStartPage}>
         <LogoImage src={`${process.env.PUBLIC_URL}/android-chrome-192x192.png`} alt="Logo" />
         <LogoText>꾼꾼농사꾼</LogoText>
       </LogoContainer>
