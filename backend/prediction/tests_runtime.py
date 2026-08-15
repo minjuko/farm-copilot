@@ -45,6 +45,24 @@ class PredictionRuntimeTests(TestCase):
             fetch_weather_data("서울", {"서울": ["1101", "108"]})
 
     @patch("prediction.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_WEATHER_SERVICE_KEY": "encoded%2Bkey"}, clear=True)
+    def test_weather_service_key_is_url_decoded(self, mock_get):
+        mock_get.return_value = Mock(
+            status_code=200,
+            content=(
+                b"<response><body><items><item>"
+                b"<tm>2026-01-01</tm><avgRhm>50</avgRhm><minTa>1</minTa>"
+                b"<maxTa>5</maxTa><maxWs>2</maxWs><avgTa>3</avgTa>"
+                b"<avgWs>1</avgWs><sumRn>0</sumRn><ddMes>0</ddMes>"
+                b"</item></items></body></response>"
+            ),
+        )
+
+        fetch_weather_data("?쒖슱", {"?쒖슱": ["1101", "108"]})
+
+        self.assertEqual(mock_get.call_args.kwargs["params"]["serviceKey"], "encoded+key")
+
+    @patch("prediction.services.requests.get")
     @patch.dict(os.environ, {
         "KAMIS_CERT_KEY": "test-key",
         "KAMIS_CERT_ID": "test-id",

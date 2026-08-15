@@ -1,6 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 import pandas as pd
 import requests
@@ -99,7 +100,9 @@ def fetch_market_prices(crop_name, region, start_date, end_date, price_code, reg
 
 
 def fetch_weather_data(region, region_codes):
-    service_key = _required_env("DATA_GO_KR_WEATHER_SERVICE_KEY", "Weather service")
+    service_key = unquote(
+        _required_env("DATA_GO_KR_WEATHER_SERVICE_KEY", "Weather service")
+    )
     if region not in region_codes:
         raise NotFoundError("Weather station mapping was not found.")
 
