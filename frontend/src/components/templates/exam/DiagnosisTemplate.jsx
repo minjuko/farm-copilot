@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useDropzone } from "react-dropzone";
 import { uploadImage } from "../../../apis/predict";
+import { getApiErrorMessage } from "../../../apis/error";
 import { FaCamera, FaFile } from "react-icons/fa";
 import CustomModal from '../../atoms/CustomModal';
 import GlobalLoader from '../../atoms/GlobalLoader';
@@ -251,7 +252,10 @@ const DiagnosisTemplate = () => {
       setResult(response.data.result);
       navigate('/info', { state: { diagnosisResult: response.data } });
     } catch (error) {
-      setModalContent('이미지 진단에 실패했습니다. 다시 시도해주세요.');
+      setModalContent(getApiErrorMessage(
+        error,
+        '이미지 진단 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
+      ));
       setIsModalOpen(true);
     } finally {
       setIsLoading(false);

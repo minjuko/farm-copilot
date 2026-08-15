@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Select from 'react-select';
 import { useNavigate } from 'react-router-dom';
 import { getCropNames, predictCrops, getRegionNames } from "../../../apis/crop";
+import { getApiErrorMessage } from "../../../apis/error";
 import { useLoading } from "../../../LoadingContext";
 import CustomModal from "../../atoms/CustomModal";
 import GlobalLoader from "../../atoms/GlobalLoader";
@@ -32,10 +33,8 @@ const CropTest = () => {
   const [region, setRegion] = useState("");
   const [currentCrop, setCurrentCrop] = useState({ name: "", ratio: "" });
   const [crops, setCrops] = useState([]);
-  const [cropNames, setCropNames] = useState([]);
   const [regions, setRegions] = useState([]);
   const [filteredCropNames, setFilteredCropNames] = useState([]);
-  const [showCropList, setShowCropList] = useState(false);
   const [showRegionList, setShowRegionList] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
@@ -45,12 +44,10 @@ const CropTest = () => {
   const [selectKey, setSelectKey] = useState(0); // 추가된 key state
   const navigate = useNavigate();
   const regionRef = useRef(null);
-  const cropNameRef = useRef(null);
 
   const fetchCropNames = async () => {
     try {
       const response = await getCropNames();
-      setCropNames(response.data.crop_names);
       setFilteredCropNames(response.data.crop_names.map(name => ({ value: name, label: name })));
     } catch (err) {
       setModalContent('작물 이름을 불러오는 중 오류가 발생했습니다.');
@@ -149,9 +146,10 @@ const CropTest = () => {
       }
     } catch (error) {
       console.error('Error fetching prediction', error);
-      setModalContent(error.response && error.response.data && error.response.data.error
-        ? error.response.data.error
-        : 'Error fetching prediction');
+      setModalContent(getApiErrorMessage(
+        error,
+        '수익 예측 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
+      ));
       setModalTitle('오류');
       setIsError(true);
       setIsModalOpen(true);
@@ -168,9 +166,6 @@ const CropTest = () => {
   const handleClickOutside = useCallback((event) => {
     if (regionRef.current && !regionRef.current.contains(event.target)) {
       setShowRegionList(false);
-    }
-    if (cropNameRef.current && !cropNameRef.current.contains(event.target)) {
-      setShowCropList(false);
     }
   }, []);
 
@@ -224,7 +219,6 @@ const CropTest = () => {
           key={selectKey}
           options={filteredCropNames}
           onChange={handleInputChange}
-          onInputChange={() => setShowCropList(true)}
           value={filteredCropNames.find(option => option.value === currentCrop.name)}
           placeholder="작물 검색"
           styles={{

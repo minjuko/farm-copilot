@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { fetchChatHistory, sendChatMessage } from '../../../apis/chat';
+import { getApiErrorMessage } from '../../../apis/error';
 import SyncLoader from 'react-spinners/SyncLoader';
 import { IoMenu } from "react-icons/io5";
 import { FaPaperPlane } from "react-icons/fa";
@@ -260,10 +261,14 @@ const ChatTemplate = () => {
       };
       setMessages((prevMessages) => [...prevMessages, botMessage]);
     } catch (error) {
-      setErrorMessage('채팅 처리 중 오류가 발생했습니다.');
+      const message = getApiErrorMessage(
+        error,
+        '현재 농업 GPT를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
+      );
+      setErrorMessage(message);
       const errorMessage = {
         isUser: false,
-        text: '채팅 처리 중 오류가 발생했습니다. 다시 시도해주세요.',
+        text: message,
         timestamp: new Date().toISOString()
       };
       setMessages((prevMessages) => [...prevMessages, errorMessage]);
