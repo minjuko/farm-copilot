@@ -7,7 +7,7 @@ import requests
 from django.test import TestCase
 from django.urls import reverse
 
-from aivle_big.exceptions import ServiceUnavailableError
+from aivle_big.exceptions import NotFoundError, ServiceUnavailableError
 from login.models import User
 
 from .services import fetch_market_prices, fetch_weather_data
@@ -64,14 +64,76 @@ class PredictionRuntimeTests(TestCase):
 
     @patch("prediction.services.requests.get")
     @patch.dict(os.environ, {
-        "KAMIS_CERT_KEY": "test-key",
-        "KAMIS_CERT_ID": "test-id",
+        "DATA_GO_KR_MARKET_SERVICE_KEY": "test-key",
     }, clear=True)
-    def test_invalid_market_xml_is_controlled(self, mock_get):
-        mock_get.return_value = Mock(status_code=200, content=b"not-xml")
-        codes = pd.DataFrame([{"품목명": "감자", "부류코드": 100, "품목코드": 1001}])
+    def test_invalid_market_json_is_controlled(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {"unexpected": {}})
+        codes = pd.DataFrame([[100, 152, "감자"]], columns=["category", "item", "crop"])
         with self.assertRaises(ServiceUnavailableError):
             fetch_market_prices("감자", "서울", "20260101", "20260102", codes, {"서울": ["1101", "108"]})
+
+    @staticmethod
+    def _market_codes():
+        return pd.DataFrame([[100, 152, "감자"]], columns=["category", "item", "crop"])
+
+    @patch("prediction.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_MARKET_SERVICE_KEY": "encoded%2Bkey"}, clear=True)
+    def test_market_decodes_service_key_and_normalizes_json(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {"response": {
+            "header": {"resultCode": "00"}, "body": {"totalCount": 2, "items": {"item": [
+                {"exmn_ymd": "20260101", "exmn_dd_cnvs_prc": "1,200", "item_nm": "감자"},
+                {"exmn_ymd": "20260102", "exmn_dd_cnvs_prc": "1300", "item_nm": "감자"},
+            ]}
+        }}})
+        frame = fetch_market_prices("감자", "서울", "20260101", "20260102", self._market_codes(), {})
+        self.assertEqual(mock_get.call_args.kwargs["params"]["serviceKey"], "encoded+key")
+        self.assertEqual(list(frame.columns), ["tm", "price", "itemname"])
+        self.assertEqual(frame["price"].tolist(), [1200.0, 1300.0])
+        self.assertTrue(pd.api.types.is_datetime64_any_dtype(frame["tm"]))
+
+    @patch("prediction.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_MARKET_SERVICE_KEY": "test-key"}, clear=True)
+    def test_market_paginates_until_total_count(self, mock_get):
+        mock_get.side_effect = [
+            Mock(status_code=200, json=lambda: {"response": {"header": {"resultCode": "00"}, "body": {
+                "totalCount": 2, "items": {"item": [{"exmn_ymd": "20260101", "exmn_dd_cnvs_prc": "100"}]}}}}),
+            Mock(status_code=200, json=lambda: {"response": {"header": {"resultCode": "00"}, "body": {
+                "totalCount": 2, "items": {"item": [{"exmn_ymd": "20260102", "exmn_dd_cnvs_prc": "200"}]}}}}),
+        ]
+        with patch("prediction.services.MARKET_PAGE_SIZE", 1):
+            frame = fetch_market_prices("감자", "서울", "20260101", "20260102", self._market_codes(), {})
+        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(frame["price"].tolist(), [100.0, 200.0])
+
+    @patch("prediction.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_MARKET_SERVICE_KEY": "test-key"}, clear=True)
+    def test_market_empty_api_response_is_controlled(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {"response": {
+            "header": {"resultCode": "00"}, "body": {"totalCount": 0, "items": {"item": []}}
+        }})
+        with self.assertRaises(NotFoundError):
+            fetch_market_prices("감자", "서울", "20260101", "20260102", self._market_codes(), {})
+
+    @patch("prediction.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_MARKET_SERVICE_KEY": "test-key"}, clear=True)
+    def test_market_api_error_timeout_and_invalid_price_are_controlled(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {"response": {
+            "header": {"resultCode": "30"}, "body": {}
+        }})
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_market_prices("감자", "서울", "20260101", "20260102", self._market_codes(), {})
+
+        mock_get.side_effect = requests.Timeout
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_market_prices("감자", "서울", "20260101", "20260102", self._market_codes(), {})
+
+        mock_get.side_effect = None
+        mock_get.return_value = Mock(status_code=200, json=lambda: {"response": {
+            "header": {"resultCode": "00"}, "body": {"totalCount": 1,
+            "items": {"item": [{"exmn_ymd": "20260101", "exmn_dd_cnvs_prc": "-"}]}}
+        }})
+        with self.assertRaises(NotFoundError):
+            fetch_market_prices("감자", "서울", "20260101", "20260102", self._market_codes(), {})
 
     def test_runtime_crop_csv_and_income_calculation(self):
         frame = read_csv_data()
