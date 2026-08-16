@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch
 from types import SimpleNamespace
 
-from django.test import RequestFactory, SimpleTestCase
+from django.test import Client, RequestFactory, SimpleTestCase
 
 from aivle_big.exceptions import ServiceUnavailableError
 from . import views
@@ -78,3 +78,28 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
 
         self.assertEqual(context.exception.status_code, 503)
         self.assertNotIn('provider traceback', context.exception.message)
+
+
+class ChatbotCsrfBoundaryTests(SimpleTestCase):
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+
+    def csrf_token(self):
+        return self.client.get("/login/auth_check/").cookies["csrftoken"].value
+
+    @patch.dict('os.environ', {}, clear=True)
+    def test_chatbot_write_requires_csrf_and_preserves_archive_boundary(self):
+        without_token = self.client.post(
+            "/selfchatbot/chatbot/",
+            data=b'{"question":"test"}',
+            content_type="application/json",
+        )
+        self.assertEqual(without_token.status_code, 403)
+
+        with_token = self.client.post(
+            "/selfchatbot/chatbot/",
+            data=b'{"question":"test"}',
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=self.csrf_token(),
+        )
+        self.assertEqual(with_token.status_code, 503)

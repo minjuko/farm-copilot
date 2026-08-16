@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from aivle_big.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.utils import timezone
 from .models import Chatbot
 from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, ServiceUnavailableError
@@ -105,7 +104,6 @@ def get_rag_chain():
     return _rag_chain
 
 
-@csrf_exempt
 def chatbot(request):
     try:
         data = json.loads(request.body)
@@ -220,7 +218,6 @@ def chat_clear_logs(request):
     Chatbot.objects.filter(user=request.user).delete()
     return redirect('selfchatbot:chat_page')
 
-@csrf_exempt
 @login_required
 def delete_session(request, session_id):
     if request.method != 'DELETE':
@@ -232,7 +229,6 @@ def delete_session(request, session_id):
 def error_page(request):
     return render(request, 'error_page.html')
 
-@csrf_exempt
 @login_required
 @require_http_methods(["PATCH"])
 def update_session_name(request, session_id):

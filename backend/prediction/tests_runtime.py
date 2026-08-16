@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import requests
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from aivle_big.exceptions import NotFoundError, ServiceUnavailableError
@@ -143,3 +143,34 @@ class PredictionRuntimeTests(TestCase):
         self.assertIsNotNone(income)
         self.assertIsInstance(adjusted, dict)
         self.assertIsNotNone(latest_year)
+
+
+class PredictionCsrfBoundaryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="prediction-csrf@example.com",
+            username="prediction-csrf",
+            password="test-password",
+        )
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.force_login(self.user)
+
+    def csrf_token(self):
+        return self.client.get("/login/auth_check/").cookies["csrftoken"].value
+
+    def test_prediction_write_requires_csrf(self):
+        payload = {"invalid": True}
+        without_token = self.client.post(
+            reverse("prediction:predict_income"),
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+        self.assertEqual(without_token.status_code, 403)
+
+        with_token = self.client.post(
+            reverse("prediction:predict_income"),
+            data="not-json",
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=self.csrf_token(),
+        )
+        self.assertEqual(with_token.status_code, 400)

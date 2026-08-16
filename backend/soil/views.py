@@ -3,7 +3,6 @@ import json
 from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from aivle_big.decorators import login_required
@@ -20,14 +19,12 @@ def _json_body(request):
         raise BadRequestError("Invalid JSON format.") from exc
 
 
-@csrf_exempt
 @require_GET
 def get_crop_names(request):
     return JsonResponse({"crop_names": load_crop_names()})
 
 
 @login_required
-@csrf_exempt
 @require_POST
 def soil_exam_result(request):
     data = _json_body(request)
@@ -47,7 +44,6 @@ def soil_exam_result(request):
 
 
 @login_required
-@csrf_exempt
 @require_POST
 def get_soil_fertilizer_info(request):
     data = _json_body(request)

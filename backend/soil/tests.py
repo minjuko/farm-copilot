@@ -3,7 +3,7 @@ import os
 from unittest.mock import Mock, patch
 
 import requests
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from aivle_big.exceptions import NotFoundError, ServiceUnavailableError, ValidationError
@@ -179,3 +179,33 @@ class SoilEndpointTests(TestCase):
         mock_codes.assert_called_once_with("sample")
         self.assertEqual(mock_fertilizer.call_args.args[2], "1234567890100010000")
         self.assertEqual(crop_data.objects.filter(user_id=self.user.id).count(), 1)
+
+
+class SoilCsrfBoundaryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="soil-csrf@example.com",
+            username="soil-csrf",
+            password="test-password",
+        )
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.force_login(self.user)
+
+    def csrf_token(self):
+        return self.client.get("/login/auth_check/").cookies["csrftoken"].value
+
+    def test_soil_write_requires_csrf(self):
+        without_token = self.client.post(
+            reverse("soil:soil_exam_result"),
+            data=json.dumps({"crop_name": "sample", "address": "sample"}),
+            content_type="application/json",
+        )
+        self.assertEqual(without_token.status_code, 403)
+
+        with_token = self.client.post(
+            reverse("soil:soil_exam_result"),
+            data=json.dumps({}),
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=self.csrf_token(),
+        )
+        self.assertEqual(with_token.status_code, 400)

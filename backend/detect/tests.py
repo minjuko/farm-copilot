@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import RequestFactory, SimpleTestCase
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase
 from PIL import Image
 
 from aivle_big.exceptions import ServiceUnavailableError, ValidationError
@@ -160,3 +160,33 @@ class DetectionRuntimeTests(SimpleTestCase):
 
         self.assertEqual(len(captured_path), 1)
         self.assertFalse(os.path.exists(captured_path[0]))
+
+
+class DetectCsrfBoundaryTests(TestCase):
+    def setUp(self):
+        from login.models import User
+
+        self.user = User.objects.create_user(
+            email="detect-csrf@example.com",
+            username="detect-csrf",
+            password="test-password",
+        )
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.force_login(self.user)
+
+    def csrf_token(self):
+        return self.client.get("/login/auth_check/").cookies["csrftoken"].value
+
+    def test_detect_upload_requires_csrf(self):
+        without_token = self.client.post(
+            "/detect/upload/",
+            data={"image": "not-an-upload"},
+        )
+        self.assertEqual(without_token.status_code, 403)
+
+        with_token = self.client.post(
+            "/detect/upload/",
+            data={"image": "not-an-upload"},
+            HTTP_X_CSRFTOKEN=self.csrf_token(),
+        )
+        self.assertEqual(with_token.status_code, 400)

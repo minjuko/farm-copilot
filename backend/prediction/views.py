@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNet
 from sklearn.metrics import r2_score, mean_squared_error
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from aivle_big.decorators import login_required
 from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, UnauthorizedError, ServiceUnavailableError
@@ -347,7 +346,6 @@ def delete_prediction_session(request, session_id):
 def submit_prediction_view(request):
     return render(request, 'prediction.html')
 
-@csrf_exempt
 @login_required
 @require_http_methods(["PATCH"])
 def update_session_name(request, session_id):
