@@ -24,7 +24,18 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-VECTOR_DB_PATH = Path(os.getenv('CHROMA_DB_PATH', settings.BASE_DIR / 'database'))
+
+
+def resolve_vector_db_path():
+    configured_path = os.getenv('CHROMA_DB_PATH')
+    if not configured_path:
+        return Path(settings.BASE_DIR) / 'database'
+
+    path = Path(configured_path)
+    return path if path.is_absolute() else Path(settings.BASE_DIR) / path
+
+
+VECTOR_DB_PATH = resolve_vector_db_path()
 _rag_chain = None
 
 contextualize_q_system_prompt = (
@@ -87,7 +98,7 @@ def get_rag_chain():
         _rag_chain = create_retrieval_chain(
             history_aware_retriever, question_answer_chain
         )
-    except (OSError, RuntimeError, ValueError) as exc:
+    except Exception as exc:
         logger.warning('Agriculture chatbot initialization failed: %s', exc)
         raise ServiceUnavailableError('Agriculture chatbot failed to initialize.') from exc
 
@@ -106,7 +117,13 @@ def chatbot(request):
         chat_history = load_chat_history(request, session_id)
         formatted_chat_history = [{"role": message['role'], "content": message['content']} for message in chat_history]
 
-        result = get_rag_chain().invoke({"input": query, "chat_history": formatted_chat_history})
+        try:
+            result = get_rag_chain().invoke({"input": query, "chat_history": formatted_chat_history})
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            logger.warning('Agriculture chatbot invocation failed: %s', exc)
+            raise ServiceUnavailableError('Agriculture chatbot is unavailable.') from exc
         answer = result['answer']
         timestamp = timezone.now()
 

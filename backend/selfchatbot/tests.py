@@ -1,6 +1,7 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+from types import SimpleNamespace
 
-from django.test import SimpleTestCase
+from django.test import RequestFactory, SimpleTestCase
 
 from aivle_big.exceptions import ServiceUnavailableError
 from . import views
@@ -24,3 +25,56 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
 
         with self.assertRaises(ServiceUnavailableError):
             views.get_rag_chain()
+
+    def test_relative_vector_database_path_is_based_on_base_dir(self):
+        with patch.dict('os.environ', {'CHROMA_DB_PATH': 'artifacts/chroma'}):
+            self.assertEqual(
+                views.resolve_vector_db_path(),
+                views.VECTOR_DB_PATH.parent / 'artifacts' / 'chroma',
+            )
+
+    @patch.object(views, 'CHATBOT_DEPENDENCIES_AVAILABLE', False)
+    @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-only-key'}, clear=True)
+    @patch.object(views, 'VECTOR_DB_PATH')
+    def test_missing_optional_dependencies_are_controlled(self, vector_db_path):
+        vector_db_path.exists.return_value = True
+
+        with self.assertRaises(ServiceUnavailableError) as context:
+            views.get_rag_chain()
+
+        self.assertEqual(context.exception.status_code, 503)
+        self.assertNotIn('Traceback', context.exception.message)
+
+    @patch.object(views, 'CHATBOT_DEPENDENCIES_AVAILABLE', True)
+    @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-only-key'}, clear=True)
+    @patch.object(views, 'VECTOR_DB_PATH')
+    @patch.object(views, 'OpenAIEmbeddings', create=True)
+    def test_initialization_failure_is_controlled(
+        self, embeddings, vector_db_path
+    ):
+        vector_db_path.exists.return_value = True
+        embeddings.side_effect = RuntimeError('provider unavailable')
+
+        with self.assertRaises(ServiceUnavailableError) as context:
+            views.get_rag_chain()
+
+        self.assertEqual(context.exception.status_code, 503)
+        self.assertNotIn('provider unavailable', context.exception.message)
+
+    @patch.object(views, 'get_rag_chain')
+    def test_endpoint_invocation_failure_is_controlled_503(self, get_rag_chain):
+        chain = SimpleNamespace(invoke=Mock(side_effect=RuntimeError('provider traceback')))
+        get_rag_chain.return_value = chain
+
+        request = RequestFactory().post(
+            '/selfchatbot/chatbot/',
+            data=b'{"question":"test"}',
+            content_type='application/json',
+        )
+        request.user = SimpleNamespace(is_authenticated=False)
+
+        with self.assertRaises(ServiceUnavailableError) as context:
+            views.chatbot(request)
+
+        self.assertEqual(context.exception.status_code, 503)
+        self.assertNotIn('provider traceback', context.exception.message)
