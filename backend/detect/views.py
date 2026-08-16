@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL_PATH = Path(settings.BASE_DIR) / 'best.pt'
 CONFIDENCE_THRESHOLD = 0.6
-MODEL_CLASS_OFFSET = 1
+MAPPING_UNAVAILABLE_MESSAGE = '병해 탐지 모델의 상세정보 매핑이 준비되지 않았습니다.'
 MODEL_PATH = DEFAULT_MODEL_PATH
 _yolo_model = None
 
@@ -117,13 +117,14 @@ def get_original_image_content(image_path):
 
 
 def map_model_class_to_pest_id(model_class_id):
-    try:
-        class_id = int(model_class_id)
-    except (TypeError, ValueError) as exc:
-        raise ValidationError('Detection returned an invalid pest class.') from exc
-    if class_id < 0:
-        raise ValidationError('Detection returned an invalid pest class.')
-    return class_id + MODEL_CLASS_OFFSET
+    """Block persistence until the model-to-Pest contract is verified.
+
+    The checkpoint's class IDs are not currently backed by authoritative Pest
+    records.  In particular, converting a zero-based class ID to a Pest PK
+    would silently attach incorrect disease details, so no implicit fallback
+    or numeric mapping is allowed here.
+    """
+    raise ServiceUnavailableError(MAPPING_UNAVAILABLE_MESSAGE)
 
 
 def process_image(image_path):
@@ -143,7 +144,6 @@ def process_image(image_path):
                     if box_confidence < CONFIDENCE_THRESHOLD:
                         continue
 
-                    pest_id = map_model_class_to_pest_id(box.cls.item())
                     confidence = box_confidence * 100
                     annotated_image = best_result.plot()
                     try:
@@ -160,6 +160,10 @@ def process_image(image_path):
                     result_image_content = ContentFile(
                         buffer.tobytes(), name=os.path.basename(image_path)
                     )
+                    # Keep model execution and annotation available, but do
+                    # not expose or persist a Pest record until the mapping
+                    # contract is authoritative.
+                    map_model_class_to_pest_id(box.cls.item())
                     break
 
         if result_image_content is None:

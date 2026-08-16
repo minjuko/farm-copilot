@@ -79,30 +79,32 @@ class DetectionRuntimeTests(SimpleTestCase):
         with self.assertRaises(ValidationError):
             views.validate_image_file(empty)
 
-    def test_model_class_mapping_is_zero_based(self):
-        self.assertEqual(views.map_model_class_to_pest_id(0), 1)
-        self.assertEqual(views.map_model_class_to_pest_id(12), 13)
-
-    def test_negative_or_malformed_class_is_rejected(self):
-        with self.assertRaises(ValidationError):
-            views.map_model_class_to_pest_id(-1)
-        with self.assertRaises(ValidationError):
-            views.map_model_class_to_pest_id('unknown')
+    def test_model_class_mapping_is_blocked_until_contract_is_verified(self):
+        for class_id in (0, 3, 4):
+            with self.subTest(class_id=class_id):
+                with self.assertRaises(ServiceUnavailableError) as context:
+                    views.map_model_class_to_pest_id(class_id)
+                self.assertEqual(context.exception.status_code, 503)
+                self.assertEqual(
+                    context.exception.message,
+                    views.MAPPING_UNAVAILABLE_MESSAGE,
+                )
 
     @patch.object(views, 'Pest')
     @patch.object(views, 'process_image')
-    def test_unknown_class_does_not_fallback_to_another_pest(
+    def test_unresolved_mapping_does_not_lookup_or_save_pest(
         self, process_image, pest_model
     ):
-        process_image.return_value = (99, 90.0, ContentFile(b'image', name='crop.jpg'))
-        pest_model.DoesNotExist = type('DoesNotExist', (Exception,), {})
-        pest_model.objects.get.side_effect = pest_model.DoesNotExist
+        process_image.side_effect = ServiceUnavailableError(
+            views.MAPPING_UNAVAILABLE_MESSAGE
+        )
 
-        with self.assertRaises(ValidationError) as context:
+        with self.assertRaises(ServiceUnavailableError) as context:
             views.upload_image_for_detection(self.make_request(self.make_image('JPEG')))
 
-        self.assertIn('not registered', context.exception.message)
-        pest_model.objects.get.assert_called_once_with(id=99)
+        self.assertEqual(context.exception.status_code, 503)
+        self.assertEqual(context.exception.message, views.MAPPING_UNAVAILABLE_MESSAGE)
+        pest_model.objects.get.assert_not_called()
 
     @patch.object(views, 'get_yolo_model')
     def test_empty_detection_returns_no_pest_without_fake_fallback(self, get_model):
