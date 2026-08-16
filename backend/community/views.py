@@ -8,7 +8,7 @@ from .forms import PostForm, CommentForm
 from aivle_big.exceptions import ResourceAccessForbiddenError, ValidationError, NotFoundError, InternalServerError, InvalidRequestError, DuplicateResourceError
 import logging
 import json
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,6 @@ def post_detail(request, post_id):
 
 
 
-@csrf_exempt
 @login_required
 def post_create(request):
     if request.method != 'POST':
@@ -127,7 +126,6 @@ def post_delete(request, post_id):
         logger.error(f"Unexpected error: {e}")
         raise InternalServerError("An unexpected error occurred.")
 
-@csrf_exempt
 @login_required
 def comment_create(request, post_id):
     if request.method != 'POST':
@@ -214,8 +212,8 @@ def comment_delete(request, comment_id):
         logger.error(f"Error deleting comment: {str(e)}")
         raise InternalServerError("Failed to delete comment")
 
-@csrf_exempt
 @login_required
+@require_GET
 def my_post_list(request):
     try:
         posts = Post.objects.filter(user=request.user).values('id', 'title', 'content', 'user__username', 'creation_date')
@@ -224,8 +222,8 @@ def my_post_list(request):
         logger.error(f"Database error fetching user's posts: {str(e)}")
         raise InternalServerError("Database error occurred while fetching user's posts")
 
-@csrf_exempt
 @login_required
+@require_GET
 def my_commented_posts(request):
     try:
         comments = Comment.objects.filter(user=request.user).values('post').distinct()

@@ -1,6 +1,6 @@
 import json
 
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from .models import User
@@ -55,3 +55,46 @@ class AuthenticationSmokeTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(self.client.get(reverse('login:auth_check')).json()['is_authenticated'])
+
+
+class AuthenticationCsrfBoundaryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='csrf-login@example.com',
+            username='csrf-login-user',
+            password='runtime-password-123',
+        )
+        self.client = Client(enforce_csrf_checks=True)
+
+    def csrf_token(self):
+        response = self.client.get(reverse('login:auth_check'))
+        return response.cookies['csrftoken'].value
+
+    def test_login_requires_csrf_and_valid_token_allows_login(self):
+        without_token = self.client.post(
+            reverse('login:login'),
+            data=json.dumps({'email': self.user.email, 'password': 'runtime-password-123'}),
+            content_type='application/json',
+        )
+        self.assertEqual(without_token.status_code, 403)
+
+        token = self.csrf_token()
+        with_token = self.client.post(
+            reverse('login:login'),
+            data=json.dumps({'email': self.user.email, 'password': 'runtime-password-123'}),
+            content_type='application/json',
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(with_token.status_code, 200)
+
+    def test_logout_requires_csrf(self):
+        self.client.force_login(self.user)
+        without_token = self.client.post(reverse('login:logout'))
+        self.assertEqual(without_token.status_code, 403)
+
+        token = self.csrf_token()
+        with_token = self.client.post(
+            reverse('login:logout'),
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(with_token.status_code, 200)

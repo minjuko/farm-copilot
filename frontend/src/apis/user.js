@@ -2,21 +2,26 @@
 
 import { instance } from "./instance";
 
+const ensureCsrfToken = () => instance.get("login/auth_check/");
+
 // 회원가입 api
 export const checkUsername = (username) => {
   return instance.get(`login/check_username/?username=${username}`);
 };
 
-export const sendVerificationEmail = (email) => {
+export const sendVerificationEmail = async (email) => {
+  await ensureCsrfToken();
   return instance.post("login/send_verification_email/", { email });
 };
 
-export const signupUser = (formData) => {
+export const signupUser = async (formData) => {
+  await ensureCsrfToken();
   return instance.post("login/signup/", formData);
 };
 
 // 로그인 api
-export const loginUser = (email, password) => {
+export const loginUser = async (email, password) => {
+  await ensureCsrfToken();
   return instance.post("/login/login/", { email, password });
 };
 
@@ -46,11 +51,13 @@ export const deleteAccount = (password) => {
 };
 
 // 비밀번호 재설정 api
-export const sendTemporaryPassword = (email) => {
+export const sendTemporaryPassword = async (email) => {
+  await ensureCsrfToken();
   return instance.post("login/password_reset/", { email });
 };
 
-export const resetPassword = (formData) => {
+export const resetPassword = async (formData) => {
+  await ensureCsrfToken();
   return instance.post("login/password_reset_done/", formData);
 };
 

@@ -8,7 +8,7 @@ import logging
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.views.decorators.http import require_http_methods, require_POST, require_GET
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import get_user_model
 from .models import User
@@ -21,7 +21,7 @@ from django.db import DatabaseError, IntegrityError
 
 logger = logging.getLogger(__name__)
 
-@csrf_exempt
+@ensure_csrf_cookie
 def signup(request):
     if request.method == 'GET':
         return render(request, 'signup.html')
@@ -64,7 +64,6 @@ def check_username(request):
         logger.error(f"Database error during username check: {str(e)}")
         raise InternalServerError("Failed to check if username is taken")
 
-@csrf_exempt
 @require_http_methods(["GET", "POST"])
 @ensure_csrf_cookie
 def login(request):
@@ -113,7 +112,7 @@ def login(request):
     else:
         raise InvalidRequestError("Method not allowed")
 
-@csrf_exempt
+@ensure_csrf_cookie
 @require_POST
 def send_verification_email(request):
     try:
@@ -150,7 +149,6 @@ def send_verification_email(request):
         logger.error(f"Error sending verification email: {str(e)}")
         raise InternalServerError("Failed to send verification email")
 
-@csrf_exempt
 def logout_view(request):
     try:
         if request.method == 'POST':
@@ -181,13 +179,13 @@ def logout_view(request):
         }, status=500)
         
 
+@ensure_csrf_cookie
 def auth_check(request):
     return JsonResponse({
         'is_authenticated': request.user.is_authenticated,
         'username': request.user.username,
     })
 
-@csrf_exempt
 @login_required
 def change_password(request):
     if request.method == 'POST':
@@ -224,7 +222,6 @@ def change_password(request):
     else:
         return JsonResponse({'status': 'error', 'message': "POST method only allowed"}, status=405)
 
-@csrf_exempt
 @login_required
 def delete_account(request):
     if request.method == 'POST':
@@ -250,7 +247,6 @@ def delete_account(request):
         return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
     
-@csrf_exempt
 @login_required
 def change_username(request):
     if request.method == 'POST':
@@ -275,7 +271,7 @@ def change_username(request):
     else:
         return JsonResponse({'status': 'error', 'message': 'POST method only allowed', 'code': 1002, 'status_code': 405}, status=405)
 
-@csrf_exempt
+@ensure_csrf_cookie
 def password_reset_request(request):
     if request.method == 'POST':
         try:
@@ -307,7 +303,7 @@ def password_reset_request(request):
     else:
         return JsonResponse({'error': 'POST 요청만 지원됩니다.'}, status=405)
     
-@csrf_exempt
+@ensure_csrf_cookie
 def password_reset(request):
     if request.method == 'POST':
         try:

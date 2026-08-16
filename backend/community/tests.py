@@ -1,6 +1,6 @@
 import json
 
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from login.models import User
@@ -88,17 +88,71 @@ class CommunitySmokeTests(TestCase):
 
         self.assertEqual(edit_response.status_code, 404)
         self.assertEqual(delete_response.status_code, 404)
-        self.assertTrue(Post.objects.filter(pk=post_id, user=self.user).exists())
+
+
+class CommunityCsrfBoundaryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='csrf-community@example.com',
+            username='csrf-community-user',
+            password='runtime-password-123',
+        )
+        self.other_user = User.objects.create_user(
+            email='csrf-other@example.com',
+            username='csrf-other-user',
+            password='runtime-password-123',
+        )
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.force_login(self.user)
+
+    def csrf_token(self):
+        response = self.client.get(reverse('login:auth_check'))
+        return response.cookies['csrftoken'].value
+
+    def test_post_create_requires_csrf_and_accepts_valid_token(self):
+        without_token = self.client.post(
+            reverse('community:post_create'),
+            data={'title': 'Blocked', 'content': 'No token', 'post_type': 'buy'},
+        )
+        self.assertEqual(without_token.status_code, 403)
+
+        token = self.csrf_token()
+        with_token = self.client.post(
+            reverse('community:post_create'),
+            data={'title': 'Allowed', 'content': 'Valid token', 'post_type': 'buy'},
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(with_token.status_code, 201)
+
+    def test_valid_csrf_does_not_bypass_post_ownership(self):
+        token = self.csrf_token()
+        post = Post.objects.create(
+            user=self.user,
+            title='Owner post',
+            content='Owner content',
+            post_type='buy',
+        )
+        self.client.force_login(self.other_user)
+        response = self.client.post(
+            reverse('community:post_edit', args=[post.id]),
+            data={'title': 'Tampered', 'content': 'Tampered', 'post_type': 'sell'},
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Post.objects.filter(pk=post.id, user=self.user).exists())
 
     def test_other_user_cannot_edit_or_delete_comment(self):
+        token = self.csrf_token()
         post_id = self.client.post(
             reverse('community:post_create'),
             data={'title': 'Comment owner post', 'content': 'Content', 'post_type': 'buy'},
+            HTTP_X_CSRFTOKEN=token,
         ).json()['id']
         comment_id = self.client.post(
             reverse('community:comment_create', args=[post_id]),
             data=json.dumps({'content': 'Owner comment'}),
             content_type='application/json',
+            HTTP_X_CSRFTOKEN=token,
         ).json()['id']
         self.client.force_login(self.other_user)
 
@@ -106,9 +160,11 @@ class CommunitySmokeTests(TestCase):
             reverse('community:comment_edit', args=[comment_id]),
             data=json.dumps({'content': 'Tampered'}),
             content_type='application/json',
+            HTTP_X_CSRFTOKEN=token,
         )
         delete_response = self.client.post(
-            reverse('community:comment_delete', args=[comment_id])
+            reverse('community:comment_delete', args=[comment_id]),
+            HTTP_X_CSRFTOKEN=token,
         )
 
         self.assertEqual(edit_response.status_code, 404)
