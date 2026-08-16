@@ -40,7 +40,7 @@ def signup(request):
                 auth_login(request, user)
                 return JsonResponse({'status': 'success', 'message': 'User registered and logged in.'})
             else:
-                raise ValidationError("Form validation failed", details=form.errors)
+                raise ValidationError("Form validation failed")
         except json.JSONDecodeError:
             raise ValidationError("Invalid JSON format")
         except IntegrityError:
@@ -240,6 +240,7 @@ def delete_account(request):
             if not user.check_password(password):
                 return JsonResponse({'status': 'error', 'message': '비밀번호가 일치하지 않습니다.'}, status=400)
 
+            logout(request)
             user.delete()
             return JsonResponse({'status': 'success', 'message': 'Account deleted successfully'})
         except Exception as e:

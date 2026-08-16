@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from login.models import User
+from .models import Comment, Post
 
 
 class CommunitySmokeTests(TestCase):
@@ -11,6 +12,11 @@ class CommunitySmokeTests(TestCase):
         self.user = User.objects.create_user(
             email='community@example.com',
             username='community-user',
+            password='runtime-password-123',
+        )
+        self.other_user = User.objects.create_user(
+            email='other-community@example.com',
+            username='other-community-user',
             password='runtime-password-123',
         )
         self.client.force_login(self.user)
@@ -49,3 +55,61 @@ class CommunitySmokeTests(TestCase):
             self.client.post(reverse('community:post_delete', args=[post_id])).status_code,
             204,
         )
+
+    def test_unauthenticated_post_creation_is_rejected(self):
+        self.client.logout()
+        response = self.client.post(
+            reverse('community:post_create'),
+            data={'title': 'Unauthenticated', 'content': 'Blocked', 'post_type': 'buy'},
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_invalid_post_input_returns_bad_request(self):
+        response = self.client.post(
+            reverse('community:post_create'),
+            data={'title': '', 'content': '', 'post_type': 'invalid'},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_other_user_cannot_edit_or_delete_post(self):
+        post_id = self.client.post(
+            reverse('community:post_create'),
+            data={'title': 'Owner post', 'content': 'Edit target', 'post_type': 'buy'},
+        ).json()['id']
+        self.client.force_login(self.other_user)
+
+        edit_response = self.client.post(
+            reverse('community:post_edit', args=[post_id]),
+            data={'title': 'Tampered', 'content': 'Tampered', 'post_type': 'sell'},
+        )
+        delete_response = self.client.post(
+            reverse('community:post_delete', args=[post_id])
+        )
+
+        self.assertEqual(edit_response.status_code, 404)
+        self.assertEqual(delete_response.status_code, 404)
+        self.assertTrue(Post.objects.filter(pk=post_id, user=self.user).exists())
+
+    def test_other_user_cannot_edit_or_delete_comment(self):
+        post_id = self.client.post(
+            reverse('community:post_create'),
+            data={'title': 'Comment owner post', 'content': 'Content', 'post_type': 'buy'},
+        ).json()['id']
+        comment_id = self.client.post(
+            reverse('community:comment_create', args=[post_id]),
+            data=json.dumps({'content': 'Owner comment'}),
+            content_type='application/json',
+        ).json()['id']
+        self.client.force_login(self.other_user)
+
+        edit_response = self.client.post(
+            reverse('community:comment_edit', args=[comment_id]),
+            data=json.dumps({'content': 'Tampered'}),
+            content_type='application/json',
+        )
+        delete_response = self.client.post(
+            reverse('community:comment_delete', args=[comment_id])
+        )
+
+        self.assertEqual(edit_response.status_code, 404)
+        self.assertEqual(delete_response.status_code, 404)

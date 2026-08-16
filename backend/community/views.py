@@ -66,12 +66,14 @@ def post_create(request):
     try:
         form = PostForm(request.POST, request.FILES)
         if not form.is_valid():
-            raise ValidationError("Form validation failed", details=form.errors)
+            raise ValidationError("Form validation failed")
         post = form.save(commit=False)
         post.user = request.user
         post.post_type = request.POST.get('post_type')
         post.save()
         return JsonResponse({'id': post.pk, 'status': 'success'}, status=201)
+    except ValidationError:
+        raise
     except IntegrityError as e:
         logger.error(f"Integrity error on creating post: {str(e)}")
         raise DuplicateResourceError("Duplicate post cannot be created.")
@@ -87,14 +89,17 @@ def post_edit(request, post_id):
     if request.method != 'POST':
         raise InvalidRequestError("POST method only allowed")
     try:
-        post = get_object_or_404(Post, pk=post_id)
+        try:
+            post = Post.objects.get(pk=post_id, user=request.user)
+        except Post.DoesNotExist as exc:
+            raise NotFoundError("Post not found") from exc
         form = PostForm(request.POST, request.FILES, instance=post)
         if not form.is_valid():
-            raise ValidationError("Form validation failed", details=form.errors)
+            raise ValidationError("Form validation failed")
         form.save()
         return JsonResponse({'status': 'success'}, status=200)
-    except Post.DoesNotExist:
-        raise NotFoundError("Post not found")
+    except (NotFoundError, ValidationError):
+        raise
     except IntegrityError as e:
         logger.error(f"Integrity error on editing post: {str(e)}")
         raise ValidationError("Duplicate data provided.")
@@ -105,21 +110,19 @@ def post_edit(request, post_id):
 @login_required
 def post_delete(request, post_id):
     try:
-        post = get_object_or_404(Post, pk=post_id)
-        if request.method == 'POST':
-            try:
-                post.delete()
-                return JsonResponse({'status': 'success'}, status=204)
-            except Exception as e:
-                logger.error(f"Error deleting post: {e}")
-                raise InternalServerError("Error deleting post.")
-        else:
+        if request.method != 'POST':
             raise InvalidRequestError("GET method not allowed.")
-    except Post.DoesNotExist:
-        raise NotFoundError("Post not found.")
+        try:
+            post = Post.objects.get(pk=post_id, user=request.user)
+        except Post.DoesNotExist as exc:
+            raise NotFoundError("Post not found.") from exc
+        post.delete()
+        return JsonResponse({'status': 'success'}, status=204)
     except ResourceAccessForbiddenError as e:
         logger.error(f"Permission denied: {e}")
         raise ResourceAccessForbiddenError("Permission denied.")
+    except (InvalidRequestError, NotFoundError):
+        raise
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise InternalServerError("An unexpected error occurred.")
@@ -133,7 +136,7 @@ def comment_create(request, post_id):
         data = json.loads(request.body)
         form = CommentForm(data)
         if not form.is_valid():
-            raise ValidationError("Form validation failed", details=form.errors)
+            raise ValidationError("Form validation failed")
         comment = form.save(commit=False)
         comment.user = request.user
         comment.post = get_object_or_404(Post, pk=post_id)
@@ -147,6 +150,8 @@ def comment_create(request, post_id):
             'created_at': comment.created_at,
             'parent_id': comment.parent_id
         }, status=201)
+    except ValidationError:
+        raise
     except Post.DoesNotExist:
         raise NotFoundError("Post related to the comment not found")
     except IntegrityError as e:
@@ -166,11 +171,14 @@ def comment_edit(request, comment_id):
     if request.method != 'POST':
         raise InvalidRequestError("POST method only allowed")
     try:
-        comment = get_object_or_404(Comment, pk=comment_id, user=request.user)
+        try:
+            comment = Comment.objects.get(pk=comment_id, user=request.user)
+        except Comment.DoesNotExist as exc:
+            raise NotFoundError("Comment not found") from exc
         data = json.loads(request.body)
         form = CommentForm(data, instance=comment)
         if not form.is_valid():
-            raise ValidationError("Form validation failed", details=form.errors)
+            raise ValidationError("Form validation failed")
         form.save()
         return JsonResponse({
             'id': comment.id,
@@ -178,8 +186,8 @@ def comment_edit(request, comment_id):
             'user_id': comment.user.id,
             'created_at': comment.created_at
         }, status=200)
-    except Comment.DoesNotExist:
-        raise NotFoundError("Comment not found")
+    except (NotFoundError, ValidationError):
+        raise
     except json.JSONDecodeError:
         raise ValidationError("Invalid JSON format")
     except IntegrityError as e:
@@ -194,11 +202,14 @@ def comment_delete(request, comment_id):
     if request.method != 'POST':
         raise InvalidRequestError("POST method only allowed")
     try:
-        comment = get_object_or_404(Comment, pk=comment_id, user=request.user)
+        try:
+            comment = Comment.objects.get(pk=comment_id, user=request.user)
+        except Comment.DoesNotExist as exc:
+            raise NotFoundError("Comment not found") from exc
         comment.delete()
         return JsonResponse({'status': 'success'}, status=204)
-    except Comment.DoesNotExist:
-        raise NotFoundError("Comment not found")
+    except (NotFoundError, ValidationError):
+        raise
     except Exception as e:
         logger.error(f"Error deleting comment: {str(e)}")
         raise InternalServerError("Failed to delete comment")
