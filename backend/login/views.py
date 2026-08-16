@@ -12,6 +12,10 @@ from django.views.decorators.http import require_http_methods, require_POST, req
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.password_validation import validate_password
+from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import User
 from cryptography.fernet import Fernet
 from django.conf import settings
@@ -20,12 +24,36 @@ from aivle_big.decorators import login_required
 from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, UnauthorizedError, InvalidRequestError, DuplicateResourceError
 from django.db import DatabaseError, IntegrityError
 from django.utils import timezone
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from hashlib import sha256
 
 logger = logging.getLogger(__name__)
 
 VERIFICATION_CODE_TTL = timedelta(minutes=10)
 VERIFICATION_RESEND_COOLDOWN = timedelta(seconds=60)
 GENERIC_RECOVERY_MESSAGE = '요청이 접수되었습니다. 계정이 존재하면 안내 메일이 발송됩니다.'
+RATE_LIMIT_WINDOW = 15 * 60
+PASSWORD_RESET_RATE_LIMIT = 5
+LOGIN_FAILURE_RATE_LIMIT = 10
+VERIFICATION_FAILURE_LIMIT = 5
+
+
+def _client_ip(request):
+    return request.META.get('REMOTE_ADDR', 'unknown')
+
+
+def _rate_limit_key(prefix, value):
+    digest = sha256(value.encode('utf-8')).hexdigest()
+    return f'login:{prefix}:{digest}'
+
+
+def _allow_request(key, limit, timeout=RATE_LIMIT_WINDOW):
+    count = cache.get(key, 0)
+    if count >= limit:
+        return False
+    cache.set(key, count + 1, timeout)
+    return True
 
 @ensure_csrf_cookie
 def signup(request):
@@ -49,12 +77,20 @@ def signup(request):
                     session_verification_code = None
 
             if submitted_verification_code != session_verification_code:
+                failures = request.session.get('verification_code_failures', 0) + 1
+                if failures >= VERIFICATION_FAILURE_LIMIT:
+                    request.session.pop('verification_code', None)
+                    request.session.pop('verification_code_sent_at', None)
+                    request.session.pop('verification_code_failures', None)
+                    return JsonResponse({'status': 'error', 'message': 'Verification code expired. Request a new code.'}, status=429)
+                request.session['verification_code_failures'] = failures
                 return JsonResponse({'status': 'error', 'message': 'Invalid verification code.'}, status=400)
 
             if form.is_valid():
                 user = form.save()
                 request.session.pop('verification_code', None)
                 request.session.pop('verification_code_sent_at', None)
+                request.session.pop('verification_code_failures', None)
                 auth_login(request, user)
                 return JsonResponse({'status': 'success', 'message': 'User registered and logged in.'})
             else:
@@ -92,6 +128,10 @@ def login(request):
             data = json.loads(request.body)
             email = data.get('email')
             password = data.get('password')
+            normalized_email = (email or '').strip().lower()
+            login_key = _rate_limit_key('login-failure', f'{normalized_email}:{_client_ip(request)}')
+            if cache.get(login_key, 0) >= LOGIN_FAILURE_RATE_LIMIT:
+                return JsonResponse({'status': 'error', 'message': 'Login temporarily unavailable.'}, status=429)
 
             if not email or not password:
                 raise ValidationError("Email and password are required")
@@ -103,6 +143,7 @@ def login(request):
 
             user = authenticate(request, email=email, password=password)
             if user:
+                cache.delete(login_key)
                 auth_login(request, user)
                 response = JsonResponse({
                     'status': 'success',
@@ -119,8 +160,11 @@ def login(request):
         except json.JSONDecodeError:
             raise ValidationError("Invalid JSON format")
         except UnauthorizedError as e:
+            _allow_request(login_key, LOGIN_FAILURE_RATE_LIMIT + 1)
             logger.error(f"Authentication error: {str(e)}")
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=403)
+            if cache.get(login_key, 0) > LOGIN_FAILURE_RATE_LIMIT:
+                return JsonResponse({'status': 'error', 'message': 'Login temporarily unavailable.'}, status=429)
+            return JsonResponse({'status': 'error', 'message': 'Invalid email or password.'}, status=403)
         except ValidationError as e:
             logger.error(f"Validation error: {str(e)}")
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
@@ -169,24 +213,25 @@ def send_verification_email(request):
 def password_reset_request(request):
     try:
         data = json.loads(request.body)
-        email = data.get('email')
+        email = (data.get('email') or '').strip().lower()
         if not email:
             return JsonResponse({'error': 'Email is required'}, status=400)
+        reset_key = _rate_limit_key('password-reset', f'{email}:{_client_ip(request)}')
+        if not _allow_request(reset_key, PASSWORD_RESET_RATE_LIMIT):
+            return JsonResponse({'message': GENERIC_RECOVERY_MESSAGE}, status=429)
         user = User.objects.filter(email=email).first()
         if user is not None:
-            temporary_password = ''.join(
-                secrets.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
-                for _ in range(10)
-            )
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            frontend_base = getattr(settings, 'FRONTEND_BASE_URL', 'http://localhost:3000').rstrip('/')
+            reset_link = f'{frontend_base}/password-reset-confirm?uid={uid}&token={token}'
             send_mail(
                 'Password reset',
-                f'Temporary password: {temporary_password}',
+                f'Use this link to reset your password: {reset_link}',
                 settings.DEFAULT_FROM_EMAIL,
                 [email],
                 fail_silently=False,
             )
-            user.set_password(temporary_password)
-            user.save(update_fields=['password'])
         return JsonResponse({'message': GENERIC_RECOVERY_MESSAGE})
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON format'}, status=400)
@@ -201,13 +246,22 @@ def password_reset(request):
     try:
         data = json.loads(request.body)
         email = data.get('email')
-        temporary_password = data.get('temporary_password')
+        uid = data.get('uid')
+        token = data.get('token')
         new_password = data.get('new_password')
-        if not email or not temporary_password or not new_password:
-            return JsonResponse({'error': 'Email, temporary password, and new password are required'}, status=400)
-        user = User.objects.filter(email=email).first()
-        if user is None or not user.check_password(temporary_password):
+        if not uid or not token or not new_password:
+            return JsonResponse({'error': 'uid, token, and new password are required'}, status=400)
+        try:
+            user_id = urlsafe_base64_decode(uid).decode()
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, UnicodeDecodeError, User.DoesNotExist):
             return JsonResponse({'error': 'Invalid password reset request'}, status=400)
+        if not default_token_generator.check_token(user, token):
+            return JsonResponse({'error': 'Invalid password reset request'}, status=400)
+        try:
+            validate_password(new_password, user)
+        except DjangoValidationError:
+            return JsonResponse({'error': 'Password does not meet security requirements'}, status=400)
         user.set_password(new_password)
         user.save(update_fields=['password'])
         return JsonResponse({'status': 'success', 'message': 'Password reset successfully'})
