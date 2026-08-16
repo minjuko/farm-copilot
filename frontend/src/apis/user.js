@@ -51,13 +51,23 @@ export const deleteAccount = (password) => {
 };
 
 // 비밀번호 재설정 api
-export const sendTemporaryPassword = async (email) => {
+export const requestPasswordReset = async (email) => {
   await ensureCsrfToken();
   return instance.post("login/password_reset/", { email });
 };
 
-export const resetPassword = async (formData) => {
+export const confirmPasswordReset = async (uid, token, newPassword) => {
   await ensureCsrfToken();
+  return instance.post("login/password_reset_confirm/", {
+    uid,
+    token,
+    new_password: newPassword,
+  });
+};
+
+// LEGACY: used by PasswordResetTemplate until the token-based screen lands.
+export const sendTemporaryPassword = requestPasswordReset;
+export const resetPassword = (formData) => {
   return instance.post("login/password_reset_done/", formData);
 };
 
