@@ -1,22 +1,47 @@
+import logging
 import os
 import tempfile
+import warnings
 from importlib import import_module
 from pathlib import Path
+
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.http import JsonResponse
 from django.utils import timezone
-from django.core.files.base import ContentFile
-from .models import Pest, PestDetection
-from aivle_big.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, ServiceUnavailableError
-import logging
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
+
+from aivle_big.decorators import login_required
+from aivle_big.exceptions import (
+    InternalServerError,
+    InvalidRequestError,
+    NotFoundError,
+    ServiceUnavailableError,
+    ValidationError,
+)
+
+from .models import Pest, PestDetection
 
 logger = logging.getLogger(__name__)
 
-MODEL_PATH = Path(os.getenv('YOLO_MODEL_PATH', settings.BASE_DIR / 'best.pt'))
+DEFAULT_MODEL_PATH = Path(settings.BASE_DIR) / 'best.pt'
+CONFIDENCE_THRESHOLD = 0.6
+MODEL_CLASS_OFFSET = 1
+MODEL_PATH = DEFAULT_MODEL_PATH
 _yolo_model = None
+
+
+def resolve_model_path():
+    configured_path = os.getenv('YOLO_MODEL_PATH')
+    if not configured_path:
+        return DEFAULT_MODEL_PATH
+
+    path = Path(configured_path)
+    return path if path.is_absolute() else Path(settings.BASE_DIR) / path
+
+
+MODEL_PATH = resolve_model_path()
 
 
 def get_yolo_model():
@@ -33,7 +58,7 @@ def get_yolo_model():
     try:
         yolo_class = import_module('ultralytics').YOLO
         _yolo_model = yolo_class(str(MODEL_PATH))
-    except (ImportError, OSError, RuntimeError) as exc:
+    except Exception as exc:
         logger.warning('Image detection runtime is unavailable: %s', exc)
         raise ServiceUnavailableError(
             'Image detection runtime is not installed or failed to initialize.'
@@ -41,38 +66,112 @@ def get_yolo_model():
 
     return _yolo_model
 
+def validate_image_file(image_file):
+    if not image_file:
+        raise ValidationError('No image uploaded.')
+    if image_file.size == 0:
+        raise ValidationError('Uploaded image is empty.')
+
+    allowed_types = {'image/jpeg', 'image/png', 'image/webp'}
+    allowed_extensions = {'jpg', 'jpeg', 'png', 'webp'}
+    extension = Path(image_file.name).suffix.lower().lstrip('.')
+    if image_file.content_type not in allowed_types or extension not in allowed_extensions:
+        raise ValidationError('Only JPEG, PNG, and WebP images are allowed.')
+
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', Image.DecompressionBombWarning)
+            with Image.open(image_file) as image:
+                if image.format not in {'JPEG', 'PNG', 'WEBP'}:
+                    raise ValidationError('Only JPEG, PNG, and WebP images are allowed.')
+                image.verify()
+
+        image_file.seek(0)
+        with Image.open(image_file) as image:
+            image.load()
+    except ValidationError:
+        raise
+    except (
+        UnidentifiedImageError,
+        OSError,
+        SyntaxError,
+        Image.DecompressionBombWarning,
+        Image.DecompressionBombError,
+    ) as exc:
+        raise ValidationError('Uploaded file is not a valid image.') from exc
+    finally:
+        image_file.seek(0)
+
+
+def save_temp_image(image_file):
+    extension = Path(image_file.name).suffix or '.img'
+    with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp_file:
+        for chunk in image_file.chunks():
+            temp_file.write(chunk)
+        return temp_file.name
+
+
+def get_original_image_content(image_path):
+    with open(image_path, 'rb') as original_file:
+        return ContentFile(original_file.read(), name=os.path.basename(image_path))
+
+
+def map_model_class_to_pest_id(model_class_id):
+    try:
+        class_id = int(model_class_id)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError('Detection returned an invalid pest class.') from exc
+    if class_id < 0:
+        raise ValidationError('Detection returned an invalid pest class.')
+    return class_id + MODEL_CLASS_OFFSET
+
+
 def process_image(image_path):
-    """Process the image and return predictions along with annotated image content."""
+    """Run inference and return (Pest PK or None, confidence, image content)."""
     model = get_yolo_model()
-    results = model(image_path)
-    pest_id = 10
-    confidence = 0.0
-    result_image_content = None
+    try:
+        results = model(image_path)
+        pest_id = None
+        confidence = 0.0
+        result_image_content = None
 
-    if results and len(results) > 0:
-        best_result = results[0] 
-        if best_result.boxes and len(best_result.boxes) > 0:
-            for box in best_result.boxes:
-                if box.conf >= 0.6:
-                    pest_id = int(box.cls.item())
-                    confidence = float(box.conf.item()) * 100 
+        if results and len(results) > 0:
+            best_result = results[0]
+            if best_result.boxes and len(best_result.boxes) > 0:
+                for box in best_result.boxes:
+                    box_confidence = float(box.conf.item())
+                    if box_confidence < CONFIDENCE_THRESHOLD:
+                        continue
 
+                    pest_id = map_model_class_to_pest_id(box.cls.item())
+                    confidence = box_confidence * 100
+                    annotated_image = best_result.plot()
                     try:
                         cv2 = import_module('cv2')
-                    except (ImportError, OSError) as exc:
+                        is_success, buffer = cv2.imencode('.jpg', annotated_image)
+                    except Exception as exc:
                         raise ServiceUnavailableError(
-                            'Image detection optional dependencies are not installed.'
+                            'Image annotation runtime is unavailable.'
                         ) from exc
-                    annotated_image = best_result.plot()
-                    is_success, buffer = cv2.imencode(".jpg", annotated_image)
-                    result_image_content = ContentFile(buffer.tobytes(), name=os.path.basename(image_path))
-                    break 
+                    if not is_success or buffer is None:
+                        raise ServiceUnavailableError(
+                            'Failed to encode the annotated detection image.'
+                        )
+                    result_image_content = ContentFile(
+                        buffer.tobytes(), name=os.path.basename(image_path)
+                    )
+                    break
 
-    if not result_image_content:
-        with open(image_path, 'rb') as original_file:
-            result_image_content = ContentFile(original_file.read(), name=os.path.basename(image_path))
-
-    return pest_id, confidence, result_image_content
+        if result_image_content is None:
+            result_image_content = get_original_image_content(image_path)
+        return pest_id, confidence, result_image_content
+    except (ServiceUnavailableError, ValidationError):
+        raise
+    except Exception as exc:
+        logger.warning('Image detection inference failed: %s', exc)
+        raise ServiceUnavailableError(
+            'Image detection runtime failed during inference.'
+        ) from exc
 
 
 @login_required
@@ -81,26 +180,18 @@ def upload_image_for_detection(request):
         return JsonResponse({'error': 'Invalid request method. Only POST requests are allowed'}, status=405)
     
     image_file = request.FILES.get('image')
-    if not image_file:
-        raise ValidationError('No image uploaded.')
-
-    if not image_file.content_type.startswith('image/'):
-        raise ValidationError('Invalid file type, expected an image.')
-
+    validate_image_file(image_file)
+    temp_image_path = None
     try:
-        file_extension = image_file.name.split('.')[-1]
-        with tempfile.NamedTemporaryFile(suffix=f'.{file_extension}', delete=False) as temp_file:
-            for chunk in image_file.chunks():
-                temp_file.write(chunk)
-            temp_image_path = temp_file.name
+        temp_image_path = save_temp_image(image_file)
 
         pest_id, confidence, result_image_content = process_image(temp_image_path)
-
+        if pest_id is None:
+            raise ValidationError('No pest was detected in the uploaded image.')
         try:
             pest_info = Pest.objects.get(id=pest_id)
-        except Pest.DoesNotExist:
-            pest_info = Pest.objects.get(id=13)
-            confidence = 0.0
+        except Pest.DoesNotExist as exc:
+            raise ValidationError('Detected pest is not registered.') from exc
 
 
         detection = PestDetection(
@@ -124,16 +215,16 @@ def upload_image_for_detection(request):
             'detection_date': detection.detection_date.now().strftime('%Y-%m-%d %H:%M')
         }
 
-        # Clean up temporary image file
-        os.remove(temp_image_path)
-
         return JsonResponse(data, status=200)
 
-    except ServiceUnavailableError:
+    except (ServiceUnavailableError, ValidationError):
         raise
     except Exception as e:
         logger.error(f"Unhandled exception during image processing: {str(e)}")
         raise InternalServerError('An unexpected error occurred.')
+    finally:
+        if temp_image_path and os.path.exists(temp_image_path):
+            os.remove(temp_image_path)
 
 
 
