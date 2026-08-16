@@ -9,6 +9,7 @@ import WritePostTemplate from "./components/templates/post/WritePostTemplate";
 import PostDetailTemplate from "./components/templates/post/PostDetailTemplate";
 import LoginTemplate from "./components/templates/user/LoginTemplate";
 import PasswordResetTemplate from "./components/templates/user/PasswordResetTemplate";
+import PasswordResetConfirmTemplate from "./components/templates/user/PasswordResetConfirmTemplate";
 import MyPageTemplate from "./components/templates/user/MyPageTemplate";
 import CropTest from "./components/templates/crop/CropTest";
 import MyPostTemplate from "./components/templates/post/MyPostTemplate";
@@ -51,6 +52,7 @@ function App() {
               <Route path="/signup" element={<PolicyAgreement />} />
               <Route path="/login" element={<LoginTemplate />} />
               <Route path="/password_reset" element={<PasswordResetTemplate />} />
+              <Route path="/password-reset-confirm" element={<PasswordResetConfirmTemplate />} />
             </Route>
 
             {/* auth */}

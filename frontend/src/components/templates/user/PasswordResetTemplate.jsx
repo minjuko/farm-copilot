@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { sendTemporaryPassword, resetPassword } from '../../../apis/user';
-import CustomModal from "../../atoms/CustomModal";
+import { requestPasswordReset } from '../../../apis/user';
+import { getApiErrorMessage } from '../../../apis/error';
 import GlobalLoader from '../../atoms/GlobalLoader';
 import { useLoading } from '../../../LoadingContext';
 
@@ -45,224 +44,81 @@ const Input = styled.input`
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  &:focus {
-    outline: none;
-    border-color: #2faa9a;
-  }
 `;
 
 const Button = styled.button`
   padding: 12px 16px;
-  margin-bottom: 24px;
   font-size: 14px;
   font-weight: 600;
-  height: 44px; 
+  height: 44px;
   color: white;
   background-color: #4aaa87;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  &:hover {
-    background-color: #6dc4b0;
-  }
   &:disabled {
     background-color: #9e9e9e;
     cursor: not-allowed;
   }
 `;
 
-const ErrorMessage = styled.div`
-  color: red;
-  font-size: 12px;
-  margin-top: 4px;
-`;
-
-const SuccessMessage = styled.div`
-  color: green;
+const Message = styled.p`
+  color: ${({ $error }) => ($error ? 'red' : 'green')};
   font-size: 14px;
-  margin-top: 4px;
-  margin-bottom: 12px;
+  margin: 0 0 16px;
 `;
 
-const validateEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-const validatePassword = (password) => {
-  const passwordRegex = /^(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()])[a-zA-Z\d!@#$%^&*()]{8,}$/;
-  return passwordRegex.test(password);
-};
-
+const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const PasswordResetTemplate = () => {
   const { setIsLoading, isLoading } = useLoading();
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [temporaryPassword, setTemporaryPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newPasswordError, setNewPasswordError] = useState("");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-  const [isTempPasswordSent, setIsTempPasswordSent] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (email) {
-      setIsTempPasswordSent(false);
-    }
-  }, [email]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "email") {
-      setEmail(value);
-      if (!validateEmail(value)) {
-        setEmailError("올바른 이메일 형식을 입력하세요.");
-      } else {
-        setEmailError("");
-      }
-    }
-  };
-
-  const handleTempPasswordChange = (e) => {
-    setTemporaryPassword(e.target.value);
-  };
-
-  const handleNewPasswordChange = (e) => {
-    setNewPassword(e.target.value);
-    if (!validatePassword(e.target.value)) {
-      setNewPasswordError("비밀번호는 8자 이상이며, 영소문자, 숫자, 특수문자를 하나 이상 포함해야 합니다.");
-    } else {
-      setNewPasswordError("");
-    }
-  };
-
-  const handleSendTempPassword = async () => {
-    setIsLoading(true);
-    try {
-      await sendTemporaryPassword(email);
-      setMessage("임시 비밀번호가 이메일로 전송되었습니다.");
-      setError("");
-      setIsTempPasswordSent(true);
-    } catch (error) {
-      setError(error.response?.data?.message || "임시 비밀번호 전송 중 오류가 발생했습니다.");
-      setMessage("");
-      setIsErrorModalOpen(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (newPasswordError) {
-      setError(newPasswordError);
-      setIsErrorModalOpen(true);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!validateEmail(email)) {
+      setError('유효한 이메일 주소를 입력해주세요.');
+      setMessage('');
       return;
     }
+
     setIsLoading(true);
+    setError('');
+    setMessage('');
     try {
-      const resetPasswordResponse = await resetPassword({ email, temporary_password: temporaryPassword, new_password: newPassword });
-      if (resetPasswordResponse.data.status === 'success') {
-        setMessage("새로운 비밀번호로 변경되었습니다.");
-        setIsSuccessModalOpen(true);
-        setError("");
-      } else {
-        setError(resetPasswordResponse.data.error || "비밀번호 변경 중 오류가 발생했습니다.");
-        setMessage("");
-        setIsErrorModalOpen(true);
-      }
-    } catch (error) {
-      setError(error.response.data.error);
-      setMessage("");
-      setIsErrorModalOpen(true);
+      await requestPasswordReset(email);
+      setMessage('계정이 존재하면 비밀번호 재설정 링크가 이메일로 발송됩니다.');
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, '비밀번호 재설정 요청에 실패했습니다.'));
     } finally {
       setIsLoading(false);
     }
   };
-
-  const closeSuccessModal = () => {
-    setIsSuccessModalOpen(false);
-    navigate("/login");
-  };
-
-  const closeModal = () => {
-    setIsErrorModalOpen(false);
-  };
-
-  const isTempPasswordButtonDisabled = !email || emailError !== "";
-  const isSubmitButtonDisabled = !email || !temporaryPassword || !newPassword || emailError !== "" || newPasswordError !== "";
 
   return (
     <Container>
       <GlobalLoader isLoading={isLoading} />
       <Form onSubmit={handleSubmit}>
         <InputGroup>
-          <Label htmlFor="email">이메일</Label>
+          <Label htmlFor="reset-email">이메일</Label>
           <Input
             type="email"
-            id="email"
-            name="email"
+            id="reset-email"
             value={email}
-            onChange={handleChange}
-            placeholder="이메일 입력"
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="이메일을 입력하세요"
+            autoComplete="email"
             required
           />
-          {emailError && <ErrorMessage>{emailError}</ErrorMessage>}
         </InputGroup>
-        <Button
-          type="button"
-          onClick={handleSendTempPassword}
-          disabled={isTempPasswordButtonDisabled}
-        >
-          임시 비밀번호 전송
+        {message && <Message>{message}</Message>}
+        {error && <Message $error>{error}</Message>}
+        <Button type="submit" disabled={isLoading || !email}>
+          재설정 링크 보내기
         </Button>
-        {isTempPasswordSent && <SuccessMessage>임시 비밀번호가 이메일로 전송되었습니다.</SuccessMessage>}
-        <InputGroup>
-          <Label htmlFor="temporary_password">임시 비밀번호</Label>
-          <Input
-            type="password"
-            id="temporary_password"
-            name="temporary_password"
-            value={temporaryPassword}
-            onChange={handleTempPasswordChange}
-            placeholder="임시 비밀번호 입력"
-            required
-          />
-        </InputGroup>
-        <InputGroup>
-          <Label htmlFor="new_password">새로운 비밀번호</Label>
-          <Input
-            type="password"
-            id="new_password"
-            name="new_password"
-            value={newPassword}
-            onChange={handleNewPasswordChange}
-            placeholder="새로운 비밀번호 입력"
-            required
-          />
-          {newPasswordError && <ErrorMessage>{newPasswordError}</ErrorMessage>}
-        </InputGroup>
-        <Button type="submit" disabled={isSubmitButtonDisabled}>비밀번호 변경하기</Button>
       </Form>
-
-      <CustomModal
-        isOpen={isSuccessModalOpen}
-        onRequestClose={closeSuccessModal}
-        title="알림"
-        content={message}
-      />
-
-      <CustomModal
-        isOpen={isErrorModalOpen}
-        onRequestClose={closeModal}
-        title="오류"
-        content={error}
-        isError={true}
-      />
     </Container>
   );
 };

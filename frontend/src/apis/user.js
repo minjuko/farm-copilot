@@ -65,11 +65,6 @@ export const confirmPasswordReset = async (uid, token, newPassword) => {
   });
 };
 
-// LEGACY: used by PasswordResetTemplate until the token-based screen lands.
-export const sendTemporaryPassword = requestPasswordReset;
-export const resetPassword = (formData) => {
-  return instance.post("login/password_reset_done/", formData);
-};
 
 // CSRFToken 가져오기
 export const getCSRFToken = () => {
