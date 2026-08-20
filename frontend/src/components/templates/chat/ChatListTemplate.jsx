@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import Modal from 'react-modal';
 import { useLoading } from '../../../LoadingContext';
 import GlobalLoader from "../../atoms/GlobalLoader";
 import { useAuth } from '../../../AuthContext';
+import { normalizeSessionName } from './chatFlow';
 
 const Container = styled.div`
   display: flex;
@@ -161,6 +162,12 @@ const ErrorMessage = styled.div`
   text-align: center; 
 `;
 
+const LimitedNotice = styled.div`
+  margin-top: 1rem;
+  color: #5d4a00;
+  text-align: center;
+`;
+
 const PaginationContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -219,7 +226,9 @@ const ChatListTemplate = () => {
   const [error, setError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-  const { isAuthenticated: isLoggedIn } = useAuth();
+  const { status } = useAuth();
+  const isLoggedIn = status === 'authenticated';
+  const actionInFlight = useRef(false);
   const sessionsPerPage = 5;
   const pageCount = Math.ceil(chatSessions.length / sessionsPerPage);
   const offset = currentPage * sessionsPerPage;
@@ -230,6 +239,7 @@ const ChatListTemplate = () => {
         setIsLoading(true);
         try {
           const response = await fetchChatSessions();
+          if (!Array.isArray(response?.data)) throw new Error('MALFORMED_CHAT_SESSIONS');
           const filteredSessions = response.data.filter(session => session.session_id !== null);
           setChatSessions(filteredSessions);
         } catch (error) {
@@ -249,8 +259,6 @@ const ChatListTemplate = () => {
     setErrorMessage('');
     if (!isLoggedIn) {
       const newSessionId = uuidv4();
-      localStorage.setItem('sessionId', newSessionId);
-      localStorage.setItem('sessionName', '농업GPT');
       navigate(`/chat/${newSessionId}?session_name=농업GPT`);
     } else {
       setIsModalOpen(true);
@@ -258,40 +266,42 @@ const ChatListTemplate = () => {
   };
 
   const handleNewChatSubmit = async () => {
-    if (!newSessionName) {
+    const trimmedSessionName = normalizeSessionName(newSessionName);
+    if (!trimmedSessionName) {
       setError('제목을 입력해주세요');
       return;
     }
+    if (actionInFlight.current) return;
     setError('');
     setErrorMessage('');
     if (editingSession) {
+      actionInFlight.current = true;
       setIsLoading(true);
       try {
-        await updateSessionName(editingSession.session_id, newSessionName);
-        setChatSessions(chatSessions.map(session => (
+        await updateSessionName(editingSession.session_id, trimmedSessionName);
+        setChatSessions((current) => current.map(session => (
           session.session_id === editingSession.session_id
-            ? { ...session, session_name: newSessionName }
+            ? { ...session, session_name: trimmedSessionName }
             : session
         )));
+        setEditingSession(null);
+        setIsModalOpen(false);
+        setNewSessionName('');
       } catch (error) {
         setErrorMessage('세션 이름을 업데이트하는 중 오류가 발생했습니다.');
       } finally {
+        actionInFlight.current = false;
         setIsLoading(false);
       }
-      setEditingSession(null);
     } else {
       const newSessionId = uuidv4();
-      localStorage.setItem('sessionId', newSessionId);
-      localStorage.setItem('sessionName', newSessionName);
-      navigate(`/chat/${newSessionId}?session_name=${encodeURIComponent(newSessionName)}`);
+      navigate(`/chat/${newSessionId}?session_name=${encodeURIComponent(trimmedSessionName)}`);
+      setIsModalOpen(false);
+      setNewSessionName('');
     }
-    setIsModalOpen(false);
-    setNewSessionName('');
   };
 
   const openChat = (sessionId, sessionName) => {
-    localStorage.setItem('sessionId', sessionId);
-    localStorage.setItem('sessionName', sessionName);
     navigate(`/chat/${sessionId}?session_name=${encodeURIComponent(sessionName)}`);
   };
 
@@ -301,14 +311,16 @@ const ChatListTemplate = () => {
   };
 
   const deleteSession = async () => {
-    if (sessionToDelete) {
+    if (sessionToDelete && !actionInFlight.current) {
+      actionInFlight.current = true;
       setIsLoading(true);
       try {
         await deleteChatSession(sessionToDelete);
-        setChatSessions(chatSessions.filter(session => session.session_id !== sessionToDelete));
+        setChatSessions((current) => current.filter(session => session.session_id !== sessionToDelete));
       } catch (error) {
         setErrorMessage('세션을 삭제하는 중 오류가 발생했습니다.');
       } finally {
+        actionInFlight.current = false;
         setIsLoading(false);
       }
       setIsConfirmModalOpen(false);
@@ -338,8 +350,9 @@ const ChatListTemplate = () => {
   return (
     <Container>
       <GlobalLoader />
+      <LimitedNotice>ARCHIVED / LIMITED · 환경이 준비된 경우에만 챗봇 답변을 제공합니다.</LimitedNotice>
       {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-      {isLoggedIn ? (
+      {status === 'checking' ? null : isLoggedIn ? (
         <>
           <NewChatButton onClick={startNewChat}>새 대화 시작하기</NewChatButton>
           {chatSessions.length === 0 ? (

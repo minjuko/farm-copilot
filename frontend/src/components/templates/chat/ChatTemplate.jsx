@@ -2,7 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { fetchChatHistory, sendChatMessage } from '../../../apis/chat';
-import { getApiErrorMessage } from '../../../apis/error';
+import { useAuth } from '../../../AuthContext';
+import {
+  buildChatPayload,
+  getChatErrorMessage,
+  normalizeChatHistory,
+  normalizeChatResponse,
+} from './chatFlow';
 import SyncLoader from 'react-spinners/SyncLoader';
 import { IoMenu } from "react-icons/io5";
 import { FaPaperPlane } from "react-icons/fa";
@@ -189,6 +195,13 @@ const ErrorMessage = styled.div`
   text-align: center; 
 `;
 
+const LimitedNotice = styled.div`
+  padding: 0.75rem;
+  text-align: center;
+  background-color: #fff8e1;
+  color: #5d4a00;
+`;
+
 const ChatTemplate = () => {
   const { sessionid } = useParams();
   const location = useLocation();
@@ -196,37 +209,35 @@ const ChatTemplate = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState(sessionid);
+  const sessionId = sessionid;
   const [errorMessage, setErrorMessage] = useState('');
+  const { status } = useAuth();
 
   const chatBoxRef = useRef(null);
+  const requestInFlight = useRef(false);
 
   const params = new URLSearchParams(location.search);
   const sessionName = params.get('session_name');
-  const isLoggedIn = localStorage.getItem('userId') !== null;
 
   useEffect(() => {
-    if (isLoggedIn) {
-      localStorage.setItem('sessionId', sessionId);
-      localStorage.setItem('sessionName', sessionName);
+    if (status === 'authenticated') {
       const fetchHistory = async () => {
         try {
           const response = await fetchChatHistory(sessionId);
-          const orderedMessages = response.data.flatMap(chat => [
-            { isUser: true, text: chat.question, timestamp: chat.timestamp },
-            { isUser: false, text: chat.answer, timestamp: chat.timestamp }
-          ]);
-          setMessages([{ isUser: false, text: '안녕하세요 무엇을 도와드릴까요?', timestamp: new Date().toISOString() }, ...orderedMessages]);
+          const orderedMessages = normalizeChatHistory(response?.data);
+          if (!orderedMessages) throw new Error('MALFORMED_CHAT_HISTORY');
+          setMessages(orderedMessages);
+          setErrorMessage('');
         } catch (error) {
           setErrorMessage('채팅 기록을 불러오는 중 오류가 발생했습니다.');
         }
       };
 
       fetchHistory();
-    } else {
-      setMessages([{ isUser: false, text: '안녕하세요 무엇을 도와드릴까요?', timestamp: new Date().toISOString() }]);
+    } else if (status === 'unauthenticated') {
+      setMessages([]);
     }
-  }, [sessionId, sessionName, isLoggedIn]);
+  }, [sessionId, status]);
 
   useEffect(() => {
     if (chatBoxRef.current) {
@@ -236,43 +247,37 @@ const ChatTemplate = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const { payload, error } = buildChatPayload({
+      question: inputValue,
+      sessionId,
+      sessionName,
+    });
+    if (error) {
+      setErrorMessage(error);
+      return;
+    }
+    if (requestInFlight.current) return;
+
     const userMessage = {
       isUser: true,
-      text: inputValue,
+      text: payload.question,
       timestamp: new Date().toISOString()
     };
-    setMessages([...messages, userMessage]);
+    setMessages((current) => [...current, userMessage]);
     setInputValue('');
+    setErrorMessage('');
+    requestInFlight.current = true;
     setLoading(true);
 
-    const messageData = {
-      question: inputValue,
-      session_id: sessionId,
-      session_name: sessionName,
-      user_id: isLoggedIn ? localStorage.getItem('userId') : null
-    };
-
     try {
-      const response = await sendChatMessage(messageData);
-      const botMessage = {
-        isUser: false,
-        text: response.data.answer,
-        timestamp: response.data.timestamp
-      };
+      const response = await sendChatMessage(payload);
+      const botMessage = normalizeChatResponse(response?.data);
+      if (!botMessage) throw new Error('MALFORMED_CHAT_RESPONSE');
       setMessages((prevMessages) => [...prevMessages, botMessage]);
     } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        '현재 농업 GPT를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
-      );
-      setErrorMessage(message);
-      const errorMessage = {
-        isUser: false,
-        text: message,
-        timestamp: new Date().toISOString()
-      };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      setErrorMessage(getChatErrorMessage(error));
     } finally {
+      requestInFlight.current = false;
       setLoading(false);
     }
   };
@@ -283,6 +288,7 @@ const ChatTemplate = () => {
         <Title>{sessionName || '농업 GPT'}</Title>
         <ChatListButton onClick={() => navigate('/chatlist')}><IoMenu />  목록 보기</ChatListButton>
       </Header>
+      <LimitedNotice>ARCHIVED / LIMITED · 환경이 준비된 경우에만 챗봇 답변을 제공합니다.</LimitedNotice>
       <ChatBox ref={chatBoxRef}>
         <MessageList>
           {messages.map((msg, index) => (
@@ -330,11 +336,11 @@ const ChatTemplate = () => {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="질문을 입력하세요"
-          required
+          disabled={loading}
         />
-        <Button type="submit"><FaPaperPlane size="20px"/></Button>
+        <Button type="submit" disabled={loading} aria-label="질문 보내기"><FaPaperPlane size="20px"/></Button>
       </InputBox>
-      {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+      {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
     </Container>
   );
 };

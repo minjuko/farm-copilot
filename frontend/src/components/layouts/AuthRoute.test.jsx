@@ -51,6 +51,8 @@ const renderRoutes = (initialPath, extra = null) => render(
         </Route>
         <Route path="/main" element={<div>main page</div>} />
         <Route path="/password-reset-confirm" element={<div>reset confirm</div>} />
+        <Route path="/chatlist" element={<div>chat list</div>} />
+        <Route path="/chat/:sessionId" element={<div>chat detail</div>} />
         <Route path="*" element={<Navigate to="/main" />} />
       </Routes>
     </AuthProvider>
@@ -139,4 +141,10 @@ test.each(["/diagnosis", "/diagnosislist", "/info"])("protects Detect route %s",
   checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
   renderRoutes(path);
   expect(await screen.findByText("login page")).toBeInTheDocument();
+});
+
+test.each(["/chatlist", "/chat/session-1"])("keeps Backend-compatible public Chatbot route %s", async (path) => {
+  checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
+  renderRoutes(path);
+  expect(await screen.findByText(/chat (list|detail)/)).toBeInTheDocument();
 });
