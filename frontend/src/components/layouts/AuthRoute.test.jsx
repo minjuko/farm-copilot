@@ -35,6 +35,8 @@ const renderRoutes = (initialPath, extra = null) => render(
       <Routes>
         <Route element={<AuthRoute />}>
           <Route path="/mypage" element={<div>mypage</div>} />
+          <Route path="/my_posts" element={<div>my posts</div>} />
+          <Route path="/my_commented_posts" element={<div>my commented posts</div>} />
         </Route>
         <Route element={<NoAuthRoute />}>
           <Route path="/login" element={<div>login page</div>} />
@@ -105,4 +107,10 @@ test("auth check failures become controlled unauthenticated state", async () => 
   checkAuthStatus.mockRejectedValue(new Error("network"));
   renderRoutes("/main", <AuthControls />);
   await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated"));
+});
+
+test.each(["/my_posts", "/my_commented_posts"])("protects community route %s", async (path) => {
+  checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
+  renderRoutes(path);
+  expect(await screen.findByText("login page")).toBeInTheDocument();
 });

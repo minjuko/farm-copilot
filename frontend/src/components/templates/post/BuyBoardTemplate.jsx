@@ -5,6 +5,7 @@ import ReactPaginate from "react-paginate";
 import { fetchPosts } from "../../../apis/post";
 import { FaPen } from "react-icons/fa";
 import { useLoading } from "../../../LoadingContext";
+import { useAuth } from "../../../AuthContext";
 
 const Container = styled.div`
   display: flex;
@@ -160,6 +161,7 @@ const PaginationContainer = styled.div`
 
 const BuyBoardTemplate = () => {
   const { setIsLoading } = useLoading();
+  const { status: authStatus } = useAuth();
   const [posts, setPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -205,9 +207,9 @@ const BuyBoardTemplate = () => {
           value={searchTerm}
           onChange={handleSearchChange}
         />
-        <CreatePostButton to="/post/create?post_type=buy">
+        {authStatus === "authenticated" && <CreatePostButton to="/post/create?post_type=buy">
           <FaPen style={{ marginRight: '8px' }} /> 글 작성
-        </CreatePostButton>
+        </CreatePostButton>}
       </SearchBar>
       <PostList>
         <Table>

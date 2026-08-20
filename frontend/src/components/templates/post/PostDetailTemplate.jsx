@@ -14,10 +14,14 @@ import { useLoading } from "../../../LoadingContext";
 import {
   Container,
 } from "../../../styles/Post";
+import { useAuth } from "../../../AuthContext";
+import { isCommunityOwner } from "./communityOwnership";
+import { getApiErrorMessage } from "../../../apis/error";
 
 const PostDetailTemplate = () => {
   const { id } = useParams();
   const { setIsLoading } = useLoading();
+  const { status: authStatus, user } = useAuth();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -28,18 +32,19 @@ const PostDetailTemplate = () => {
   const [editCommentContent, setEditCommentContent] = useState("");
   const [showSettingsMenu, setShowSettingsMenu] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const currentUserId = localStorage.getItem("userId");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const settingsMenuRefs = useRef([]);
 
   const fetchPost = useCallback(async () => {
     try {
+      setErrorMessage("");
       setIsLoading(true);
       const response = await fetchPostDetail(id);
       setPost(response.data);
       setComments(response.data.comments || []);
     } catch (error) {
-      alert("게시글을 불러오는데 실패했습니다. 다시 시도해주세요.");
+      setErrorMessage(getApiErrorMessage(error, "게시글을 불러오지 못했습니다."));
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +91,7 @@ const PostDetailTemplate = () => {
       await fetchPost();
       setNewComment("");
     } catch (error) {
-      alert("댓글 작성에 실패했습니다. 다시 시도해주세요.");
+      setErrorMessage(getApiErrorMessage(error, "댓글 작성에 실패했습니다."));
     }
   };
 
@@ -98,7 +103,7 @@ const PostDetailTemplate = () => {
       setNewReply("");
       setReplyCommentId(null);
     } catch (error) {
-      alert("답글 작성에 실패했습니다.");
+      setErrorMessage(getApiErrorMessage(error, "답글 작성에 실패했습니다."));
     }
   };
 
@@ -114,7 +119,7 @@ const PostDetailTemplate = () => {
       setEditCommentId(null);
       setEditCommentContent("");
     } catch (error) {
-      alert("댓글 수정에 실패했습니다. 다시 시도해주세요.");
+      setErrorMessage(getApiErrorMessage(error, "댓글 수정에 실패했습니다."));
     }
   };
 
@@ -123,7 +128,7 @@ const PostDetailTemplate = () => {
       await deleteComment(commentId);
       setComments(comments.filter((comment) => comment.id !== commentId));
     } catch (error) {
-      alert("댓글 삭제에 실패했습니다. 다시 시도해주세요.");
+      setErrorMessage(getApiErrorMessage(error, "댓글 삭제에 실패했습니다."));
     }
   };
 
@@ -140,7 +145,7 @@ const PostDetailTemplate = () => {
         navigate("/exchangeboard");
       }
     } catch (error) {
-      console.error("Failed to delete post", error);
+      setErrorMessage(getApiErrorMessage(error, "게시글 삭제에 실패했습니다."));
     }
   };
 
@@ -160,14 +165,15 @@ const PostDetailTemplate = () => {
   };
 
   if (!post) {
-    return <Container>게시글을 불러오는 중입니다...</Container>;
+    return <Container>{errorMessage || "게시글을 불러오는 중입니다..."}</Container>;
   }
 
   return (
     <Container>
+      {errorMessage && <p role="alert">{errorMessage}</p>}
       <PostDetails
         post={post}
-        currentUserId={currentUserId}
+        canManagePost={isCommunityOwner(authStatus, user, post)}
         showSettingsMenu={showSettingsMenu}
         settingsMenuRefs={settingsMenuRefs}
         openModal={openModal}
@@ -191,7 +197,8 @@ const PostDetailTemplate = () => {
         handleEditComment={handleEditComment}
         handleDeleteComment={handleDeleteComment}
         setReplyCommentId={setReplyCommentId}
-        currentUserId={currentUserId}
+        authStatus={authStatus}
+        user={user}
         setEditCommentId={setEditCommentId}
         setEditCommentContent={setEditCommentContent}
         setShowSettingsMenu={setShowSettingsMenu}

@@ -17,6 +17,7 @@ import {
 import { FaPaperPlane } from "react-icons/fa";
 import { MdOutlineChatBubbleOutline } from "react-icons/md";
 import ConfirmModal from "../atoms/ConfirmModal";
+import { isCommunityOwner } from "../templates/post/communityOwnership";
 
 const Comment = ({
   comments,
@@ -33,7 +34,8 @@ const Comment = ({
   handleEditComment,
   handleDeleteComment,
   setReplyCommentId,
-  currentUserId,
+  authStatus,
+  user,
   setEditCommentId,
   setEditCommentContent,
 }) => {
@@ -125,9 +127,9 @@ const Comment = ({
             ) : (
               <CommentContent>{comment.content}</CommentContent>
             )}
-            {String(currentUserId) === String(comment.user_id) && (
+            {isCommunityOwner(authStatus, user, comment) && (
               <>
-                <SettingsIcon2 onClick={() => handleSettingsClick(comment.id)} />
+                <SettingsIcon2 aria-label="댓글 관리" onClick={() => handleSettingsClick(comment.id)} />
                 <SettingsMenu2
                   show={showSettingsMenu[comment.id]}
                   ref={(el) => (settingsMenuRefs.current[comment.id] = el)}
@@ -149,7 +151,7 @@ const Comment = ({
                 </SettingsMenu2>
               </>
             )}
-            {parentId === null && (
+            {authStatus === "authenticated" && parentId === null && (
               <CommentActions>
                 <button onClick={() => setReplyCommentId(comment.id)}>
                   <MdOutlineChatBubbleOutline /> 답글
@@ -157,7 +159,7 @@ const Comment = ({
               </CommentActions>
             )}
             {renderComments(comments, comment.id)}
-            {replyCommentId === comment.id && (
+            {authStatus === "authenticated" && replyCommentId === comment.id && (
               <CommentForm isReply onSubmit={handleSubmitReply}>
                 <CommentTextarea
                   rows="2"
@@ -177,7 +179,7 @@ const Comment = ({
   return (
     <>
       <CommentList>{renderComments(comments)}</CommentList>
-      <CommentForm onSubmit={handleSubmitComment}>
+      {authStatus === "authenticated" && <CommentForm onSubmit={handleSubmitComment}>
         <CommentTextarea
           rows="1"
           placeholder="댓글을 작성하세요"
@@ -188,7 +190,7 @@ const Comment = ({
         <CommentButton type="submit" disabled={!newComment.trim()}>
           <FaPaperPlane />
         </CommentButton>
-      </CommentForm>
+      </CommentForm>}
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         onRequestClose={closeModal}

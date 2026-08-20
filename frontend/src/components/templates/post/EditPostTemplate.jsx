@@ -18,10 +18,14 @@ import {
   ImagePreview,
 } from "../../../styles/Post";
 import { useLoading } from "../../../LoadingContext";
+import { useAuth } from "../../../AuthContext";
+import { isCommunityOwner } from "./communityOwnership";
+import { getApiErrorMessage } from "../../../apis/error";
 
 const EditPostTemplate = () => {
   const { id } = useParams();
   const { setIsLoading } = useLoading();
+  const { status: authStatus, user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [postType, setPostType] = useState("buy");
@@ -32,6 +36,7 @@ const EditPostTemplate = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalContent, setModalContent] = useState("");
+  const [accessError, setAccessError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,18 +44,22 @@ const EditPostTemplate = () => {
       try {
         setIsLoading(true);
         const response = await fetchPost(id);
+        if (!isCommunityOwner(authStatus, user, response.data)) {
+          setAccessError("작성자만 게시글을 수정할 수 있습니다.");
+          return;
+        }
         setTitle(response.data.title);
         setContent(response.data.content);
         setPostType(response.data.post_type);
         setExistingImage(response.data.image);
       } catch (error) {
-        console.error("Failed to fetch post", error);
+        setAccessError(getApiErrorMessage(error, "게시글을 불러오지 못했습니다."));
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, [id, setIsLoading]);
+  }, [authStatus, id, setIsLoading, user]);
 
   const handleTitleChange = (event) => {
     setTitle(event.target.value);
@@ -108,6 +117,10 @@ const EditPostTemplate = () => {
     setIsModalOpen(false);
     navigate(`/post/${id}`);
   };
+
+  if (accessError) {
+    return <Container>{accessError}</Container>;
+  }
 
   return (
     <Container>

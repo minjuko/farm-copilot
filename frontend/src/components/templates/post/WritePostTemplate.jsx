@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { createPost } from "../../../apis/post";
 import CustomModal from "../../atoms/CustomModal";
 import { useLoading } from "../../../LoadingContext";
+import { getApiErrorMessage } from "../../../apis/error";
 import {
   Container,
   Form,
@@ -42,6 +43,7 @@ const WritePostTemplate = () => {
   const [modalTitle, setModalTitle] = useState(""); // 모달 타이틀 상태 추가
   const [modalContent, setModalContent] = useState(""); // 모달 내용 상태 추가
   const [createdPostId, setCreatedPostId] = useState(null); // 생성된 글 ID 저장
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (postTypeQueryParam) {
@@ -77,6 +79,7 @@ const WritePostTemplate = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (isSubmitting) return;
 
     let isValid = true;
     if (title.trim() === "") {
@@ -107,6 +110,7 @@ const WritePostTemplate = () => {
 
     try {
       setIsLoading(true);
+      setIsSubmitting(true);
       const response = await createPost(formData);
       setCreatedPostId(response.data.id);
       setModalTitle("알림");
@@ -114,10 +118,11 @@ const WritePostTemplate = () => {
       setIsModalOpen(true);
     } catch (error) {
       setModalTitle("작성 실패");
-      setModalContent("글 작성 중 오류가 발생했습니다. 다시 시도해 주세요.");
+      setModalContent(getApiErrorMessage(error, "글 작성 중 오류가 발생했습니다. 다시 시도해 주세요."));
       setIsModalOpen(true);
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -170,7 +175,7 @@ const WritePostTemplate = () => {
           {fileName && <FileName>{fileName}</FileName>}
           {imagePreview && <ImagePreview src={imagePreview} alt="Image Preview" />}
         </FileInputWrapper>
-        <Button type="submit" disabled={!title || !content}>작성하기</Button>
+        <Button type="submit" disabled={!title.trim() || !content.trim() || isSubmitting}>작성하기</Button>
       </Form>
 
       <CustomModal

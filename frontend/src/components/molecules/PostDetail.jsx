@@ -149,7 +149,7 @@ const ListIconContainer = styled.div`
 
 const PostDetail = ({
   post,
-  currentUserId,
+  canManagePost,
   showSettingsMenu,
   settingsMenuRefs,
   openModal,
@@ -197,9 +197,9 @@ const PostDetail = ({
           <FaThList />
         </ListIconContainer>
         <Title>{post.title}</Title>
-        {String(currentUserId) === String(post.user_id) && (
+        {canManagePost && (
           <>
-            <SettingsIcon onClick={() => handleSettingsClick(0)} />
+            <SettingsIcon aria-label="게시글 관리" onClick={() => handleSettingsClick(0)} />
             <SettingsMenu show={showSettingsMenu[0]} ref={(el) => (settingsMenuRefs.current[0] = el)}>
               <SettingsMenuItem onClick={() => navigate(`/post/edit/${post.id}`)}>
                 수정
