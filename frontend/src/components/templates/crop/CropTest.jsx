@@ -26,6 +26,7 @@ import {
   ErrorMessage,
   RemoveIcon,
 } from '../../../styles/CropTest';
+import { buildPredictionPayload, removeCropAt } from './predictionFlow';
 
 const CropTest = () => {
   const { setIsLoading, isLoading } = useLoading();
@@ -42,6 +43,7 @@ const CropTest = () => {
   const [isError, setIsError] = useState(false);
   const [addError, setAddError] = useState("");
   const [selectKey, setSelectKey] = useState(0); // 추가된 key state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const regionRef = useRef(null);
 
@@ -82,7 +84,16 @@ const CropTest = () => {
 
   const addCrop = async () => {
     if (landArea && region && currentCrop.name && currentCrop.ratio) {
-      setCrops([...crops, { ...currentCrop, id: crops.length + 1 }]);
+      const ratio = Number(currentCrop.ratio);
+      if (!Number.isFinite(ratio) || ratio <= 0) {
+        setAddError("작물 비율은 0보다 큰 숫자로 입력해주세요.");
+        return;
+      }
+      if (crops.some((crop) => crop.name === currentCrop.name)) {
+        setAddError("같은 작물은 중복해서 추가할 수 없습니다.");
+        return;
+      }
+      setCrops([...crops, { ...currentCrop, ratio, id: crops.length + 1 }]);
       setCurrentCrop({ name: "", ratio: "" });
       setAddError("");
       setSelectKey(prevKey => prevKey + 1); // key를 변경하여 Select 컴포넌트를 재설정
@@ -93,8 +104,7 @@ const CropTest = () => {
   };
 
   const removeCrop = (index) => {
-    const newCrops = crops.filter((_, i) => i !== index);
-    setCrops(newCrops);
+    setCrops(removeCropAt(crops, index));
   };
 
   const validateInput = () => {
@@ -113,6 +123,7 @@ const CropTest = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const inputErrors = validateInput();
     if (inputErrors.length > 0) {
       setModalContent(inputErrors.join("\n"));
@@ -122,16 +133,20 @@ const CropTest = () => {
       return;
     }
 
+    const session_id = `session_${Date.now()}`;
+    const { payload, error: payloadError } = buildPredictionPayload({ landArea, region, crops, sessionId: session_id });
+    if (payloadError) {
+      setModalContent(payloadError);
+      setModalTitle('오류');
+      setIsError(true);
+      setIsModalOpen(true);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const session_id = `session_${Date.now()}`;
-      const response = await predictCrops({
-        land_area: landArea,
-        crop_names: crops.map(crop => crop.name),
-        crop_ratios: crops.map(crop => crop.ratio),
-        region: region,
-        session_id: session_id,
-      });
+      setIsSubmitting(true);
+      const response = await predictCrops(payload);
 
       if (response.data.error) {
         const errorMessage = String(response.data.error) === "0"
@@ -142,7 +157,7 @@ const CropTest = () => {
         setIsError(true);
         setIsModalOpen(true);
       } else {
-        navigate('/sessiondetails', { state: { landArea, cropNames: crops.map(crop => crop.name), result: response.data, session_id } });
+        navigate(`/sessiondetails/${session_id}`, { state: { session_id } });
       }
     } catch (error) {
       console.error('Error fetching prediction', error);
@@ -155,6 +170,7 @@ const CropTest = () => {
       setIsModalOpen(true);
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -187,7 +203,9 @@ const CropTest = () => {
       <InputContainer>
         <Label>재배 면적 (평)</Label>
         <Input
-          type="text"
+          type="number"
+          min="0"
+          step="any"
           placeholder="재배 면적 (평)"
           value={landArea}
           onChange={(e) => setLandArea(e.target.value)}
@@ -241,7 +259,9 @@ const CropTest = () => {
         <Label>작물별 비율</Label>
         <div style={{ display: 'flex', alignItems: 'left', height: '2.5rem', margin: '0.7rem 0', }}>
           <SmallInput
-            type="text"
+            type="number"
+            min="0"
+            step="any"
             name="ratio"
             placeholder="ex) 0.5, 1"
             value={currentCrop.ratio}
@@ -276,7 +296,7 @@ const CropTest = () => {
             <RemoveIcon onClick={() => removeCrop(index)}><FaTrash /></RemoveIcon>
           </SummaryItem>
         ))}
-        <Button onClick={handleSubmit}>예측 결과 보러가기</Button>
+        <Button onClick={handleSubmit} disabled={isSubmitting}>예측 결과 보러가기</Button>
       </SummaryContainer>
       <CustomModal
         isOpen={isModalOpen}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Bar, Line } from 'react-chartjs-2';
 import { getSessionDetails } from '../../../apis/crop';
 import Chart from 'chart.js/auto';
@@ -8,6 +8,8 @@ import { CategoryScale, TimeScale } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
+import { getApiErrorMessage } from '../../../apis/error';
+import { finiteNumberOrZero, normalizePredictionResult } from './predictionFlow';
 
 Chart.register(CategoryScale, TimeScale);
 
@@ -212,7 +214,7 @@ const columns = [
 
 const generateBarChartData = (adjustedData, cropName) => {
   const labels = columns;
-  const data = columns.map(column => adjustedData[column]);
+  const data = columns.map(column => finiteNumberOrZero(adjustedData?.[column]));
 
   return {
     labels,
@@ -251,8 +253,11 @@ const generateBarChartData = (adjustedData, cropName) => {
 };
 
 const generateLineChartData = (cropChartData, cropName, additionalPrice) => {
-  const labels = cropChartData.map(data => new Date(data.tm));
-  const data = cropChartData.map(data => data.price);
+  const points = cropChartData
+    .map(item => ({ date: new Date(item.tm), price: finiteNumberOrZero(item.price) }))
+    .filter(point => !Number.isNaN(point.date.getTime()));
+  const labels = points.map(point => point.date);
+  const data = points.map(point => point.price);
 
   return {
     labels,
@@ -266,7 +271,7 @@ const generateLineChartData = (cropChartData, cropName, additionalPrice) => {
       },
       {
         label: `다음날 예측 도매가: ${additionalPrice}원`,
-        data: Array(data.length).fill(additionalPrice),
+        data: Array(data.length).fill(finiteNumberOrZero(additionalPrice)),
         fill: false,
         borderColor: 'rgb(255, 99, 132)',
         tension: 0.1
@@ -348,6 +353,7 @@ const barChartOptions = {
 };
 
 const formatNumber = (num) => {
+  num = finiteNumberOrZero(num);
   if (num >= 1000000000000) {
     return (num / 1000000000000).toFixed(1) + '조원';
   } else if (num >= 100000000) {
@@ -363,6 +369,7 @@ const formatNumber = (num) => {
 
 const SessionDetails = () => {
   const location = useLocation();
+  const { sessionId } = useParams();
   const navigate = useNavigate();
   const [selectedCropIndex, setSelectedCropIndex] = useState(0);
   const [sessionDetails, setSessionDetails] = useState(null);
@@ -370,8 +377,11 @@ const SessionDetails = () => {
   const [lineChartData, setLineChartData] = useState(null);
   const { setIsLoading, isLoading } = useLoading();
   const [isChartLoading, setIsChartLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isFetching, setIsFetching] = useState(true);
 
   const updateCharts = (details, index) => {
+    if (!details.results[index]) return;
     const cropNames = details.results.map(result => result.crop_name);
     const additionalPrices = details.results.map(result => result.price);
     const barData = generateBarChartData(details.results[index].adjusted_data, cropNames[index]);
@@ -382,31 +392,36 @@ const SessionDetails = () => {
 
   useEffect(() => {
     const fetchSessionDetails = async () => {
-      const session_id = location.state?.session_id;
+      const session_id = sessionId || location.state?.session_id;
       if (!session_id) {
-        console.error('No session ID found');
-        navigate('/');
+        setErrorMessage('세션 ID가 없습니다. 목록에서 다시 선택해주세요.');
+        setIsFetching(false);
         return;
       }
       try {
         setIsLoading(true);
         const response = await getSessionDetails(session_id);
-        setSessionDetails(response.data);
-
-        updateCharts(response.data, 0);
+        const normalized = normalizePredictionResult(response.data);
+        if (normalized.results.length === 0) {
+          setErrorMessage('표시할 예측 결과가 없습니다.');
+          return;
+        }
+        setSessionDetails(normalized);
+        updateCharts(normalized, 0);
       } catch (error) {
-        console.error('Error fetching session details:', error);
         if (error.response && error.response.status === 401) {
-          alert('사용자 인증이 필요합니다. 로그인 페이지로 이동합니다.');
           navigate('/login');
+        } else {
+          setErrorMessage(getApiErrorMessage(error, '세션 상세 정보를 불러오지 못했습니다.'));
         }
       } finally {
         setIsLoading(false);
+        setIsFetching(false);
       }
     };
 
     fetchSessionDetails();
-  }, [location.state, navigate, setIsLoading]);
+  }, [location.state, navigate, sessionId, setIsLoading]);
 
   const handleTabClick = (index) => {
     setSelectedCropIndex(index);
@@ -424,8 +439,14 @@ const SessionDetails = () => {
   };
 
 
+  if (isFetching || isLoading) {
+    return <PageContainer><GlobalLoader /><Loader /></PageContainer>;
+  }
+  if (errorMessage) {
+    return <PageContainer><ErrorText role="alert">{errorMessage}</ErrorText></PageContainer>;
+  }
   if (!sessionDetails || !barChartData || !lineChartData) {
-    return <div></div>;
+    return <PageContainer><ErrorText>표시할 예측 결과가 없습니다.</ErrorText></PageContainer>;
   }
 
   const cropNames = sessionDetails.results.map(result => result.crop_name);
@@ -450,7 +471,7 @@ const SessionDetails = () => {
                 </tr>
                 <tr>
                   <td>토지 면적</td>
-                  <td>{sessionDetails.land_area.toLocaleString()} 평</td>
+                  <td>{finiteNumberOrZero(sessionDetails.land_area).toLocaleString()} 평</td>
                 </tr>
                 <tr>
                   <td>작물 조합 총 소득 (연간)</td>
@@ -520,15 +541,15 @@ const SessionDetails = () => {
                   </tr>
                   <tr>
                     <td>내일 예상 도매가 (단위:1kg)</td>
-                    <td>{sessionDetails.results[selectedCropIndex].price} 원</td>
+                    <td>{finiteNumberOrZero(sessionDetails.results[selectedCropIndex].price).toLocaleString()} 원</td>
                   </tr>
                   <tr>
                     <td>모델 학습 결과 (RMSE)</td>
-                    <td>{sessionDetails.results[selectedCropIndex].rmse.toFixed(1)}</td>
+                    <td>{finiteNumberOrZero(sessionDetails.results[selectedCropIndex].rmse).toFixed(1)}</td>
                   </tr>
                   <tr>
                     <td>모델 학습 결과 (R2)</td>
-                    <td>{sessionDetails.results[selectedCropIndex].r2_score.toFixed(3)}</td>
+                    <td>{finiteNumberOrZero(sessionDetails.results[selectedCropIndex].r2_score).toFixed(3)}</td>
                   </tr>
                 </tbody>
               </InfoTable>
@@ -539,7 +560,7 @@ const SessionDetails = () => {
               </ExplanationText>
               <SectionTitle>지난 1년간 일일 도매가</SectionTitle>
               <ChartContainer>
-                {sessionDetails.results[selectedCropIndex].crop_chart_data ? (
+                {sessionDetails.results[selectedCropIndex].crop_chart_data.length > 0 ? (
                   <Line
                     data={lineChartData}
                     options={lineChartOptions}

@@ -73,6 +73,7 @@ function App() {
               <Route path="/info" element={<InfoTemplate />} />
               <Route path="/diagnosislist" element={<DiagnosisListTemplate />} />
               <Route path="/sessiondetails" element={<SessionDetails />} />
+              <Route path="/sessiondetails/:sessionId" element={<SessionDetails />} />
             </Route>
 
             {/* post */}

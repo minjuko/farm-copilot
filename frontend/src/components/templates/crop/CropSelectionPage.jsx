@@ -6,6 +6,8 @@ import ConfirmModal from '../../atoms/ConfirmModal';
 import ReactPaginate from 'react-paginate';
 import { useLoading } from '../../../LoadingContext';
 import GlobalLoader from "../../atoms/GlobalLoader";
+import { getApiErrorMessage } from '../../../apis/error';
+import { finiteNumberOrZero } from './predictionFlow';
 import {
   PageContainer,
   ContentContainer,
@@ -33,10 +35,12 @@ const CropSelectionPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionIdToDelete, setSessionIdToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [savingSessionId, setSavingSessionId] = useState(null);
   const sessionsPerPage = 4;
   const navigate = useNavigate();
 
   const formatNumber = (num) => {
+    num = finiteNumberOrZero(num);
     if (num >= 1000000000000) {
       return (num / 1000000000000).toFixed(1) + '조원';
     } else if (num >= 100000000) {
@@ -59,9 +63,8 @@ const CropSelectionPage = () => {
         session_name: session.session_name === "Default Prediction Session" ? session.crop_names : session.session_name,
       }));
       setSessions(updatedSessions);
-      localStorage.setItem('sessions', JSON.stringify(updatedSessions));
     } catch (err) {
-      setError('세션 정보를 불러오는 중 오류가 발생했습니다.');
+      setError(getApiErrorMessage(err, '세션 정보를 불러오는 중 오류가 발생했습니다.'));
     }
     setIsLoading(false);
   }, [setIsLoading]);
@@ -76,16 +79,16 @@ const CropSelectionPage = () => {
       await deleteCrop(sessionIdToDelete);
       const updatedSessions = sessions.filter(session => session.session_id !== sessionIdToDelete);
       setSessions(updatedSessions);
-      localStorage.setItem('sessions', JSON.stringify(updatedSessions));
       setIsModalOpen(false);
+      setSessionIdToDelete(null);
     } catch (err) {
-      setError('세션 삭제 중 오류가 발생했습니다.');
+      setError(getApiErrorMessage(err, '세션 삭제 중 오류가 발생했습니다.'));
     }
     setIsLoading(false);
   };
 
   const handleSessionClick = (session) => {
-    navigate('/sessiondetails', { state: { ...session } });
+    navigate(`/sessiondetails/${session.session_id}`, { state: { session_id: session.session_id } });
   };
 
   const handleEditClick = (session, e) => {
@@ -96,25 +99,33 @@ const CropSelectionPage = () => {
 
   const handleSaveClick = async (sessionId, e) => {
     e.stopPropagation();
+    const trimmedName = newSessionName.trim();
+    if (!trimmedName || savingSessionId) {
+      if (!trimmedName) setError('세션 이름을 입력해주세요.');
+      return;
+    }
     setIsLoading(true);
+    setSavingSessionId(sessionId);
     try {
-      await updateSessionName(sessionId, newSessionName);
+      await updateSessionName(sessionId, trimmedName);
       const updatedSessions = sessions.map(session => {
         if (session.session_id === sessionId) {
           return {
             ...session,
-            session_name: newSessionName,
+            session_name: trimmedName,
           };
         }
         return session;
       });
       setSessions(updatedSessions);
-      localStorage.setItem('sessions', JSON.stringify(updatedSessions));
       setEditingSession(null);
+      setError(null);
     } catch (error) {
-      setError('세션 이름 업데이트 중 오류가 발생했습니다.');
+      setError(getApiErrorMessage(error, '세션 이름 업데이트 중 오류가 발생했습니다.'));
+    } finally {
+      setSavingSessionId(null);
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const openDeleteModal = (sessionId, e) => {
@@ -161,7 +172,7 @@ const CropSelectionPage = () => {
                             onChange={(e) => setNewSessionName(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <SaveButton onClick={(e) => handleSaveClick(session.session_id, e)}>저장</SaveButton>
+                          <SaveButton disabled={savingSessionId === session.session_id} onClick={(e) => handleSaveClick(session.session_id, e)}>저장</SaveButton>
                         </>
                       ) : (
                         <>
