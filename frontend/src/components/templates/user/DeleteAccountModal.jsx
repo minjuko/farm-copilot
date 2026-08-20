@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { deleteAccount } from "../../../apis/user";
 import { FaTimes } from "react-icons/fa";
 import { useLoading } from '../../../LoadingContext';
+import { useAuth } from '../../../AuthContext';
 
 const customStyles = {
   content: {
@@ -94,6 +95,7 @@ const WarningMessage = styled.div`
 
 const DeleteAccountModal = ({ isOpen, onRequestClose }) => {
   const { setIsLoading, isLoading } = useLoading();
+  const { clearSession } = useAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -110,11 +112,11 @@ const DeleteAccountModal = ({ isOpen, onRequestClose }) => {
     setIsLoading(true);
     try {
       await deleteAccount(password);
+      clearSession();
       setMessage("계정이 성공적으로 삭제되었습니다.");
       setError("");
       setTimeout(() => {
         navigate('/');
-        window.location.reload();
       }, 1000);
     } catch (error) {
       setError(error.response?.data?.message || "계정 삭제 중 오류가 발생했습니다.");

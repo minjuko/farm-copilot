@@ -1,20 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../../AuthContext";
 
 const NoAuthRoute = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { status } = useAuth();
 
-  useEffect(() => {
-    const checkAuth = () => {
-      const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-      setIsAuthenticated(loggedIn);
-    };
+  if (status === "checking") {
+    return null;
+  }
 
-    checkAuth();
-  }, []);
-
-  if (isAuthenticated) {
-    return <Navigate to="/main" />;
+  if (status === "authenticated") {
+    return <Navigate to="/main" replace />;
   }
 
   return <Outlet />;

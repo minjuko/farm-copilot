@@ -5,9 +5,8 @@ import ChangePasswordModal from "./ChangePasswordModal";
 import ChangeUsernameModal from "./ChangeUsernameModal";
 import DeleteAccountModal from "./DeleteAccountModal";
 import { FaUserEdit, FaKey, FaTrashAlt, FaPen, FaCommentDots } from "react-icons/fa";
-import { checkAuthStatus } from "../../../apis/user";
-import { useLoading } from "../../../LoadingContext";
 import TopBarLoader from "../../atoms/TopBarLoader";
+import { useAuth } from "../../../AuthContext";
 
 
 const Container = styled.div`
@@ -96,35 +95,18 @@ const ActionText = styled.div`
 `;
 
 const MyPageTemplate = () => {
-  const { setIsLoading } = useLoading();
-  const [username, setUsername] = useState("");
-  const [isUsernameLoading, setIsUsernameLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, user, updateUser } = useAuth();
+  const [username, setUsername] = useState(user?.username || "");
+  const [isUsernameLoading, setIsUsernameLoading] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      setIsLoading(true);
-      try {
-        if (localStorage.getItem("isLoggedIn") === "true") {
-          setIsAuthenticated(true);
-          const response = await checkAuthStatus();
-          setUsername(response.data.username);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-      }
-      setIsUsernameLoading(false);
-      setIsLoading(false);
-    };
-
-    fetchUserData();
-  }, [setIsLoading]);
+    setUsername(user?.username || "");
+    setIsUsernameLoading(false);
+  }, [user]);
 
   const handlePasswordChange = () => {
     setIsPasswordModalOpen(true);
@@ -199,7 +181,10 @@ const MyPageTemplate = () => {
           <ChangeUsernameModal
             isOpen={isUsernameModalOpen}
             onRequestClose={() => setIsUsernameModalOpen(false)}
-            setUsername={setUsername}
+            setUsername={(newUsername) => {
+              setUsername(newUsername);
+              updateUser({ username: newUsername });
+            }}
           />
           <DeleteAccountModal
             isOpen={isDeleteAccountModalOpen}

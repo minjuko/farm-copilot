@@ -5,6 +5,7 @@ import { confirmPasswordReset } from '../../../apis/user';
 import { getApiErrorMessage } from '../../../apis/error';
 import GlobalLoader from '../../atoms/GlobalLoader';
 import { useLoading } from '../../../LoadingContext';
+import { useAuth } from '../../../AuthContext';
 
 const Container = styled.div`
   display: flex;
@@ -71,6 +72,7 @@ const Message = styled.p`
 
 const PasswordResetConfirmTemplate = () => {
   const { setIsLoading, isLoading } = useLoading();
+  const { clearSession } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const uid = searchParams.get('uid');
@@ -103,6 +105,7 @@ const PasswordResetConfirmTemplate = () => {
     setMessage('');
     try {
       await confirmPasswordReset(uid, token, newPassword);
+      clearSession();
       setMessage('비밀번호가 변경되었습니다. 다시 로그인해주세요.');
       setTimeout(() => navigate('/login'), 1000);
     } catch (requestError) {

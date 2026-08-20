@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { loginUser } from "../../../apis/user";
 import CustomModal from "../../atoms/CustomModal";
 import { useLoading } from '../../../LoadingContext';
+import { useAuth } from '../../../AuthContext';
 
 const Container = styled.div`
   display: flex;
@@ -99,6 +100,7 @@ const StyledLink = styled(RouterLink)`
 
 const LoginTemplate = () => {
   const { setIsLoading, isLoading } = useLoading();
+  const { establishSession, refreshAuth } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -113,12 +115,6 @@ const LoginTemplate = () => {
   const [modalTitle, setModalTitle] = useState("");
   const [isError, setIsError] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") === "true") {
-      navigate('/main');
-    }
-  }, [navigate]);
 
   useEffect(() => {
     const { email, password } = formData;
@@ -167,8 +163,11 @@ const LoginTemplate = () => {
       .then((response) => {
         const { status, message, user_id } = response.data;
         if (status === "success") {
-          localStorage.setItem("userId", user_id);
-          localStorage.setItem("isLoggedIn", "true");
+          establishSession(response.data);
+          if (user_id != null) {
+            localStorage.setItem("userId", user_id);
+          }
+          refreshAuth({ showChecking: false });
           setModalContent("로그인이 완료되었습니다.");
           setModalTitle("성공");
           setIsError(false);

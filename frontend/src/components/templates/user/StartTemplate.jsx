@@ -5,6 +5,7 @@ import { loginUser } from "../../../apis/user";
 import CustomModal from "../../atoms/CustomModal";
 import GlobalLoader from '../../atoms/GlobalLoader';
 import { useLoading } from '../../../LoadingContext';
+import { useAuth } from '../../../AuthContext';
 
 const Container = styled.div`
   display: flex;
@@ -107,6 +108,7 @@ const PrivacyPolicyLink = styled.a`
 
 const StartTemplate = () => {
   const { setIsLoading, isLoading } = useLoading();
+  const { status: authStatus, establishSession, refreshAuth } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
   const [modalTitle, setModalTitle] = useState("");
@@ -114,10 +116,10 @@ const StartTemplate = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") === "true") {
+    if (authStatus === "authenticated") {
       navigate('/main');
     }
-  }, [navigate]);
+  }, [authStatus, navigate]);
 
   const handleTestLogin = async () => {
     const email = "hynm0333@naver.com";
@@ -128,12 +130,14 @@ const StartTemplate = () => {
       const response = await loginUser(email, password);
       const { status, user_id } = response.data;
       if (status === "success") {
-        localStorage.setItem("userId", user_id);
-        localStorage.setItem("isLoggedIn", "true");
+        establishSession(response.data);
+        if (user_id != null) {
+          localStorage.setItem("userId", user_id);
+        }
+        refreshAuth({ showChecking: false });
         setModalTitle("로그인 성공");
         setModalContent("테스트 계정으로 로그인 완료.");
         setIsError(false);
-        window.location.reload();
       }
     } catch (error) {
       setModalTitle("로그인 실패");

@@ -210,12 +210,6 @@ const PolicyAgreement = () => {
   const { ageCheck, usingListCheck } = isAgreed;
 
   useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") === "true") {
-      navigate('/main');
-    }
-  }, [navigate]);
-
-  useEffect(() => {
     const allChecked = ageCheck && usingListCheck;
     setIsAgreed(prev => prev.allChecked === allChecked
       ? prev

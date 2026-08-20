@@ -7,6 +7,7 @@ import CustomModal from "../../atoms/CustomModal";
 import { FaTimes } from "react-icons/fa";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import { useLoading } from "../../../LoadingContext";
+import { useAuth } from "../../../AuthContext";
 
 const ModalContainer = styled(Modal)`
   display: flex;
@@ -100,6 +101,7 @@ const ErrorMessage = styled.div`
 
 const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
   const { setIsLoading, isLoading } = useLoading(); // Access loading context
+  const { clearSession } = useAuth();
   const [formData, setFormData] = useState({
     old_password: "",
     new_password1: "",
@@ -141,6 +143,7 @@ const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
       const response = await changePassword(formData);
 
       if (response.data.status === 'success') {
+        clearSession();
         setModalContent("비밀번호가 변경되었습니다. 다시 로그인을 진행해주세요.");
         setIsSuccessModalOpen(true);
         setError("");

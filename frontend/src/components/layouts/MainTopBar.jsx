@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from "styled-components";
-import { checkAuthStatus, logoutUser } from "../../apis/user";
 import CustomModal from "../atoms/CustomModal";
 import TopBarLoader from "../atoms/TopBarLoader";
 import { useLoading } from "../../LoadingContext";
+import { useAuth } from "../../AuthContext";
 
 const TopBars = styled.nav`
   display: flex;
@@ -73,45 +73,17 @@ const GrayText = styled.span`
 
 const MainTopBar = () => {
   const { setIsLoading, isLoading } = useLoading();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState("");
+  const { status, user, logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const isStartPage = location.pathname === "/";
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      setIsLoading(true);
-      try {
-        const response = await checkAuthStatus();
-        if (response.data.is_authenticated) {
-          setIsLoggedIn(true);
-          setUsername(response.data.username);
-          localStorage.setItem('isLoggedIn', 'true');
-        } else {
-          setIsLoggedIn(false);
-          localStorage.setItem('isLoggedIn', 'false');
-        }
-      } catch (error) {
-        setIsLoggedIn(false);
-        localStorage.setItem('isLoggedIn', 'false');
-      }
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, [setIsLoading]);
-
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await logoutUser();
-      setIsLoggedIn(false);
-      setUsername("");
-      localStorage.setItem('isLoggedIn', 'false');
-      localStorage.clear();
+      await logout();
       setModalContent("로그아웃이 완료되었습니다.");
       setIsModalOpen(true);
     } catch (error) {
@@ -138,10 +110,12 @@ const MainTopBar = () => {
         <LogoText>꾼꾼농사꾼</LogoText>
       </LogoContainer>
       <RightSection>
-        {isLoggedIn ? (
+        {status === "checking" ? (
+          <TopBarLoader color="white" />
+        ) : status === "authenticated" ? (
           <>
             <UsernameText>
-              {username}
+              {user?.username}
               <GrayText>님</GrayText>
             </UsernameText>
             <TopBarButton onClick={handleLogout}>

@@ -9,6 +9,7 @@ import ConfirmModal from '../../atoms/ConfirmModal';
 import Modal from 'react-modal';
 import { useLoading } from '../../../LoadingContext';
 import GlobalLoader from "../../atoms/GlobalLoader";
+import { useAuth } from '../../../AuthContext';
 
 const Container = styled.div`
   display: flex;
@@ -218,8 +219,7 @@ const ChatListTemplate = () => {
   const [error, setError] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const { isAuthenticated: isLoggedIn } = useAuth();
   const sessionsPerPage = 5;
   const pageCount = Math.ceil(chatSessions.length / sessionsPerPage);
   const offset = currentPage * sessionsPerPage;

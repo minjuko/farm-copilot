@@ -34,11 +34,13 @@ import ChatListTemplate from "./components/templates/chat/ChatListTemplate";
 import ChatTemplate from "./components/templates/chat/ChatTemplate";
 import AuthRoute from "./components/layouts/AuthRoute";
 import NoAuthRoute from "./components/layouts/NoAuthRoute";
+import { AuthProvider } from "./AuthContext";
 
 function App() {
   return (
     <LoadingProvider>
-      <BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           <Route element={<MainLayout />}>
             {/* user */}
@@ -52,8 +54,8 @@ function App() {
               <Route path="/signup" element={<PolicyAgreement />} />
               <Route path="/login" element={<LoginTemplate />} />
               <Route path="/password_reset" element={<PasswordResetTemplate />} />
-              <Route path="/password-reset-confirm" element={<PasswordResetConfirmTemplate />} />
             </Route>
+            <Route path="/password-reset-confirm" element={<PasswordResetConfirmTemplate />} />
 
             {/* auth */}
             <Route element={<AuthRoute />}>
@@ -85,7 +87,8 @@ function App() {
             <Route path="chat/:sessionid" element={<ChatTemplate />} />
           </Route>
         </Routes>
-      </BrowserRouter>
+        </BrowserRouter>
+      </AuthProvider>
     </LoadingProvider>
   );
 }

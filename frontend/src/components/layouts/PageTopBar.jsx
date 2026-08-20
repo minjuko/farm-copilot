@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from "styled-components";
-import { checkAuthStatus, logoutUser } from "../../apis/user";
 import { FaArrowLeft, FaUser, FaSignInAlt, FaSignOutAlt } from "react-icons/fa";
 import CustomModal from "../atoms/CustomModal";
 import TopBarLoader from "../atoms/TopBarLoader";
 import { useLoading } from "../../LoadingContext";
+import { useAuth } from "../../AuthContext";
 
 const TopBars = styled.nav`
   display: flex;
@@ -71,8 +71,7 @@ const IconButton = styled.button`
 
 const PageTopBar = () => {
   const { setIsLoading, isLoading } = useLoading();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState("");
+  const { status, user, logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
   const navigate = useNavigate();
@@ -139,35 +138,10 @@ const PageTopBar = () => {
     return regex.test(location.pathname) && !location.pathname.startsWith("/post/create");
   });
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      setIsLoading(true);
-      try {
-        const response = await checkAuthStatus();
-        if (response.data.is_authenticated) {
-          setIsLoggedIn(true);
-          setUsername(response.data.username);
-        } else {
-          setIsLoggedIn(false);
-        }
-      } catch (error) {
-        console.error("Failed to check auth status:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [setIsLoading]);
-
   const handleLogout = async () => {
     setIsLoading(true);
      try {
-      await logoutUser();
-      setIsLoggedIn(false);
-      setUsername("");
-      localStorage.setItem('isLoggedIn', 'false');
-      localStorage.clear();
+      await logout();
       setModalContent("로그아웃이 완료되었습니다.");
       setIsModalOpen(true);
     }  catch (error) {
@@ -201,13 +175,15 @@ const PageTopBar = () => {
         </LeftSection>
         <Title>{pageTitle}</Title>
         <RightSection>
-          {isLoggedIn ? (
+          {status === "checking" ? (
+            <TopBarLoader color="#4aaa87" />
+          ) : status === "authenticated" ? (
             isLoading ? (
               <TopBarLoader color="#4aaa87" />
             ) : (
               <>
                 <IconButton onClick={() => navigate("/mypage")}>
-                  <FaUser title={`${username}님`} />
+                  <FaUser title={`${user?.username || ""}님`} />
                 </IconButton>
                 <IconButton onClick={handleLogout}>
                   <FaSignOutAlt title="로그아웃" />
