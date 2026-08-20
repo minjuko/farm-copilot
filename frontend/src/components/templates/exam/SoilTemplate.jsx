@@ -7,6 +7,7 @@ import { getApiErrorMessage } from "../../../apis/error";
 import { useLoading } from "../../../LoadingContext";
 import CustomModal from '../../atoms/CustomModal';
 import SoilResults from "./SoilResults";
+import { buildFertilizerPayload } from "./soilFlow";
 
 const Container = styled.div`
   display: flex;
@@ -192,40 +193,58 @@ const SoilTemplate = () => {
   const [showCropList, setShowCropList] = useState(false);
   const [error, setError] = useState(null);
   const [errorModalIsOpen, setErrorModalIsOpen] = useState(false);
+  const [isSoilLoading, setIsSoilLoading] = useState(false);
+  const [isFertilizerLoading, setIsFertilizerLoading] = useState(false);
   const navigate = useNavigate();
 
   const inputRef = useRef(null);
+  const soilRequestInFlight = useRef(false);
+  const fertilizerRequestInFlight = useRef(false);
 
   const handleCropNameChange = (e) => {
     const value = e.target.value;
     setCropName(value);
     setFilteredCropNames(cropNames.filter(crop => crop.toLowerCase().includes(value.toLowerCase())));
     setShowCropList(true);
+    setSoilData([]);
+    setSelectedSample(null);
+    setFertilizerData(null);
   };
 
-  const handleAddressChange = (e) => setAddress(e.target.value);
+  const handleAddressChange = (e) => {
+    setAddress(e.target.value);
+    setSoilData([]);
+    setSelectedSample(null);
+    setFertilizerData(null);
+  };
 
   const handleSampleChange = async (e) => {
-    const selectedSampleId = e.target.value;
-    const selected = soilData.find(sample => sample.No === selectedSampleId);
+    if (fertilizerRequestInFlight.current) return;
+    const selected = soilData[Number(e.target.value)];
     setSelectedSample(selected);
+    setFertilizerData(null);
+
+    const { payload, error: payloadError } = buildFertilizerPayload({
+      cropName,
+      address: address.trim(),
+      soilItem: selected,
+    });
+    if (payloadError) {
+      setError(payloadError);
+      setErrorModalIsOpen(true);
+      return;
+    }
 
     try {
+      fertilizerRequestInFlight.current = true;
+      setIsFertilizerLoading(true);
       setIsLoading(true);
-      const response = await getSoilFertilizerInfo({
-        crop_code: cropName,
-        address: address,
-        acid: selected.ACID ?? 0,
-        om: selected.OM ?? 0,
-        vldpha: selected.VLDPHA ?? 0,
-        posifert_K: selected.POSIFERT_K ?? 0,
-        posifert_Ca: selected.POSIFERT_CA ?? 0,
-        posifert_Mg: selected.POSIFERT_MG ?? 0,
-        vldsia: selected.VLDSIA ?? 0,
-        selc: selected.SELC ?? 0,
-        PNU_Nm: selected.PNU_Nm
-      });
-      setFertilizerData(response.data.data);
+      const response = await getSoilFertilizerInfo(payload);
+      const fertilizerItems = response?.data?.data;
+      if (!Array.isArray(fertilizerItems) || fertilizerItems.length === 0) {
+        throw new Error("EMPTY_FERTILIZER_RESULT");
+      }
+      setFertilizerData(fertilizerItems);
       setError(null);
     } catch (err) {
       setError(getApiErrorMessage(
@@ -235,6 +254,8 @@ const SoilTemplate = () => {
       setErrorModalIsOpen(true);
       setFertilizerData(null);
     } finally {
+      fertilizerRequestInFlight.current = false;
+      setIsFertilizerLoading(false);
       setIsLoading(false);
     }
   };
@@ -255,16 +276,22 @@ const SoilTemplate = () => {
   }, []);
 
   const fetchSoilExamData = async () => {
+    if (soilRequestInFlight.current) return;
     try {
-      if (!cropNames.includes(cropName)) {
+      if (!cropNames.includes(cropName) || !address.trim()) {
         setError('작물이름과 주소를 정확히 입력해 주세요.');
         setErrorModalIsOpen(true);
         return;
       }
 
+      soilRequestInFlight.current = true;
+      setIsSoilLoading(true);
       setIsLoading(true);
-      const response = await getSoilExamData(cropName, address);
-      if (response.data.soil_data.length === 0) {
+      setSelectedSample(null);
+      setFertilizerData(null);
+      const response = await getSoilExamData(cropName, address.trim());
+      const soilItems = response?.data?.soil_data;
+      if (!Array.isArray(soilItems) || soilItems.length === 0) {
         setError('현재 주소에 해당하는 데이터가 없습니다.');
         setErrorModalIsOpen(true);
         setSoilData([]);
@@ -272,7 +299,7 @@ const SoilTemplate = () => {
         setFertilizerData(null);
         return;
       }
-      setSoilData(response.data.soil_data);
+      setSoilData(soilItems);
       setSelectedSample(null);
       setError(null);
     } catch (err) {
@@ -283,6 +310,8 @@ const SoilTemplate = () => {
       setErrorModalIsOpen(true);
       setSoilData([]);
     } finally {
+      soilRequestInFlight.current = false;
+      setIsSoilLoading(false);
       setIsLoading(false);
     }
   };
@@ -294,6 +323,9 @@ const SoilTemplate = () => {
   const handleCropSelect = (crop) => {
     setCropName(crop);
     setShowCropList(false);
+    setSoilData([]);
+    setSelectedSample(null);
+    setFertilizerData(null);
   };
 
   const handleClickOutside = (event) => {
@@ -358,17 +390,17 @@ const SoilTemplate = () => {
               onKeyDown={handleKeyDown}
               placeholder="예) 광주광역시 수완동"
             />
-            <SearchButton onClick={fetchSoilExamData}>주소 검색 <SearchIcon /></SearchButton>
+            <SearchButton onClick={fetchSoilExamData} disabled={isSoilLoading}>주소 검색 <SearchIcon /></SearchButton>
           </AddressContainer>
           <p style={{ color: '#7f8c8d', fontSize: '0.875rem', marginTop: '0.5rem' }}>예시) 광주광역시 용전동, 전라남도 순천시 용당동</p>
         </InputContainer>
         {soilData.length > 0 && (
           <InputContainer>
             <InputLabel>상세 주소 선택</InputLabel>
-            <Select onChange={handleSampleChange} defaultValue="">
+            <Select onChange={handleSampleChange} defaultValue="" disabled={isFertilizerLoading}>
               <option value="" disabled>선택하세요</option>
-              {soilData.map(sample => (
-                <option key={sample.No} value={sample.No}>
+              {soilData.map((sample, index) => (
+                <option key={`${sample.No ?? sample.PNU_Nm}-${index}`} value={index}>
                   {sample.PNU_Nm}
                 </option>
               ))}
@@ -388,11 +420,12 @@ const SoilTemplate = () => {
         overlayStyles={{ zIndex: 1103 }}
         contentStyles={{ zIndex: 1104 }}
       />
-      {selectedSample && fertilizerData && (
+      {selectedSample && (
         <SoilResults
           cropName={cropName}
           selectedSoilSample={selectedSample}
           fertilizerData={fertilizerData}
+          isFertilizerLoading={isFertilizerLoading}
           handleBackToList={handleBackToList}
         />
       )}

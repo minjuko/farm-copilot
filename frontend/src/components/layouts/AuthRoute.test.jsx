@@ -39,6 +39,9 @@ const renderRoutes = (initialPath, extra = null) => render(
           <Route path="/my_commented_posts" element={<div>my commented posts</div>} />
           <Route path="/cropselection" element={<div>prediction sessions</div>} />
           <Route path="/sessiondetails/:sessionId" element={<div>prediction detail</div>} />
+          <Route path="/soil" element={<div>soil exam</div>} />
+          <Route path="/soillist" element={<div>soil list</div>} />
+          <Route path="/soil_details" element={<div>soil detail</div>} />
         </Route>
         <Route element={<NoAuthRoute />}>
           <Route path="/login" element={<div>login page</div>} />
@@ -118,6 +121,12 @@ test.each(["/my_posts", "/my_commented_posts"])("protects community route %s", a
 });
 
 test.each(["/cropselection", "/sessiondetails/session-1"])("protects prediction route %s", async (path) => {
+  checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
+  renderRoutes(path);
+  expect(await screen.findByText("login page")).toBeInTheDocument();
+});
+
+test.each(["/soil", "/soillist", "/soil_details"])("protects soil route %s", async (path) => {
   checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
   renderRoutes(path);
   expect(await screen.findByText("login page")).toBeInTheDocument();
