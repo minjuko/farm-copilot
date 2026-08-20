@@ -1,9 +1,13 @@
-import React, { useCallback, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useDropzone } from "react-dropzone";
 import { uploadImage } from "../../../apis/predict";
-import { getApiErrorMessage } from "../../../apis/error";
+import {
+  getDetectionErrorMessage,
+  normalizeDetectionResult,
+  validateDetectionFile,
+} from "./detectFlow";
 import { FaCamera, FaFile } from "react-icons/fa";
 import CustomModal from '../../atoms/CustomModal';
 import GlobalLoader from '../../atoms/GlobalLoader';
@@ -154,22 +158,6 @@ const PlaceholderText = styled.p`
   }
 `;
 
-const ResultContainer = styled.div`
-  margin-top: 1.25rem;
-  font-size: 1rem;
-  color: #333;
-  text-align: center;
-  background-color: #fff;
-  padding: 0.625rem;
-  border-radius: 0.625rem;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
-
-  @media (min-width: 768px) {
-    font-size: 1.25rem; 
-    padding: 1rem;
-  }
-`;
-
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -221,43 +209,75 @@ const DiagnosisTemplate = () => {
   const { setIsLoading, isLoading } = useLoading();
   const [image, setImage] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [result, setResult] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
   const navigate = useNavigate();
   const cameraInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const uploadInFlight = useRef(false);
 
-  const onDrop = useCallback((acceptedFiles) => {
-    const file = acceptedFiles[0];
+  const selectFile = useCallback((file) => {
+    const validationError = validateDetectionFile(file);
+    if (validationError) {
+      setImage(null);
+      setSelectedFile(null);
+      setModalContent(validationError);
+      setIsModalOpen(true);
+      return;
+    }
     setImage(URL.createObjectURL(file));
     setSelectedFile(file);
   }, []);
 
+  useEffect(() => () => {
+    if (image) URL.revokeObjectURL(image);
+  }, [image]);
+
+  const onDrop = useCallback((acceptedFiles) => {
+    const file = acceptedFiles[0];
+    selectFile(file);
+  }, [selectFile]);
+
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
+    onDropRejected: () => {
+      setImage(null);
+      setSelectedFile(null);
+      setModalContent("JPEG, PNG, WebP 이미지 파일만 선택할 수 있습니다.");
+      setIsModalOpen(true);
+    },
+    accept: {
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"],
+      "image/webp": [".webp"],
+    },
+    multiple: false,
     noClick: true,
   });
 
   const handleDiagnose = async () => {
-    if (!selectedFile) {
-      setModalContent('이미지를 업로드해주세요');
+    const validationError = validateDetectionFile(selectedFile);
+    if (validationError) {
+      setModalContent(validationError);
       setIsModalOpen(true);
       return;
     }
+    if (uploadInFlight.current) return;
 
     try {
+      uploadInFlight.current = true;
       setIsLoading(true);
       const response = await uploadImage(selectedFile);
-      setResult(response.data.result);
-      navigate('/info', { state: { diagnosisResult: response.data } });
+      const diagnosisResult = normalizeDetectionResult(response?.data);
+      if (!diagnosisResult) {
+        throw new Error("MALFORMED_DETECTION_RESPONSE");
+      }
+      navigate('/info', { state: { diagnosisResult } });
     } catch (error) {
-      setModalContent(getApiErrorMessage(
-        error,
-        '이미지 진단 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
-      ));
+      setModalContent(getDetectionErrorMessage(error));
       setIsModalOpen(true);
     } finally {
+      uploadInFlight.current = false;
       setIsLoading(false);
     }
   };
@@ -276,18 +296,14 @@ const DiagnosisTemplate = () => {
 
   const handleCameraInputChange = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setImage(URL.createObjectURL(file));
-      setSelectedFile(file);
-    }
+    selectFile(file);
+    event.target.value = "";
   };
 
   const handleFileInputChange = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      setImage(URL.createObjectURL(file));
-      setSelectedFile(file);
-    }
+    selectFile(file);
+    event.target.value = "";
   };
 
   return (
@@ -325,15 +341,14 @@ const DiagnosisTemplate = () => {
           )}
         </UploadContainer>
         <ButtonContainer>
-          <DiagnoseButton onClick={handleDiagnose}>
+          <DiagnoseButton onClick={handleDiagnose} disabled={isLoading}>
             <FaFile />
             진단하기
           </DiagnoseButton>
         </ButtonContainer>
-        {result && <ResultContainer>{result}</ResultContainer>}
         <input
           type="file"
-          accept="image/*"
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
           capture="camera"
           ref={cameraInputRef}
           style={{ display: 'none' }}

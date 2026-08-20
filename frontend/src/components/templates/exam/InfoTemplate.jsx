@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { formatDetectionConfidence, normalizeDetectionResult } from "./detectFlow";
 
 const PageContainer = styled.div`
   display: flex;
@@ -136,14 +137,21 @@ const BackButton = styled.button`
 const InfoTemplate = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { diagnosisResult } = location.state || {};
+  const diagnosisResult = normalizeDetectionResult(location.state?.diagnosisResult);
+  const [userImageFailed, setUserImageFailed] = useState(false);
+  const [dbImageFailed, setDbImageFailed] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   if (!diagnosisResult) {
-    return <div>No diagnosis result available.</div>;
+    return (
+      <PageContainer>
+        <p>표시할 수 있는 진단 결과가 없습니다.</p>
+        <BackButton onClick={() => navigate('/diagnosislist')}>목록으로 돌아가기</BackButton>
+      </PageContainer>
+    );
   }
 
   const {
@@ -158,7 +166,7 @@ const InfoTemplate = () => {
     detection_date
   } = diagnosisResult;
 
-  const pesticides = pesticide_name.split("\n");
+  const pesticides = pesticide_name.split("\n").map((item) => item.trim()).filter(Boolean);
 
   return (
     <PageContainer>
@@ -167,13 +175,17 @@ const InfoTemplate = () => {
           <div>
             <ImageLabel>사용자 이미지</ImageLabel>
             <ImageContainer>
-              {user_image_url ? <Image src={user_image_url} alt="User uploaded Pest" /> : <p>No Image Available</p>}
+              {user_image_url && !userImageFailed
+                ? <Image src={user_image_url} alt="사용자 진단 이미지" onError={() => setUserImageFailed(true)} />
+                : <p>이미지를 표시할 수 없습니다.</p>}
             </ImageContainer>
           </div>
           <div>
             <ImageLabel>질병 이미지</ImageLabel>
             <ImageContainer>
-              {db_image_url ? <Image src={db_image_url} alt="Pest from DB" /> : <p>No Image Available</p>}
+              {db_image_url && !dbImageFailed
+                ? <Image src={db_image_url} alt="병해충 참고 이미지" onError={() => setDbImageFailed(true)} />
+                : <p>이미지를 표시할 수 없습니다.</p>}
             </ImageContainer>
           </div>
         </SingleRowContainer>
@@ -184,17 +196,10 @@ const InfoTemplate = () => {
           </InfoBox>
           <InfoBox>
             <InfoLabel>모델 학습 결과</InfoLabel>
-            <InfoText>{pest_name === "0" ? "정상" : confidence.toFixed(2)}</InfoText>
+            <InfoText>{formatDetectionConfidence(confidence)}</InfoText>
           </InfoBox>
         </SingleRowContainer>
-        {pest_name === "0" ? (
-          <InfoBox>
-            <InfoLabel>진단 결과</InfoLabel>
-            <InfoText>병해충이 탐지되지 않았습니다.</InfoText>
-          </InfoBox>
-        ) : (
-          <>
-            <InfoBox>
+        <InfoBox>
               <InfoLabel>질병 이름</InfoLabel>
               <InfoText>{pest_name}</InfoText>
             </InfoBox>
@@ -222,7 +227,7 @@ const InfoTemplate = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {pesticides.map((pesticide, index) => (
+                    {(pesticides.length ? pesticides : ["정보 없음"]).map((pesticide, index) => (
                       <tr key={index}>
                         <TableCell>{pesticide}</TableCell>
                       </tr>
@@ -231,8 +236,6 @@ const InfoTemplate = () => {
                 </Table>
               </InfoBox>
             </InfoContainer>
-          </>
-        )}
       </LayoutContainer>
       <BackButton onClick={() => navigate('/diagnosislist')}>목록으로 돌아가기</BackButton>
     </PageContainer>

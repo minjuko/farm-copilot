@@ -7,6 +7,11 @@ import ConfirmModal from '../../atoms/ConfirmModal';
 import ReactPaginate from 'react-paginate';
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
+import {
+  formatDetectionConfidence,
+  normalizeDetectionResult,
+  normalizeMediaUrl,
+} from "./detectFlow";
 
 const PageContainer = styled.div`
   display: flex;
@@ -223,6 +228,7 @@ const DiagnosisListTemplate = () => {
   const [sessionIdToDelete, setSessionIdToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const navigate = useNavigate();
 
   const sessionsPerPage = 4;
@@ -234,9 +240,12 @@ const DiagnosisListTemplate = () => {
       setIsLoading(true);
       try {
         const response = await fetchDetectionSessions();
+        if (!Array.isArray(response?.data)) throw new Error("MALFORMED_DETECTION_HISTORY");
         setSessions(response.data);
+        setLoadError("");
       } catch (error) {
-        alert("세션을 불러오는데 실패했습니다.");
+        setSessions([]);
+        setLoadError("진단 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
       }
       setIsLoading(false);
       setLoading(false);
@@ -250,7 +259,9 @@ const DiagnosisListTemplate = () => {
       setIsLoading(true);
       setLoading(true);
       const response = await fetchSessionDetails(sessionId);
-      navigate('/info', { state: { diagnosisResult: response.data } });
+      const diagnosisResult = normalizeDetectionResult(response?.data);
+      if (!diagnosisResult) throw new Error("MALFORMED_DETECTION_RESULT");
+      navigate('/info', { state: { diagnosisResult } });
     } catch (error) {
       alert('세션을 불러오는데 실패했습니다. 다시 시도해주세요.');
     } finally {
@@ -299,18 +310,26 @@ const DiagnosisListTemplate = () => {
       </AddButtonContainer>
 
       <Content>
-        {sessions.length === 0 ? (
+        {loadError ? (
+          <EmptyMessage>{loadError}</EmptyMessage>
+        ) : sessions.length === 0 ? (
           <EmptyMessage>진단 목록이 존재하지 않습니다. 첫 진단을 시작해보세요!</EmptyMessage>
         ) : (
           <>
             <SessionList>
               {sessions.slice(offset, offset + sessionsPerPage).map(session => (
-                <SessionItem key={session.session_id} onClick={() => handleSessionClick(session.session_id)} tabIndex="0" aria-label={`${session.pest_name === "0" ? "정상" : session.pest_name} 진단 결과 보기`}>
-                  <SessionImage src={session.user_image_url} alt={session.pest_name === "0" ? "정상" : session.pest_name} />
+                <SessionItem key={session.session_id} onClick={() => handleSessionClick(session.session_id)} tabIndex="0" aria-label={`${session.pest_name || "정보 없음"} 진단 결과 보기`}>
+                  {normalizeMediaUrl(session.user_image_url) && (
+                    <SessionImage
+                      src={normalizeMediaUrl(session.user_image_url)}
+                      alt={session.pest_name || "진단 이미지"}
+                      onError={(event) => { event.currentTarget.style.display = "none"; }}
+                    />
+                  )}
                   <SessionInfo>
-                    <div><strong>질병명:</strong> {session.pest_name === "0" ? "정상" : session.pest_name}</div>
-                    <div><strong>진단 날짜:</strong> {session.detection_date}</div>
-                    <div><strong>AI 모델 정확도:</strong> {session.pest_name === "0" ? "정상" : session.confidence.toFixed(2)}</div>
+                    <div><strong>질병명:</strong> {session.pest_name && session.pest_name !== "0" ? session.pest_name : "정보 없음"}</div>
+                    <div><strong>진단 날짜:</strong> {session.detection_date || "정보 없음"}</div>
+                    <div><strong>AI 모델 정확도:</strong> {formatDetectionConfidence(session.confidence)}</div>
                   </SessionInfo>
                   <DeleteButton onClick={(e) => {
                     e.stopPropagation();

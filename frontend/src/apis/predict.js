@@ -21,9 +21,7 @@ export const uploadImage = (file) => {
   formData.append("image", file);
 
   return instance.post("/detect/upload/", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { "Content-Type": undefined },
   });
 };
 
