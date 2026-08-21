@@ -378,7 +378,7 @@ const ChatListTemplate = () => {
               </ChatList>
             </>
           )}
-          <PaginationContainer>
+          {pageCount > 0 && <PaginationContainer>
             <ReactPaginate
               previousLabel={"이전"}
               nextLabel={"다음"}
@@ -394,10 +394,11 @@ const ChatListTemplate = () => {
               disabledClassName={"disabled"}
               forcePage={currentPage}
             />
-          </PaginationContainer>
+          </PaginationContainer>}
           <ModalContainer
             isOpen={isModalOpen}
             onRequestClose={closeModal}
+            appElement={document.getElementById('root')}
           >
             <CloseButton onClick={closeModal}><FaTimes /></CloseButton>
             <ModalTitle>{editingSession ? '대화 제목 수정' : '새 대화 생성'}</ModalTitle>
