@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { loginUser } from "../../../apis/user";
-import CustomModal from "../../atoms/CustomModal";
-import GlobalLoader from '../../atoms/GlobalLoader';
-import { useLoading } from '../../../LoadingContext';
 import { useAuth } from '../../../AuthContext';
 
 const Container = styled.div`
@@ -58,18 +54,6 @@ const Button = styled.button`
   }
 `;
 
-const ExplanationText = styled.p`
-  font-size: 0.875rem;
-  color: #666;
-  margin-top: -0.75rem;
-  margin-bottom: 1rem;
-  text-align: center;
-
-  @media (max-width: 768px) {
-    font-size: 0.75rem;
-  }
-`;
-
 const Logo = styled.img`
   width: 10rem;
   height: 10rem;
@@ -107,12 +91,7 @@ const PrivacyPolicyLink = styled.a`
 `;
 
 const StartTemplate = () => {
-  const { setIsLoading, isLoading } = useLoading();
-  const { status: authStatus, establishSession, refreshAuth } = useAuth();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState("");
-  const [modalTitle, setModalTitle] = useState("");
-  const [isError, setIsError] = useState(false);
+  const { status: authStatus } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -121,43 +100,8 @@ const StartTemplate = () => {
     }
   }, [authStatus, navigate]);
 
-  const handleTestLogin = async () => {
-    const email = "hynm0333@naver.com";
-    const password = "abcd1234!";
-
-    setIsLoading(true);
-    try {
-      const response = await loginUser(email, password);
-      const { status, user_id } = response.data;
-      if (status === "success") {
-        establishSession(response.data);
-        if (user_id != null) {
-          localStorage.setItem("userId", user_id);
-        }
-        refreshAuth({ showChecking: false });
-        setModalTitle("로그인 성공");
-        setModalContent("테스트 계정으로 로그인 완료.");
-        setIsError(false);
-      }
-    } catch (error) {
-      setModalTitle("로그인 실패");
-      setModalContent("로그인 과정에서 오류가 발생했습니다.");
-      setIsError(true);
-    } finally {
-      setIsModalOpen(true);
-      setIsLoading(false);
-    }
-  };
-
   const handleLoginRedirect = () => {
     navigate('/login');
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    if (!isError) {
-      navigate("/main");
-    }
   };
 
   const handlePrivacyPolicyClick = () => {
@@ -166,20 +110,9 @@ const StartTemplate = () => {
 
   return (
     <Container>
-      <GlobalLoader text={isLoading ? "로그인 중입니다..." : ""} />
       <Logo src={`${process.env.PUBLIC_URL}/android-chrome-192x192.png`} alt="Logo" />
       <Title>꾼꾼농사꾼에 오신 것을 환영합니다!</Title>
-      <ExplanationText>테스트 계정으로 접속하면 회원가입 과정 없이 서비스 이용할 수 있습니다.</ExplanationText>
-      <Button onClick={handleTestLogin}>테스트 계정으로 접속하기</Button>
       <Button onClick={handleLoginRedirect}>로그인하러가기</Button>
-      <CustomModal
-        isOpen={isModalOpen}
-        onRequestClose={closeModal}
-        title={modalTitle}
-        content={modalContent}
-        showConfirmButton={false}
-        isError={isError}
-      />
       <Footer>
         © 2024 꾼꾼농사꾼. All rights reserved.
         <PrivacyPolicyLink onClick={handlePrivacyPolicyClick}>개인정보 처리방침</PrivacyPolicyLink>

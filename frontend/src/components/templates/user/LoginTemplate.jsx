@@ -161,12 +161,9 @@ const LoginTemplate = () => {
     setIsLoading(true);
     loginUser(email, password)
       .then((response) => {
-        const { status, message, user_id } = response.data;
+        const { status, message } = response.data;
         if (status === "success") {
           establishSession(response.data);
-          if (user_id != null) {
-            localStorage.setItem("userId", user_id);
-          }
           refreshAuth({ showChecking: false });
           setModalContent("로그인이 완료되었습니다.");
           setModalTitle("성공");

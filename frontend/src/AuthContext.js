@@ -5,11 +5,6 @@ const AuthContext = createContext(null);
 
 const unauthenticatedState = { status: "unauthenticated", user: null };
 
-const clearStoredUser = () => {
-  localStorage.removeItem("isLoggedIn");
-  localStorage.removeItem("userId");
-};
-
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState({ status: "checking", user: null });
 
@@ -24,11 +19,9 @@ export const AuthProvider = ({ children }) => {
         setAuth({ status: "authenticated", user: response.data });
         return response.data;
       }
-      clearStoredUser();
       setAuth(unauthenticatedState);
       return null;
     } catch (error) {
-      clearStoredUser();
       setAuth(unauthenticatedState);
       return null;
     }
@@ -44,7 +37,6 @@ export const AuthProvider = ({ children }) => {
 
   const clearSession = useCallback(() => {
     setAuth(unauthenticatedState);
-    clearStoredUser();
   }, []);
 
   const updateUser = useCallback((updates) => {
