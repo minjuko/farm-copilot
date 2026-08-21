@@ -4,10 +4,6 @@
 > 작물 수익 예측 · 토양 분석 · 병해충 진단 · 농업 챗봇 · 커뮤니티를
 > 하나의 서비스에서 제공
 
-<p align="center">
-  <img src="./docs/readme/01_main.png" alt="꾼꾼농사꾼 모바일 메인 화면" width="320" />
-</p>
-
 ## 프로젝트 소개
 
 농업을 처음 시작하는 사용자는 **작물 선정, 예상 수익, 토양 상태, 병해충
@@ -17,7 +13,9 @@
 정보를 하나의 흐름으로 제공하는 웹 서비스입니다.
 
 -   **대상**: 귀농·귀촌인, 청년 농부 등 초보 농업인
+-   **프로젝트**: KT AIVLE School 5기 빅프로젝트
 -   **형태**: React SPA + Django API 기반 팀 프로젝트
+-   **팀 구성**: 총 8명 · Frontend 3명 · Backend/AI 5명  
 -   **핵심 기능**: 수익 예측 · 토양/비료 분석 · 병해충 진단 · AI 챗봇 ·
     농업 커뮤니티
 
@@ -38,20 +36,22 @@
 
 <table>
   <tr>
-    <th width="50%">작물 수익 예측</th>
-    <th width="50%">토양 분석 · 비료 처방</th>
+    <th colspan="3" width="50%">메인 화면</th>
+    <th colspan="3" width="50%">작물 수익 예측</th>
   </tr>
   <tr>
-    <td align="center"><img src="./docs/readme/02_prediction_result.png" alt="작물 수익 예측 결과 화면" width="320" /></td>
-    <td align="center"><img src="./docs/readme/03_soil_fertilizer.png" alt="토양 분석 및 비료 처방 화면" width="320" /></td>
+    <td align="center" colspan="3"><img src="./docs/readme/01_main.png" alt="꾼꾼농사꾼 모바일 메인 화면" width="320" /></td>
+    <td align="center" colspan="3"><img src="./docs/readme/02_prediction_result.png" alt="작물 수익 예측 결과 화면" width="320" /></td>
   </tr>
   <tr>
-    <th>농업 챗봇</th>
-    <th>커뮤니티</th>
+    <th colspan="2" width="33.33%">토양 분석 · 비료 처방</th>
+    <th colspan="2" width="33.33%">병해충 탐지</th>
+    <th colspan="2" width="33.33%">농업 챗봇</th>
   </tr>
   <tr>
-    <td align="center"><img src="./docs/readme/04_chatbot.png" alt="농업 챗봇 대화 화면" width="320" /></td>
-    <td align="center"><img src="./docs/readme/05_community.png" alt="농업 커뮤니티 게시글 및 댓글 화면" width="320" /></td>
+    <td align="center" colspan="2"><img src="./docs/readme/03_soil_fertilizer.png" alt="토양 분석 및 비료 처방 화면" width="280" /></td>
+    <td align="center" colspan="2"><img src="./docs/readme/05_pest_detection.png" alt="병해충 탐지 결과 화면" width="280" /></td>
+    <td align="center" colspan="2"><img src="./docs/readme/04_chatbot.png" alt="농업 챗봇 대화 화면" width="280" /></td>
   </tr>
 </table>
 
@@ -101,19 +101,6 @@ flowchart LR
 ```
 
 ------------------------------------------------------------------------
-
-## 팀 구성 및 역할
-
-| 담당 | 주요 역할 |
-|---|---|
-| **고민주** | **Frontend — 인증, 메인·공통 UI, 커뮤니티 / 마이페이지·챗봇 UI 공동 개발** |
-| 김현지 | Prediction Web/AI, Detect Frontend, Soil Backend 공동 개발 |
-| 박용범 | Prediction Frontend, Soil Frontend |
-| 박수환 | Prediction AI, Chatbot Backend |
-| 이건 | Prediction Web/AI |
-| 이승현 | Prediction Web, Soil Backend |
-| 한명준 | 마이페이지·회원정보·Chatbot Frontend 공동 개발 |
-| 이한웅 | 회원·커뮤니티·Detect Backend |
 
 ## 담당 역할 및 기여
 
@@ -200,9 +187,6 @@ kunkunnongsakun/
 -   Frontend·Backend 회귀 테스트 및 production build 검증
 -   credential·runtime artifact를 source와 분리
 
-> 후속 개선은 **2024년 팀 프로젝트 당시 개인 기여와 구분되는 별도
-> 리팩터링 작업**입니다.
-
 ------------------------------------------------------------------------
 
 ## 외부 데이터 및 API
@@ -211,41 +195,4 @@ kunkunnongsakun/
 -   기상청 기상 데이터
 -   농촌진흥청 토양검정 정보
 -   농촌진흥청 비료사용처방 정보
--   Kakao Local API
-
-------------------------------------------------------------------------
-
-## 실행
-
-### Backend
-
-``` bash
-cd backend
-python -m venv .venv
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-```
-
-### Frontend
-
-``` bash
-cd frontend
-npm ci
-npm start
-```
-
-환경별 API Key와 Database 설정은 `.env.example`을 참고합니다. 실제
-credential과 AI 모델·Vector DB artifact는 Repository에 포함하지
-않습니다.
-
-------------------------------------------------------------------------
-
-## Project History
-
-**2024 Team Project**\
-초보 농업인을 위한 농업 코파일럿 서비스 기획·개발
-
-**2026 Portfolio Refactoring**\
-원본 프로젝트를 기반으로 Repository 통합, API 최신화, 인증·오류
-처리·테스트 및 실행 환경 개선
+-   Kakao Map API
