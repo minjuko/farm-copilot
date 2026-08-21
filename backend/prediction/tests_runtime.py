@@ -11,6 +11,7 @@ from aivle_big.exceptions import NotFoundError, ServiceUnavailableError
 from login.models import User
 
 from .services import fetch_market_prices, fetch_weather_data
+from .models import PredictionResult, PredictionSession
 from .views import fetch_crop_data, read_csv_data
 
 
@@ -107,6 +108,19 @@ class PredictionRuntimeTests(TestCase):
 
     @patch("prediction.services.requests.get")
     @patch.dict(os.environ, {"DATA_GO_KR_MARKET_SERVICE_KEY": "test-key"}, clear=True)
+    def test_market_uses_public_api_maximum_page_size(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {"response": {
+            "header": {"resultCode": "00"}, "body": {"totalCount": 0, "items": {"item": []}}
+        }})
+
+        with self.assertRaises(NotFoundError):
+            codes = self._market_codes()
+            fetch_market_prices(codes.iloc[0, 2], "region", "20260101", "20260102", codes, {})
+
+        self.assertEqual(mock_get.call_args.kwargs["params"]["numOfRows"], 1000)
+
+    @patch("prediction.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_MARKET_SERVICE_KEY": "test-key"}, clear=True)
     def test_market_empty_api_response_is_controlled(self, mock_get):
         mock_get.return_value = Mock(status_code=200, json=lambda: {"response": {
             "header": {"resultCode": "00"}, "body": {"totalCount": 0, "items": {"item": []}}
@@ -143,6 +157,33 @@ class PredictionRuntimeTests(TestCase):
         self.assertIsNotNone(income)
         self.assertIsInstance(adjusted, dict)
         self.assertIsNotNone(latest_year)
+
+    @patch("prediction.views.fetch_market_prices", side_effect=ServiceUnavailableError("unavailable"))
+    def test_session_details_survive_market_chart_outage(self, _mock_market):
+        session = PredictionSession.objects.create(
+            user=self.user,
+            session_id="runtime-session",
+            session_name="runtime",
+            crop_names="媛먯옄",
+            land_area=100,
+            region="?쒖슱",
+            total_income=1000,
+        )
+        PredictionResult.objects.create(
+            session=session,
+            crop_name="媛먯옄",
+            predicted_income=1000,
+            adjusted_data={},
+            price=100,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("prediction:prediction_session_details", args=[session.session_id])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["results"][0]["crop_chart_data"], [])
 
 
 class PredictionCsrfBoundaryTests(TestCase):

@@ -12,7 +12,7 @@ from aivle_big.exceptions import NotFoundError, ServiceUnavailableError
 REQUEST_TIMEOUT_SECONDS = 10
 MARKET_API_URL = "https://apis.data.go.kr/B552845/periodWholesale/price"
 WEATHER_API_URL = "http://apis.data.go.kr/1360000/AsosDalyInfoService/getWthrDataList"
-MARKET_PAGE_SIZE = 100
+MARKET_PAGE_SIZE = 1000
 MARKET_MAX_PAGES = 1000
 
 

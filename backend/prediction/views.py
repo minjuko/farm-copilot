@@ -301,11 +301,19 @@ def prediction_session_details(request, session_id):
         end_date = timezone.now().strftime('%Y%m%d')
 
         for result in results:
-            df_1 = fetch_market_prices(result.crop_name, session.region, start_date, end_date)
-            if df_1 is not None and not df_1.empty:
-                df_1_json = df_1.to_json(orient='records', date_format='iso')
-                crop_chart_data_parsed = json.loads(df_1_json)
-            else:
+            try:
+                df_1 = fetch_market_prices(result.crop_name, session.region, start_date, end_date)
+                if df_1 is not None and not df_1.empty:
+                    df_1_json = df_1.to_json(orient='records', date_format='iso')
+                    crop_chart_data_parsed = json.loads(df_1_json)
+                else:
+                    crop_chart_data_parsed = []
+            except (NotFoundError, ServiceUnavailableError) as exc:
+                logger.warning(
+                    "Market chart data unavailable for prediction session %s: %s",
+                    session.session_id,
+                    type(exc).__name__,
+                )
                 crop_chart_data_parsed = []
 
             details.append({
