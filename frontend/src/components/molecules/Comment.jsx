@@ -102,7 +102,7 @@ const Comment = ({
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       .map((comment) => (
         <React.Fragment key={comment.id}>
-          <CommentItem isReply={parentId !== null}>
+          <CommentItem $isReply={parentId !== null}>
             <CommentAuthor>{comment.user__username}</CommentAuthor>
             <CommentMeta>{new Date(comment.created_at).toLocaleString()}</CommentMeta>
             {editCommentId === comment.id ? (
@@ -131,7 +131,7 @@ const Comment = ({
               <>
                 <SettingsIcon2 aria-label="댓글 관리" onClick={() => handleSettingsClick(comment.id)} />
                 <SettingsMenu2
-                  show={showSettingsMenu[comment.id]}
+                  $show={showSettingsMenu[comment.id]}
                   ref={(el) => (settingsMenuRefs.current[comment.id] = el)}
                   data-comment-id={comment.id}
                 >
@@ -160,7 +160,7 @@ const Comment = ({
             )}
             {renderComments(comments, comment.id)}
             {authStatus === "authenticated" && replyCommentId === comment.id && (
-              <CommentForm isReply onSubmit={handleSubmitReply}>
+              <CommentForm $isReply onSubmit={handleSubmitReply}>
                 <CommentTextarea
                   rows="2"
                   placeholder="댓글을 작성하세요"

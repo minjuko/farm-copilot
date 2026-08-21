@@ -104,7 +104,7 @@ const EditPostTemplate = () => {
       setModalContent("글이 성공적으로 수정되었습니다.");
       setIsModalOpen(true);
     } catch (error) {
-      console.error("Failed to edit post", error);
+      console.error("Failed to edit post");
       setModalTitle("수정 실패");
       setModalContent("글 수정 중 오류가 발생했습니다. 다시 시도해 주세요.");
       setIsModalOpen(true);

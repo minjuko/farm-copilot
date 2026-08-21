@@ -43,12 +43,12 @@ const Button = styled.button`
   font-size: 16px;
   font-weight: bold;
   color: white;
-  background-color: ${({ color }) => color || '#e53e3e'};
+  background-color: ${({ $color }) => $color || '#e53e3e'};
   border: none;
   border-radius: 4px;
   cursor: pointer;
   &:hover {
-    background-color: ${({ hoverColor }) => hoverColor || '#c53030'};
+    background-color: ${({ $hoverColor }) => $hoverColor || '#c53030'};
   }
 `;
 
@@ -75,10 +75,10 @@ const ConfirmModal = ({
     <ModalTitle>{title}</ModalTitle>
     <ModalContent>{content}</ModalContent>
     <ButtonContainer>
-      <Button color={confirmColor} hoverColor={confirmHoverColor} onClick={onConfirm}>
+      <Button $color={confirmColor} $hoverColor={confirmHoverColor} onClick={onConfirm}>
         {confirmText}
       </Button>
-      <Button color={cancelColor} hoverColor={cancelHoverColor} onClick={closeModal}>
+      <Button $color={cancelColor} $hoverColor={cancelHoverColor} onClick={closeModal}>
         {cancelText}
       </Button>
     </ButtonContainer>

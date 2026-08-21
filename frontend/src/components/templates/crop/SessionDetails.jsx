@@ -133,10 +133,10 @@ const Tabs = styled.div`
 `;
 
 const TabButton = styled.button`
-  background-color: ${props => (props.active ? '#4aaa87' : 'transparent')};
-  color: ${props => (props.active ? 'white' : '#4aaa87')};
+  background-color: ${props => (props.$active ? '#4aaa87' : 'transparent')};
+  color: ${props => (props.$active ? 'white' : '#4aaa87')};
   border: none;
-  border-bottom: ${props => (props.active ? '2px solid #4aaa87' : 'none')};
+  border-bottom: ${props => (props.$active ? '2px solid #4aaa87' : 'none')};
   padding: 12px 24px;
   margin: 0 8px;
   border-radius: 5px 5px 0 0;
@@ -486,7 +486,7 @@ const SessionDetails = () => {
             {cropNames.map((cropName, index) => (
               <TabButton
                 key={index}
-                active={index === selectedCropIndex}
+                $active={index === selectedCropIndex}
                 onClick={() => handleTabClick(index)}
               >
                 {cropName}

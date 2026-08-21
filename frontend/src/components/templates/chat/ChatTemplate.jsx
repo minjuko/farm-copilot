@@ -82,7 +82,7 @@ const MessageContainer = styled.li`
   display: flex;
   align-items: flex-start;
   margin-bottom: 0.75rem; 
-  justify-content: ${({ isUser }) => (isUser ? 'flex-end' : 'flex-start')};
+  justify-content: ${({ $isUser }) => ($isUser ? 'flex-end' : 'flex-start')};
 
   @media (max-width: 768px) {
     margin-bottom: 0.5rem; 
@@ -93,10 +93,10 @@ const Message = styled.div`
   max-width: 70%;
   display: flex;
   flex-direction: column;
-  align-items: ${({ isUser }) => (isUser ? 'flex-end' : 'flex-start')};
+  align-items: ${({ $isUser }) => ($isUser ? 'flex-end' : 'flex-start')};
   padding: 0.625rem 0.875rem; 
   border-radius: 1.25rem; 
-  background-color: ${({ isUser }) => (isUser ? '#F7FE2E' : 'white')};
+  background-color: ${({ $isUser }) => ($isUser ? '#F7FE2E' : 'white')};
   position: relative;
   box-shadow: 0 0.0625rem 0.0625rem rgba(0, 0, 0, 0.1); 
   word-break: break-word;
@@ -115,21 +115,21 @@ const MessageTime = styled.small`
   margin-top: 0.25rem;
   font-size: 0.8em;
   color: #666;
-  ${({ isUser }) => isUser ? css`align-self: flex-end;` : css`align-self: flex-start;`}
+  ${({ $isUser }) => $isUser ? css`align-self: flex-end;` : css`align-self: flex-start;`}
 `;
 
 const ProfileImage = styled.img`
   width: 3.125rem; 
   height: 3.125rem; 
   border-radius: 50%;
-  margin-right: ${({ isUser }) => (isUser ? '0' : '0.625rem')}; 
-  margin-left: ${({ isUser }) => (isUser ? '0.625rem' : '0')}; 
+  margin-right: ${({ $isUser }) => ($isUser ? '0' : '0.625rem')};
+  margin-left: ${({ $isUser }) => ($isUser ? '0.625rem' : '0')};
 
   @media (max-width: 768px) {
     width: 2.5rem; 
     height: 2.5rem; 
-    margin-right: ${({ isUser }) => (isUser ? '0' : '0.375rem')};
-    margin-left: ${({ isUser }) => (isUser ? '0.375rem' : '0')}; 
+    margin-right: ${({ $isUser }) => ($isUser ? '0' : '0.375rem')};
+    margin-left: ${({ $isUser }) => ($isUser ? '0.375rem' : '0')};
   }
 `;
 
@@ -292,9 +292,9 @@ const ChatTemplate = () => {
       <ChatBox ref={chatBoxRef}>
         <MessageList>
           {messages.map((msg, index) => (
-            <MessageContainer key={index} isUser={msg.isUser}>
+            <MessageContainer key={index} $isUser={msg.isUser}>
               {!msg.isUser && <ProfileImage src={`${process.env.PUBLIC_URL}/android-chrome-192x192.png`} alt="Profile" />}
-              <Message isUser={msg.isUser}>
+              <Message $isUser={msg.isUser}>
                 <MessageText>
                   {!msg.isUser ? (
                     <div dangerouslySetInnerHTML={{ __html: msg.text }} />
@@ -305,15 +305,15 @@ const ChatTemplate = () => {
                     </>
                   )}
                 </MessageText>
-                <MessageTime isUser={msg.isUser}>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</MessageTime>
+                <MessageTime $isUser={msg.isUser}>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</MessageTime>
               </Message>
-              {msg.isUser && <ProfileImage src={`${process.env.PUBLIC_URL}/user_icon.jpg`} alt="Profile" isUser />}
+              {msg.isUser && <ProfileImage src={`${process.env.PUBLIC_URL}/user_icon.jpg`} alt="Profile" $isUser />}
             </MessageContainer>
           ))}
           {loading && (
-            <MessageContainer isUser={false}>
+            <MessageContainer $isUser={false}>
               <ProfileImage src={`${process.env.PUBLIC_URL}/android-chrome-192x192.png`} alt="Profile" />
-              <Message isUser={false} style={{ display: 'flex', alignItems: 'center' }}>
+              <Message $isUser={false} style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <span>답변을 불러오는 중입니다.</span>
                   <SyncLoader

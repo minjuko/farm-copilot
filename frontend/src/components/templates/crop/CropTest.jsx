@@ -51,7 +51,7 @@ const CropTest = () => {
     try {
       const response = await getCropNames();
       setFilteredCropNames(response.data.crop_names.map(name => ({ value: name, label: name })));
-    } catch (err) {
+    } catch {
       setModalContent('작물 이름을 불러오는 중 오류가 발생했습니다.');
       setModalTitle('오류');
       setIsError(true);
@@ -66,8 +66,8 @@ const CropTest = () => {
       try {
         const response = await getRegionNames();
         setRegions(response.data.region_names);
-      } catch (err) {
-        console.error('Error fetching region names:', err);
+      } catch {
+        console.error('Error fetching region names');
         setModalContent('지역 이름을 불러오는 중 오류가 발생했습니다.');
         setModalTitle('오류');
         setIsError(true);
@@ -160,7 +160,7 @@ const CropTest = () => {
         navigate(`/sessiondetails/${session_id}`, { state: { session_id } });
       }
     } catch (error) {
-      console.error('Error fetching prediction', error);
+      console.error('Error fetching prediction');
       setModalContent(getApiErrorMessage(
         error,
         '수익 예측 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
@@ -199,7 +199,7 @@ const CropTest = () => {
   return (
     <PageContainer>
       {isLoading && <GlobalLoader text="AI 수익 예측 중입니다."/>}
-      <SummaryTitle step="1">작물정보 입력</SummaryTitle>
+      <SummaryTitle $step="1">작물정보 입력</SummaryTitle>
       <InputContainer>
         <Label>재배 면적 (평)</Label>
         <Input
@@ -275,7 +275,7 @@ const CropTest = () => {
         <p style={{ color: '#7f8c8d', fontSize: '0.875rem', marginTop: '0.625rem' }}>각 작물별 비율은 합해서 1이 되어야 합니다.</p>
         {addError && <ErrorMessage>{addError}</ErrorMessage>}
       </InputContainer>
-      <SummaryTitle step="2">입력 정보 확인</SummaryTitle>
+      <SummaryTitle $step="2">입력 정보 확인</SummaryTitle>
       <SummaryContainer>
         <SummaryItem>
           <ItemText>

@@ -145,6 +145,7 @@ test.each(["/diagnosis", "/diagnosislist", "/info"])("protects Detect route %s",
 
 test.each(["/chatlist", "/chat/session-1"])("keeps Backend-compatible public Chatbot route %s", async (path) => {
   checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
-  renderRoutes(path);
+  renderRoutes(path, <AuthControls />);
   expect(await screen.findByText(/chat (list|detail)/)).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated"));
 });

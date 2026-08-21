@@ -81,7 +81,7 @@ const SettingsMenu = styled.div`
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  display: ${(props) => (props.show ? "block" : "none")};
+  display: ${(props) => (props.$show ? "block" : "none")};
   z-index: 1;
   animation: fadeIn 0.3s ease;
 
@@ -200,7 +200,7 @@ const PostDetail = ({
         {canManagePost && (
           <>
             <SettingsIcon aria-label="게시글 관리" onClick={() => handleSettingsClick(0)} />
-            <SettingsMenu show={showSettingsMenu[0]} ref={(el) => (settingsMenuRefs.current[0] = el)}>
+            <SettingsMenu $show={showSettingsMenu[0]} ref={(el) => (settingsMenuRefs.current[0] = el)}>
               <SettingsMenuItem onClick={() => navigate(`/post/edit/${post.id}`)}>
                 수정
               </SettingsMenuItem>

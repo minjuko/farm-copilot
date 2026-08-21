@@ -28,7 +28,7 @@ const Title = styled.div`
 
 const Content = styled.div`
   padding: 1rem;
-  display: ${({ isOpen }) => (isOpen ? "block" : "none")};
+  display: ${({ $isOpen }) => ($isOpen ? "block" : "none")};
   background-color: #f0f0f0;
   font-size: 1rem;
 
@@ -75,7 +75,7 @@ const PrivacyPolicyPage = () => {
           <span>제1장 개인정보의 처리 목적</span>
           <span>{openSections["section1"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section1"]}>
+        <Content $isOpen={openSections["section1"]}>
             <p>제1조(개인정보의 처리목적)</p>
             <p>&lt;꾼꾼농사꾼&gt;은 다음의 목적을 위하여
               개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는
@@ -96,7 +96,7 @@ const PrivacyPolicyPage = () => {
           <span>제2장 개인정보의 처리 및 보유 기간</span>
           <span>{openSections["section2"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section2"]}>
+        <Content $isOpen={openSections["section2"]}>
             <p>제2조(개인정보의 처리 및 보유기간)</p>
             <p>① &lt;꾼꾼농사꾼&gt;은(는) 법령에 따른 개인정보 보유·이용기간 또는 정보주체로부터
               개인정보를 수집 시에 동의받은 개인정보 보유·이용기간 내에서 개인정보를 처리·보유합니다.
@@ -112,7 +112,7 @@ const PrivacyPolicyPage = () => {
           <span>제3장 개인정보의 파기절차 및 파기방법</span>
           <span>{openSections["section4"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section4"]}>
+        <Content $isOpen={openSections["section4"]}>
             <p>제7조(개인정보의 파기)</p>
             <p>① &lt;꾼꾼농사꾼&gt;은 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체없이 해당 개인정보를 파기합니다.</p>
             <p>② 정보주체로부터 동의받은 개인정보 보유기간이 경과하거나 처리목적이 달성되었음에도 불구하고 다른 법령에 따라 개인정보를 계속 보존하여야 하는 경우에는, 해당 개인정보를 별도의 데이터베이스(DB)로 옮기거나 보관장소를 달리하여 보존합니다.</p>
@@ -131,7 +131,7 @@ const PrivacyPolicyPage = () => {
           </span>
           <span>{openSections["section6"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section6"]}>
+        <Content $isOpen={openSections["section6"]}>
             <p>제5조(정보주체와 법정대리인의 권리·의무 및 행사방법)</p>
             <p>1. 정보주체는 &lt;꾼꾼농사꾼&gt;에 대해 언제든지 개인정보 열람·정정·삭제·처리정지 요구 등의 권리를 행사할 수 있습니다.</p>
             <p>2. 제1항에 따른 권리 행사는 &lt;꾼꾼농사꾼&gt;에 대해 개인정보보호법 시행령 제41조제1항에 따라 서면, 전자우편, 모사전송(FAX) 등을 통하여 하실 수 있으며, &lt;꾼꾼농사꾼&gt;은(는) 이에 대해 지체없이 조치하겠습니다.</p>
@@ -149,7 +149,7 @@ const PrivacyPolicyPage = () => {
           </span>
           <span>{openSections["section7"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section7"]}>
+        <Content $isOpen={openSections["section7"]}>
             <p>제10조(개인정보 보호책임자)</p>
             <p>1. &lt;꾼꾼농사꾼&gt;은(는) 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의 불만처리 및 피해구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
             <p>▶ 개인정보 보호책임자</p>
@@ -167,7 +167,7 @@ const PrivacyPolicyPage = () => {
           <span>제6장 처리하는 개인정보의 항목</span>
           <span>{openSections["section8"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section8"]}>
+        <Content $isOpen={openSections["section8"]}>
             <p>제6조(처리하는 개인정보 항목)</p>
             <p>&lt;꾼꾼농사꾼&gt;은 다음의 개인정보 항목을 처리하고 있습니다.</p>
             <p>1. 홈페이지 회원 가입 및 관리</p>
@@ -183,7 +183,7 @@ const PrivacyPolicyPage = () => {
           <span>제7장 개인정보의 안전성 확보조치에 관한 사항</span>
           <span>{openSections["section9"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section9"]}>
+        <Content $isOpen={openSections["section9"]}>
             <p>제8조(개인정보의 안전성 확보조치)</p>
             <p>&lt;꾼꾼농사꾼&gt;은 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다.</p>
             <p>1. 관리적 조치: 내부관리계획 수립·시행, 정기적 직원 교육 등</p>
@@ -196,7 +196,7 @@ const PrivacyPolicyPage = () => {
           <span>제8장 개인정보 처리방침의 변경에 관한 사항</span>
           <span>{openSections["section10"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section10"]}>
+        <Content $isOpen={openSections["section10"]}>
             <p>제17조(개인정보 처리방침 변경)</p>
             <p>1. 이 개인정보 처리방침은 2024. 7. 22부터 적용됩니다.</p>
             <p>2. 이전의 개인정보 처리방침은 아래에서 확인하실 수 있습니다.</p>
@@ -208,7 +208,7 @@ const PrivacyPolicyPage = () => {
           <span>제9장 개인정보의 열람청구를 접수 · 처리하는 부서</span>
           <span>{openSections["section11"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section11"]}>
+        <Content $isOpen={openSections["section11"]}>
             <p>제14조(개인정보 열람청구)</p>
             <p>정보주체는 「개인정보 보호법」 제35조에 따른 개인정보의 열람 청구를 아래의 부서에 할 수 있습니다.</p>
             <p>&lt;꾼꾼농사꾼&gt;은 정보주체의 개인정보 열람청구가 신속하게 처리되도록 노력하겠습니다.</p>
@@ -224,7 +224,7 @@ const PrivacyPolicyPage = () => {
           <span>제10장 정보주체의 권익침해에 대한 구제방법</span>
           <span>{openSections["section12"] ? "▲" : "▼"}</span>
         </Title>
-        <Content isOpen={openSections["section12"]}>
+        <Content $isOpen={openSections["section12"]}>
             <p>제15조(권익침해 구제방법)</p>
             <p>정보주체는 개인정보침해로 인한 구제를 받기 위하여 개인정보분쟁조정위원회, 한국인터넷진흥원 개인정보침해신고센터 등에 분쟁 해결이나 상담 등을 신청할 수 있습니다. 이 밖에 기타 개인정보침해의 신고, 상담에 대하여는 아래의 기관에 문의하시기 바랍니다.</p>
             <p>1. 개인정보분쟁조정위원회 : (국번없이) 1833-6972 (www.kopico.go.kr)</p>

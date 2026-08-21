@@ -122,7 +122,7 @@ export const SummaryTitle = styled.h2`
   text-align: left;
 
   &::before {
-    content: '${props => props.step}';
+    content: '${props => props.$step}';
     display: inline-block;
     width: 24px;
     height: 24px;

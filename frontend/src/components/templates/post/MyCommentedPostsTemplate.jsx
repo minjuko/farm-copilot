@@ -47,7 +47,7 @@ const TableCell = styled.td`
   padding: 12px;
   border-bottom: 1px solid #ccc;
   font-size: 14px;
-  color: ${(props) => (props.header ? "aliceblue" : "black")};
+  color: ${(props) => (props.$header ? "aliceblue" : "black")};
   text-align: left;
 `;
 
@@ -128,8 +128,8 @@ const MyCommentedPostsTemplate = () => {
         const response = await fetchMyCommentedPosts();
         const sortedPosts = response.data.sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
         setPosts(sortedPosts);
-      } catch (error) {
-        console.error("Failed to fetch posts", error);
+      } catch {
+        console.error("Failed to fetch posts");
       }
       setIsLoading(false);
     };
@@ -147,9 +147,9 @@ const MyCommentedPostsTemplate = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableCell header>제목</TableCell>
-              <TableCell header>작성자</TableCell>
-              <TableCell header>작성일</TableCell>
+              <TableCell $header>제목</TableCell>
+              <TableCell $header>작성자</TableCell>
+              <TableCell $header>작성일</TableCell>
             </TableRow>
           </TableHeader>
           <tbody>

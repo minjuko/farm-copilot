@@ -173,8 +173,8 @@ const SoilListTemplate = () => {
         setIsLoading(true);
         const response = await getSoilCropData();
         setSoilData(response.data);
-      } catch (error) {
-        console.error('Failed to fetch soil data', error);
+      } catch {
+        console.error('Failed to fetch soil data');
       } finally {
         setIsLoading(false);
       }
@@ -193,7 +193,7 @@ const SoilListTemplate = () => {
       await deleteSoilData(selectedSessionId);
       setSoilData(soilData.filter(soil => soil.session_id !== selectedSessionId));
       closeModal();
-    } catch (error) {
+    } catch {
       alert("토양 데이터 삭제에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);

@@ -86,8 +86,8 @@ const MainTopBar = () => {
       await logout();
       setModalContent("로그아웃이 완료되었습니다.");
       setIsModalOpen(true);
-    } catch (error) {
-      console.error("Failed to logout:", error);
+    } catch {
+      console.error("Failed to logout");
     }
     setIsLoading(false);
   };

@@ -166,7 +166,7 @@ export const SettingsMenu = styled.div`
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  display: ${(props) => (props.show ? "block" : "none")};
+  display: ${(props) => (props.$show ? "block" : "none")};
   z-index: 1;
   animation: fadeIn 0.3s ease;
 
@@ -229,10 +229,10 @@ export const CommentItem = styled.li`
   padding: 8px 16px;
   margin-bottom: 12px;
   position: relative;
-  margin-left: ${(props) => (props.isReply ? "40px" : "0")};
+  margin-left: ${(props) => (props.$isReply ? "40px" : "0")};
 
   &::before {
-    content: "${(props) => (props.isReply ? "↳" : "")}";
+    content: "${(props) => (props.$isReply ? "↳" : "")}";
     position: absolute;
     left: -20px;
     top: 50%;
@@ -278,7 +278,7 @@ export const CommentForm = styled.form`
   align-items: center;
   position: relative;
   margin-top: 12px;
-  margin-left: ${(props) => (props.isReply ? "40px" : "0")};
+  margin-left: ${(props) => (props.$isReply ? "40px" : "0")};
 `;
 
 export const CommentTextarea = styled.textarea`
@@ -356,7 +356,7 @@ export const SettingsMenu2 = styled.div`
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  display: ${(props) => (props.show ? "block" : "none")};
+  display: ${(props) => (props.$show ? "block" : "none")};
   z-index: 1;
   animation: fadeIn 0.3s ease;
 

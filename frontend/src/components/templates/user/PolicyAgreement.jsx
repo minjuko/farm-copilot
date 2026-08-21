@@ -146,7 +146,7 @@ const ToggleContent = styled.div`
   margin: 5px 0 10px;
   padding: 10px;
   position: relative;
-  ${props => props.show && css`
+  ${props => props.$show && css`
     display: flex;
   `}
 `;
@@ -170,7 +170,7 @@ const StepCircle = styled.div`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background-color: ${props => (props.active ? '#4aaa87' : '#e0e0e0')};
+  background-color: ${props => (props.$active ? '#4aaa87' : '#e0e0e0')};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,7 +188,7 @@ const StepCircle = styled.div`
 const StepLabel = styled.div`
   margin-top: 4px;
   font-size: 14px;
-  color: ${props => (props.active ? '#4aaa87' : '#6b7280')};
+  color: ${props => (props.$active ? '#4aaa87' : '#6b7280')};
 
   @media (max-width: 768px) {
     font-size: 12px;
@@ -243,16 +243,16 @@ const PolicyAgreement = () => {
     <Container>
       <StepperContainer>
         <Step>
-          <StepCircle active={currentStep === 1}>1</StepCircle>
-          <StepLabel active={currentStep === 1}>약관 동의</StepLabel>
+          <StepCircle $active={currentStep === 1}>1</StepCircle>
+          <StepLabel $active={currentStep === 1}>약관 동의</StepLabel>
         </Step>
         <Step>
-          <StepCircle active={currentStep === 2}>2</StepCircle>
-          <StepLabel active={currentStep === 2}>회원 정보 입력</StepLabel>
+          <StepCircle $active={currentStep === 2}>2</StepCircle>
+          <StepLabel $active={currentStep === 2}>회원 정보 입력</StepLabel>
         </Step>
       </StepperContainer>
       {currentStep === 1 && (
-        <AgreementSection expanded={Object.values(showDetails).some(value => value)}>
+        <AgreementSection>
           <h2>회원가입 약관 동의</h2>
           <CheckboxGroup>
             <CheckboxWrapper>
@@ -289,7 +289,7 @@ const PolicyAgreement = () => {
                     {showDetails[key] ? <FaChevronUp /> : <FaChevronDown />}
                   </ToggleIcon>
                 </CheckboxWrapper>
-                <ToggleContent show={showDetails[key]}>
+                <ToggleContent $show={showDetails[key]}>
                   {content}
                   {key === 'ageCheck' && (
                     <InfoButton 
