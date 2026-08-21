@@ -8,7 +8,7 @@ import { CategoryScale, TimeScale } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
-import { getApiErrorMessage } from '../../../apis/error';
+import { getServiceErrorMessage } from '../../../apis/error';
 import { finiteNumberOrZero, normalizePredictionResult } from './predictionFlow';
 
 Chart.register(CategoryScale, TimeScale);
@@ -412,7 +412,7 @@ const SessionDetails = () => {
         if (error.response && error.response.status === 401) {
           navigate('/login');
         } else {
-          setErrorMessage(getApiErrorMessage(error, '세션 상세 정보를 불러오지 못했습니다.'));
+          setErrorMessage(getServiceErrorMessage(error, '세션 상세 정보를 불러오지 못했습니다.'));
         }
       } finally {
         setIsLoading(false);

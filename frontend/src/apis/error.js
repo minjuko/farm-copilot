@@ -7,3 +7,8 @@ export const getApiErrorMessage = (error, fallbackMessage) => {
 
   return responseData?.message || responseData?.error || fallbackMessage;
 };
+
+export const getServiceErrorMessage = (error, fallbackMessage) => {
+  if (error?.response?.status >= 500) return fallbackMessage;
+  return getApiErrorMessage(error, fallbackMessage);
+};
