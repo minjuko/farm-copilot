@@ -164,14 +164,6 @@ def fetch_soil_exam(stdg_code):
     return result
 
 
-def _bounded(value, minimum, maximum):
-    try:
-        number = float(value)
-    except (TypeError, ValueError):
-        number = minimum
-    return str(max(minimum, min(number, maximum)))
-
-
 def fetch_fertilizer(crop_name, soil_values, pnu_code=None):
     pnu_code = pnu_code or soil_values.get("pnu_code")
     if not pnu_code:
@@ -180,16 +172,10 @@ def fetch_fertilizer(crop_name, soil_values, pnu_code=None):
         "serviceKey": _public_api_key("DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY"),
         "PNU_Code": pnu_code,
         "crop_Code": get_crop_code(crop_name),
-        "acid": _bounded(soil_values.get("acid"), 4, 9),
-        "om": _bounded(soil_values.get("om"), 5, 300),
-        "vldpha": _bounded(soil_values.get("vldpha"), 5, 1700),
-        "posifert_K": _bounded(soil_values.get("posifert_K"), 0.01, 9),
-        "posifert_Ca": _bounded(soil_values.get("posifert_Ca"), 0.1, 30),
-        "posifert_Mg": _bounded(soil_values.get("posifert_Mg"), 0.1, 20),
-        "vldsia": _bounded(soil_values.get("vldsia"), 5, 1500),
         "animix_Ratio_Cattl": "28",
         "animix_Ratio_Pig": "22",
         "animix_Ratio_Chick": "19",
+        "animix_Ratio_Sawdust": "21",
     }
     try:
         response = requests.get(FERTILIZER_V2_URL, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
@@ -217,6 +203,6 @@ def fetch_fertilizer(crop_name, soil_values, pnu_code=None):
     if not result:
         raise NotFoundError("No fertilizer recommendation data was found.")
     filtered_params = {
-        key: value for key, value in params.items() if key not in {"serviceKey", "crop_Code", "PNU_Code"}
+        key: value for key, value in soil_values.items() if key not in {"serviceKey", "crop_Code", "PNU_Code"}
     }
     return result, filtered_params

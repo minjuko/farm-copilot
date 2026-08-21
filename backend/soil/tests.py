@@ -10,7 +10,7 @@ from aivle_big.exceptions import NotFoundError, ServiceUnavailableError, Validat
 from login.models import User
 
 from .models import crop_data
-from .services import build_pnu_code, fetch_fertilizer, fetch_soil_exam, find_address_codes, find_legal_district_code, get_crop_names
+from .services import build_pnu_code, fetch_fertilizer, fetch_soil_exam, find_address_codes, find_legal_district_code, get_crop_code, get_crop_names
 
 
 class SoilServiceTests(TestCase):
@@ -102,8 +102,13 @@ class SoilServiceTests(TestCase):
         self.assertNotIn("PNU_Code", filtered)
         self.assertNotIn("selc", filtered)
         self.assertEqual(mock_get.call_args.kwargs["params"]["PNU_Code"], "1234567890100100000")
-        self.assertEqual(mock_get.call_args.kwargs["params"]["crop_Code"], "01001")
+        self.assertEqual(
+            mock_get.call_args.kwargs["params"]["crop_Code"],
+            get_crop_code(get_crop_names()[0]),
+        )
         self.assertNotIn("selc", mock_get.call_args.kwargs["params"])
+        self.assertNotIn("acid", mock_get.call_args.kwargs["params"])
+        self.assertEqual(mock_get.call_args.kwargs["params"]["animix_Ratio_Sawdust"], "21")
         self.assertEqual(mock_get.call_args.kwargs["params"]["serviceKey"], "encoded+key")
         self.assertEqual(mock_get.call_args.args[0], "https://apis.data.go.kr/1390802/SoilEnviron_FrtlzrUse_V2/getSoilFrtlzrExamInfo")
 
