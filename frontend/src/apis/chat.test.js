@@ -1,8 +1,8 @@
 import { instance } from "./instance";
-import { deleteChatSession, sendChatMessage, updateSessionName } from "./chat";
+import { deleteChatSession, fetchChatbotStatus, sendChatMessage, updateSessionName } from "./chat";
 
 jest.mock("./instance", () => ({
-  instance: { post: jest.fn(), patch: jest.fn(), delete: jest.fn() },
+  instance: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn() },
 }));
 
 beforeEach(() => jest.clearAllMocks());
@@ -11,6 +11,11 @@ test("sends the Backend chatbot payload through the shared instance", () => {
   const payload = { question: "질문", session_id: "session-1", session_name: "상담" };
   sendChatMessage(payload);
   expect(instance.post).toHaveBeenCalledWith("/selfchatbot/chatbot/", payload);
+});
+
+test("fetches the public chatbot capability status", () => {
+  fetchChatbotStatus();
+  expect(instance.get).toHaveBeenCalledWith("/selfchatbot/status/");
 });
 
 test("renames a session with PATCH and session_name payload", () => {

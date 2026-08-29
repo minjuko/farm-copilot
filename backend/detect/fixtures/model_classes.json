@@ -1,0 +1,97 @@
+[
+  {
+    "model": "detect.pest",
+    "pk": 101,
+    "fields": {
+      "code": "PEPPER_ANTHRACNOSE",
+      "pest_name": "고추 탄저병",
+      "occurrence_environment": null,
+      "symptom_description": null,
+      "prevention_methods": null,
+      "pesticide_name": null,
+      "image_url": null
+    }
+  },
+  {
+    "model": "detect.pest",
+    "pk": 102,
+    "fields": {
+      "code": "PEPPER_POWDERY_MILDEW",
+      "pest_name": "고추 흰가루병",
+      "occurrence_environment": null,
+      "symptom_description": null,
+      "prevention_methods": null,
+      "pesticide_name": null,
+      "image_url": null
+    }
+  },
+  {
+    "model": "detect.pest",
+    "pk": 103,
+    "fields": {
+      "code": "CUCUMBER_DOWNY_MILDEW",
+      "pest_name": "오이 노균병",
+      "occurrence_environment": null,
+      "symptom_description": null,
+      "prevention_methods": null,
+      "pesticide_name": null,
+      "image_url": null
+    }
+  },
+  {
+    "model": "detect.pest",
+    "pk": 104,
+    "fields": {
+      "code": "TOMATO_POWDERY_MILDEW",
+      "pest_name": "토마토 흰가루병",
+      "occurrence_environment": null,
+      "symptom_description": null,
+      "prevention_methods": null,
+      "pesticide_name": null,
+      "image_url": null
+    }
+  },
+  {
+    "model": "detect.pest",
+    "pk": 105,
+    "fields": {
+      "code": "CUCUMBER_POWDERY_MILDEW",
+      "pest_name": "오이 흰가루병",
+      "occurrence_environment": null,
+      "symptom_description": null,
+      "prevention_methods": null,
+      "pesticide_name": null,
+      "image_url": null
+    }
+  },
+  {
+    "model": "detect.pestmodelclass",
+    "pk": 1,
+    "fields": { "class_id": 0, "model_label": "고추 탄저병", "pest": 101 }
+  },
+  {
+    "model": "detect.pestmodelclass",
+    "pk": 2,
+    "fields": { "class_id": 1, "model_label": "고추 흰가루병", "pest": 102 }
+  },
+  {
+    "model": "detect.pestmodelclass",
+    "pk": 3,
+    "fields": { "class_id": 2, "model_label": "오이 노균병", "pest": 103 }
+  },
+  {
+    "model": "detect.pestmodelclass",
+    "pk": 4,
+    "fields": { "class_id": 3, "model_label": "토마토 흰가루병", "pest": 104 }
+  },
+  {
+    "model": "detect.pestmodelclass",
+    "pk": 5,
+    "fields": { "class_id": 4, "model_label": "오이 노균병", "pest": 103 }
+  },
+  {
+    "model": "detect.pestmodelclass",
+    "pk": 6,
+    "fields": { "class_id": 5, "model_label": "오이 흰가루병", "pest": 105 }
+  }
+]

@@ -12,6 +12,7 @@ from PIL import Image
 from aivle_big.exceptions import ServiceUnavailableError, ValidationError
 
 from . import views
+from .models import Pest, PestModelClass
 
 
 class DetectionRuntimeTests(SimpleTestCase):
@@ -79,7 +80,9 @@ class DetectionRuntimeTests(SimpleTestCase):
         with self.assertRaises(ValidationError):
             views.validate_image_file(empty)
 
-    def test_model_class_mapping_is_blocked_until_contract_is_verified(self):
+    @patch.object(views.PestModelClass.objects, 'select_related')
+    def test_unconfigured_model_classes_are_blocked(self, select_related):
+        select_related.return_value.get.side_effect = PestModelClass.DoesNotExist
         for class_id in (0, 3, 4):
             with self.subTest(class_id=class_id):
                 with self.assertRaises(ServiceUnavailableError) as context:
@@ -160,6 +163,32 @@ class DetectionRuntimeTests(SimpleTestCase):
 
         self.assertEqual(len(captured_path), 1)
         self.assertFalse(os.path.exists(captured_path[0]))
+
+
+class DetectionModelClassMappingTests(TestCase):
+    def test_explicit_zero_based_mapping_resolves_the_pest(self):
+        pest = Pest.objects.create(
+            code='PEPPER_ANTHRACNOSE',
+            pest_name='고추 탄저병',
+        )
+        PestModelClass.objects.create(
+            class_id=0,
+            model_label='고추 탄저병',
+            pest=pest,
+        )
+
+        self.assertEqual(views.map_model_class_to_pest_id(0), pest.id)
+
+    def test_multiple_model_classes_can_resolve_the_same_pest(self):
+        pest = Pest.objects.create(
+            code='CUCUMBER_DOWNY_MILDEW',
+            pest_name='오이 노균병',
+        )
+        PestModelClass.objects.create(class_id=2, model_label='오이 노균병', pest=pest)
+        PestModelClass.objects.create(class_id=4, model_label='오이 노균병', pest=pest)
+
+        self.assertEqual(views.map_model_class_to_pest_id(2), pest.id)
+        self.assertEqual(views.map_model_class_to_pest_id(4), pest.id)
 
 
 class DetectCsrfBoundaryTests(TestCase):

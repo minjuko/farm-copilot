@@ -8,6 +8,7 @@ class Pest(models.Model):
     Model to store information about different types of pests.
     """
     pest_name = models.CharField(max_length=100)
+    code = models.CharField(max_length=100, unique=True, null=True, blank=True)
     occurrence_environment = models.TextField(blank=True, null=True)
     symptom_description = models.TextField(blank=True, null=True)
     prevention_methods = models.TextField(blank=True, null=True)
@@ -16,6 +17,25 @@ class Pest(models.Model):
 
     def __str__(self):
         return self.pest_name
+
+
+class PestModelClass(models.Model):
+    """Explicit contract between a model class index and a Pest record."""
+
+    class_id = models.PositiveIntegerField(unique=True)
+    model_label = models.CharField(max_length=100)
+    pest = models.ForeignKey(
+        Pest,
+        on_delete=models.CASCADE,
+        related_name='model_classes',
+    )
+
+    class Meta:
+        db_table = 'pest_model_class'
+        ordering = ['class_id']
+
+    def __str__(self):
+        return f'{self.class_id}: {self.model_label}'
 
 class PestDetection(models.Model):
     """

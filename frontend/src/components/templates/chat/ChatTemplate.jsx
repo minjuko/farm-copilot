@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { fetchChatHistory, sendChatMessage } from '../../../apis/chat';
+import { fetchChatbotStatus, fetchChatHistory, sendChatMessage } from '../../../apis/chat';
 import { useAuth } from '../../../AuthContext';
 import {
   buildChatPayload,
@@ -109,6 +109,7 @@ const Message = styled.div`
 
 const MessageText = styled.div`
   flex: 1;
+  white-space: pre-wrap;
 `;
 
 const MessageTime = styled.small`
@@ -211,6 +212,7 @@ const ChatTemplate = () => {
   const [loading, setLoading] = useState(false);
   const sessionId = sessionid;
   const [errorMessage, setErrorMessage] = useState('');
+  const [chatbotStatus, setChatbotStatus] = useState('checking');
   const { status } = useAuth();
 
   const chatBoxRef = useRef(null);
@@ -218,6 +220,18 @@ const ChatTemplate = () => {
 
   const params = new URLSearchParams(location.search);
   const sessionName = params.get('session_name');
+
+  useEffect(() => {
+    let active = true;
+    fetchChatbotStatus()
+      .then((response) => {
+        if (active) setChatbotStatus(response?.data?.status || 'limited');
+      })
+      .catch(() => {
+        if (active) setChatbotStatus('limited');
+      });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -288,7 +302,11 @@ const ChatTemplate = () => {
         <Title>{sessionName || '농업 GPT'}</Title>
         <ChatListButton onClick={() => navigate('/chatlist')}><IoMenu />  목록 보기</ChatListButton>
       </Header>
-      <LimitedNotice>ARCHIVED / LIMITED · 환경이 준비된 경우에만 챗봇 답변을 제공합니다.</LimitedNotice>
+      <LimitedNotice>
+        {chatbotStatus === 'available'
+          ? 'LIVE · 농업 RAG 챗봇이 활성화되어 있습니다.'
+          : 'ARCHIVED / LIMITED · 환경이 준비된 경우에만 챗봇 답변을 제공합니다.'}
+      </LimitedNotice>
       <ChatBox ref={chatBoxRef}>
         <MessageList>
           {messages.map((msg, index) => (
@@ -296,14 +314,7 @@ const ChatTemplate = () => {
               {!msg.isUser && <ProfileImage src={`${process.env.PUBLIC_URL}/android-chrome-192x192.png`} alt="Profile" />}
               <Message $isUser={msg.isUser}>
                 <MessageText>
-                  {!msg.isUser ? (
-                    <div dangerouslySetInnerHTML={{ __html: msg.text }} />
-                  ) : (
-                    <>
-                      {msg.text}
-                      <br/>
-                    </>
-                  )}
+                  {msg.text}
                 </MessageText>
                 <MessageTime $isUser={msg.isUser}>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</MessageTime>
               </Message>
@@ -336,9 +347,9 @@ const ChatTemplate = () => {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="질문을 입력하세요"
-          disabled={loading}
+          disabled={loading || chatbotStatus !== 'available'}
         />
-        <Button type="submit" disabled={loading} aria-label="질문 보내기"><FaPaperPlane size="20px"/></Button>
+        <Button type="submit" disabled={loading || chatbotStatus !== 'available'} aria-label="질문 보내기"><FaPaperPlane size="20px"/></Button>
       </InputBox>
       {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
     </Container>

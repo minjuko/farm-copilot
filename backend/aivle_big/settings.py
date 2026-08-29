@@ -161,6 +161,17 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
 
+# Optional agriculture chatbot runtime. The feature remains disabled unless it
+# is explicitly enabled and all provider/runtime artifacts are configured.
+CHATBOT_ENABLED = env_bool('CHATBOT_ENABLED', False)
+CHATBOT_LLM_MODEL = os.getenv('CHATBOT_LLM_MODEL', 'gpt-4o-mini')
+CHATBOT_EMBEDDING_MODEL = os.getenv(
+    'CHATBOT_EMBEDDING_MODEL', 'text-embedding-3-small'
+)
+CHATBOT_COLLECTION_NAME = os.getenv(
+    'CHATBOT_COLLECTION_NAME', 'agriculture-knowledge'
+)
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/

@@ -196,3 +196,61 @@ kunkunnongsakun/
 -   농촌진흥청 토양검정 정보
 -   농촌진흥청 비료사용처방 정보
 -   Kakao Map API
+
+------------------------------------------------------------------------
+
+## 현재 Repository 실행 범위
+
+팀 프로젝트 당시에는 AWS·S3와 OpenAI 기반 RAG 환경을 포함해 전체 기능을
+시연했습니다. 현재 공개 Repository는 과금과 credential 노출을 방지하기 위해
+SQLite·로컬 파일 저장소를 기본값으로 사용하며, 외부 서비스는 필요한 환경이
+설정된 경우에만 활성화됩니다.
+
+| 기능 | 기본 상태 | 활성화 조건 |
+|---|---|---|
+| 인증·커뮤니티 | 사용 가능 | Backend·Frontend 로컬 실행 |
+| 이미지 저장 | 사용 가능 | 기본 로컬 저장소, 선택적으로 S3 설정 |
+| 토양·비료 분석 | 제한 | Kakao 및 공공데이터 API 키 필요 |
+| 작물 수익 예측 | 제한 | 기상·시장가격 공공데이터 API 키 필요 |
+| 농업 챗봇 | 비활성 | OpenAI 키, AI 의존성, Chroma 인덱스 필요 |
+| 병해충 진단 | 비활성 | YOLO 실행 환경과 검증된 클래스 매핑 필요 |
+
+### 농업 챗봇 선택 실행
+
+원본 팀 저장소의 `chatbot.csv`처럼 `질문`, `답변` 열을 가진 자료를
+`backend/artifacts/chatbot.csv`에 준비합니다. AI 의존성 설치 후 다음 명령으로
+새 Chroma 인덱스를 생성할 수 있습니다. 임베딩 생성 과정에는 OpenAI API
+비용이 발생합니다.
+
+``` powershell
+cd backend
+.\.venv\Scripts\python.exe -m pip install -r requirements-ai.txt
+.\.venv\Scripts\python.exe manage.py build_chatbot_index
+```
+
+인덱스 생성 후 `.env`에 다음 값을 설정합니다.
+
+``` dotenv
+CHATBOT_ENABLED=true
+CHROMA_DB_PATH=artifacts/chroma
+OPENAI_API_KEY=your-api-key
+```
+
+API 키는 Frontend 코드나 Git에 포함하지 않고 Backend 환경변수로만 관리합니다.
+
+### 병해충 모델 선택 실행
+
+팀 프로젝트의 YOLO checkpoint에서 확인한 6개 클래스는 숫자 DB PK가 아닌
+명시적인 매핑 테이블로 연결합니다. 마이그레이션 후 매핑 fixture를 로드합니다.
+동일한 `오이 노균병` 라벨을 가진 모델 클래스 2와 4도 같은 병해 레코드로
+안전하게 연결됩니다.
+
+``` powershell
+cd backend
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py loaddata detect/fixtures/model_classes.json
+```
+
+공개 fixture에는 모델에서 확인된 병명과 클래스 계약만 포함하며, 검증되지 않은
+증상·농약·방제 정보는 만들어 넣지 않습니다. 해당 상세 정보는 공신력 있는 출처를
+확인한 뒤 별도로 보강해야 합니다.

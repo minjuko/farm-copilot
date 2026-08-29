@@ -1,5 +1,9 @@
 import { instance } from './instance';
 
+export const fetchChatbotStatus = () => {
+  return instance.get('/selfchatbot/status/');
+};
+
 export const fetchChatSessions = () => {
   return instance.get('/selfchatbot/chat_sessions/');
 };

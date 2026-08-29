@@ -21,7 +21,7 @@ from aivle_big.exceptions import (
     ValidationError,
 )
 
-from .models import Pest, PestDetection
+from .models import Pest, PestDetection, PestModelClass
 
 logger = logging.getLogger(__name__)
 
@@ -117,14 +117,19 @@ def get_original_image_content(image_path):
 
 
 def map_model_class_to_pest_id(model_class_id):
-    """Block persistence until the model-to-Pest contract is verified.
+    """Resolve an explicit class mapping; never interpret a class as a DB PK."""
+    try:
+        class_id = int(model_class_id)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ServiceUnavailableError(MAPPING_UNAVAILABLE_MESSAGE) from exc
 
-    The checkpoint's class IDs are not currently backed by authoritative Pest
-    records.  In particular, converting a zero-based class ID to a Pest PK
-    would silently attach incorrect disease details, so no implicit fallback
-    or numeric mapping is allowed here.
-    """
-    raise ServiceUnavailableError(MAPPING_UNAVAILABLE_MESSAGE)
+    try:
+        mapping = PestModelClass.objects.select_related('pest').get(
+            class_id=class_id
+        )
+    except PestModelClass.DoesNotExist as exc:
+        raise ServiceUnavailableError(MAPPING_UNAVAILABLE_MESSAGE) from exc
+    return mapping.pest_id
 
 
 def process_image(image_path):

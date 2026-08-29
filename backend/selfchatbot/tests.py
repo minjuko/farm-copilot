@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch
 from types import SimpleNamespace
 
-from django.test import Client, RequestFactory, SimpleTestCase
+from django.test import Client, RequestFactory, SimpleTestCase, override_settings
 
 from aivle_big.exceptions import ServiceUnavailableError
 from . import views
@@ -20,6 +20,7 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
 
     @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-only-key'}, clear=True)
     @patch.object(views, 'VECTOR_DB_PATH')
+    @override_settings(CHATBOT_ENABLED=True)
     def test_missing_vector_database_is_not_created(self, vector_db_path):
         vector_db_path.exists.return_value = False
 
@@ -34,6 +35,7 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
             )
 
     @patch.object(views, 'CHATBOT_DEPENDENCIES_AVAILABLE', False)
+    @override_settings(CHATBOT_ENABLED=True)
     @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-only-key'}, clear=True)
     @patch.object(views, 'VECTOR_DB_PATH')
     def test_missing_optional_dependencies_are_controlled(self, vector_db_path):
@@ -46,6 +48,7 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
         self.assertNotIn('Traceback', context.exception.message)
 
     @patch.object(views, 'CHATBOT_DEPENDENCIES_AVAILABLE', True)
+    @override_settings(CHATBOT_ENABLED=True)
     @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-only-key'}, clear=True)
     @patch.object(views, 'VECTOR_DB_PATH')
     @patch.object(views, 'OpenAIEmbeddings', create=True)
@@ -78,6 +81,18 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
 
         self.assertEqual(context.exception.status_code, 503)
         self.assertNotIn('provider traceback', context.exception.message)
+
+    def test_provider_output_remains_plain_text(self):
+        answer = '<img src=x onerror=alert(1)>\n**안전한 답변**'
+        self.assertEqual(views.format_answer(answer), answer)
+
+    @override_settings(CHATBOT_ENABLED=False)
+    def test_status_reports_archived_without_provider_details(self):
+        response = views.chatbot_status(RequestFactory().get('/selfchatbot/status/'))
+        self.assertJSONEqual(response.content, {
+            'status': 'archived',
+            'available': False,
+        })
 
 
 class ChatbotCsrfBoundaryTests(SimpleTestCase):

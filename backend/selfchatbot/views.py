@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_GET, require_POST
 
 try:
     from langchain.chains import create_history_aware_retriever, create_retrieval_chain
@@ -58,6 +59,9 @@ def get_rag_chain():
     if _rag_chain is not None:
         return _rag_chain
 
+    if not settings.CHATBOT_ENABLED:
+        raise ServiceUnavailableError('Agriculture chatbot is disabled.')
+
     openai_api_key = os.getenv('OPENAI_API_KEY')
     if not openai_api_key:
         raise ServiceUnavailableError('Agriculture chatbot requires an OPENAI_API_KEY.')
@@ -72,14 +76,20 @@ def get_rag_chain():
 
     try:
         embeddings = OpenAIEmbeddings(
-            model='text-embedding-ada-002',
+            model=settings.CHATBOT_EMBEDDING_MODEL,
             api_key=openai_api_key,
         )
         retriever = Chroma(
             persist_directory=str(VECTOR_DB_PATH),
             embedding_function=embeddings,
+            collection_name=settings.CHATBOT_COLLECTION_NAME,
         ).as_retriever(search_kwargs={'k': 3})
-        llm = ChatOpenAI(api_key=openai_api_key, model='gpt-4o-2024-05-13')
+        llm = ChatOpenAI(
+            api_key=openai_api_key,
+            model=settings.CHATBOT_LLM_MODEL,
+            timeout=30,
+            max_retries=2,
+        )
         contextualize_q_prompt = ChatPromptTemplate.from_messages([
             ('system', contextualize_q_system_prompt),
             MessagesPlaceholder('chat_history'),
@@ -104,13 +114,17 @@ def get_rag_chain():
     return _rag_chain
 
 
+@require_POST
 def chatbot(request):
     try:
         data = json.loads(request.body)
         query = data.get('question')
         session_id = data.get('session_id', 'default')
-        if not query:
+        if not isinstance(query, str) or not query.strip():
             return JsonResponse({'error': 'Question must be provided.'}, status=400)
+        query = query.strip()
+        if len(query) > 2000:
+            return JsonResponse({'error': 'Question is too long.'}, status=400)
 
         chat_history = load_chat_history(request, session_id)
         formatted_chat_history = [{"role": message['role'], "content": message['content']} for message in chat_history]
@@ -166,17 +180,25 @@ def load_chat_history(request, session_id):
         return []
 
 def format_answer(answer):
+    """Store and return provider output as text, never executable HTML."""
+    return str(answer or '').strip()
 
-    formatted_answer = answer.replace('\n', '<br>')
-    
-    while '**' in formatted_answer:
-        start = formatted_answer.find('**')
-        end = formatted_answer.find('**', start + 2)
-        if end == -1:
-            break
-        formatted_answer = formatted_answer[:start] + '<b>' + formatted_answer[start+2:end] + '</b>' + formatted_answer[end+2:]
 
-    return f"{formatted_answer}"
+@require_GET
+def chatbot_status(request):
+    enabled = bool(settings.CHATBOT_ENABLED)
+    configured = bool(os.getenv('OPENAI_API_KEY'))
+    artifact_available = VECTOR_DB_PATH.exists()
+    available = (
+        enabled
+        and configured
+        and artifact_available
+        and CHATBOT_DEPENDENCIES_AVAILABLE
+    )
+    return JsonResponse({
+        'status': 'available' if available else ('limited' if enabled else 'archived'),
+        'available': available,
+    })
 
 @login_required
 def chat_sessions(request):

@@ -1,0 +1,89 @@
+import csv
+import os
+from pathlib import Path
+
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+
+
+class Command(BaseCommand):
+    help = 'Build the agriculture chatbot Chroma index from a question/answer CSV.'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--source',
+            default=os.getenv('CHATBOT_SOURCE_CSV', 'artifacts/chatbot.csv'),
+            help='CSV containing 질문 and 답변 columns.',
+        )
+        parser.add_argument(
+            '--output',
+            default=os.getenv('CHROMA_DB_PATH', 'artifacts/chroma'),
+            help='A new or empty Chroma persistence directory.',
+        )
+
+    def handle(self, *args, **options):
+        if not os.getenv('OPENAI_API_KEY'):
+            raise CommandError('OPENAI_API_KEY is required to create embeddings.')
+
+        source = self._resolve_path(options['source'])
+        output = self._resolve_path(options['output'])
+        if not source.is_file():
+            raise CommandError(f'Chatbot source CSV was not found: {source}')
+        if output.exists() and any(output.iterdir()):
+            raise CommandError(
+                f'Output directory must be empty to avoid mixing indexes: {output}'
+            )
+
+        try:
+            from langchain_community.vectorstores import Chroma
+            from langchain_core.documents import Document
+            from langchain_openai import OpenAIEmbeddings
+        except ImportError as exc:
+            raise CommandError(
+                'Install requirements-ai.txt before building the chatbot index.'
+            ) from exc
+
+        documents = self._load_documents(source, Document)
+        if not documents:
+            raise CommandError('The chatbot source CSV contains no usable rows.')
+
+        output.mkdir(parents=True, exist_ok=True)
+        embeddings = OpenAIEmbeddings(
+            model=settings.CHATBOT_EMBEDDING_MODEL,
+            api_key=os.environ['OPENAI_API_KEY'],
+        )
+        vector_store = Chroma.from_documents(
+            documents=documents,
+            embedding=embeddings,
+            collection_name=settings.CHATBOT_COLLECTION_NAME,
+            persist_directory=str(output),
+        )
+        persist = getattr(vector_store, 'persist', None)
+        if callable(persist):
+            persist()
+        self.stdout.write(self.style.SUCCESS(
+            f'Built chatbot index with {len(documents)} documents at {output}'
+        ))
+
+    @staticmethod
+    def _resolve_path(value):
+        path = Path(value)
+        return path if path.is_absolute() else Path(settings.BASE_DIR) / path
+
+    @staticmethod
+    def _load_documents(source, document_class):
+        documents = []
+        with source.open(encoding='utf-8-sig', newline='') as csv_file:
+            reader = csv.DictReader(csv_file)
+            if not reader.fieldnames or not {'질문', '답변'}.issubset(reader.fieldnames):
+                raise CommandError('CSV must contain 질문 and 답변 columns.')
+            for row_number, row in enumerate(reader, start=2):
+                question = (row.get('질문') or '').strip()
+                answer = (row.get('답변') or '').strip()
+                if not question or not answer:
+                    continue
+                documents.append(document_class(
+                    page_content=f'질문: {question}\n답변: {answer}',
+                    metadata={'source': source.name, 'row': row_number},
+                ))
+        return documents
