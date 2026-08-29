@@ -5,6 +5,7 @@ from urllib.parse import unquote
 
 import pandas as pd
 import requests
+from django.conf import settings
 
 from aivle_big.exceptions import NotFoundError, ServiceUnavailableError, ValidationError
 
@@ -18,6 +19,8 @@ FERTILIZER_V2_URL = "https://apis.data.go.kr/1390802/SoilEnviron_FrtlzrUse_V2/ge
 
 
 def _required_env(name):
+    if not settings.SOIL_SERVICE_ENABLED:
+        raise ServiceUnavailableError("Soil information service is disabled.")
     value = os.getenv(name, "").strip()
     if not value:
         raise ServiceUnavailableError("Soil information service is not configured.")
@@ -80,13 +83,15 @@ def build_pnu_code(b_code, mountain_yn, main_address_no, sub_address_no=""):
     return pnu
 
 
-def find_address_codes(address):
+def _find_address_document(address):
+    if not isinstance(address, str) or not address.strip():
+        raise ValidationError("Address is required.")
     api_key = _required_env("KAKAO_REST_API_KEY")
     try:
         response = requests.get(
             KAKAO_ADDRESS_URL,
             headers={"Authorization": f"KakaoAK {api_key}"},
-            params={"query": address},
+            params={"query": address.strip()},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
@@ -103,22 +108,29 @@ def find_address_codes(address):
 
     for document in documents:
         parcel = document.get("address") or {}
-        legal_code = parcel.get("b_code")
-        if legal_code:
-            return {
-                "stdg_code": str(legal_code)[:10],
-                "pnu_code": build_pnu_code(
-                    legal_code,
-                    parcel.get("mountain_yn"),
-                    parcel.get("main_address_no"),
-                    parcel.get("sub_address_no"),
-                ),
-            }
+        if parcel.get("b_code"):
+            return parcel
     raise NotFoundError("No legal district code was found for the address.")
 
 
 def find_legal_district_code(address):
-    return find_address_codes(address)["stdg_code"]
+    parcel = _find_address_document(address)
+    return str(parcel["b_code"])[:10]
+
+
+def find_address_codes(address):
+    """Resolve a parcel address to both legal-district and 19-digit PNU codes."""
+    parcel = _find_address_document(address)
+    legal_code = parcel["b_code"]
+    return {
+        "stdg_code": str(legal_code)[:10],
+        "pnu_code": build_pnu_code(
+            legal_code,
+            parcel.get("mountain_yn"),
+            parcel.get("main_address_no"),
+            parcel.get("sub_address_no"),
+        ),
+    }
 
 
 def fetch_soil_exam(stdg_code):

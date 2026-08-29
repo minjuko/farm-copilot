@@ -31,9 +31,21 @@ class SoilServiceTests(TestCase):
     def test_kakao_code_is_normalized_for_soil_v2(self, mock_get):
         mock_get.return_value = Mock(
             status_code=200,
-            json=lambda: {"documents": [{"address": {"b_code": "1234567890", "mountain_yn": "N", "main_address_no": "12", "sub_address_no": "3"}}]},
+            json=lambda: {"documents": [{"address": {"b_code": "1234567890"}}]},
         )
         self.assertEqual(find_legal_district_code("서울"), "1234567890")
+
+    @patch("soil.services.requests.get")
+    @patch.dict(os.environ, {"KAKAO_REST_API_KEY": "test-key"}, clear=True)
+    def test_district_lookup_does_not_require_parcel_numbers(self, mock_get):
+        mock_get.return_value = Mock(
+            status_code=200,
+            json=lambda: {"documents": [{"address": {
+                "b_code": "1234567890", "mountain_yn": "N",
+                "main_address_no": "", "sub_address_no": "",
+            }}]},
+        )
+        self.assertEqual(find_legal_district_code("광주광역시 용전동"), "1234567890")
 
     def test_pnu_builder_normal_and_mountain_parcels(self):
         self.assertEqual(build_pnu_code("1234567890", "N", "12", "3"), "1234567890100120003")
@@ -176,14 +188,56 @@ class SoilEndpointTests(TestCase):
     def test_fertilizer_endpoint_preserves_frontend_contract(self, mock_fertilizer, mock_codes):
         response = self.client.post(
             reverse("soil:get_soil_fertilizer_info"),
-            data=json.dumps({"crop_code": "sample", "address": "sample", "acid": "6"}),
+            data=json.dumps({
+                "crop_code": "sample",
+                "address": "district query",
+                "PNU_Nm": "selected parcel 1-2",
+                "acid": "6",
+            }),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"data": [{"crop_Code": "01001", "pre_Fert_N": "10"}]})
-        mock_codes.assert_called_once_with("sample")
+        mock_codes.assert_called_once_with("selected parcel 1-2")
+        self.assertEqual(response.json()["data"], [{"crop_Code": "01001", "pre_Fert_N": "10"}])
+        self.assertTrue(response.json()["session_id"])
         self.assertEqual(mock_fertilizer.call_args.args[2], "1234567890100010000")
-        self.assertEqual(crop_data.objects.filter(user_id=self.user.id).count(), 1)
+        saved = crop_data.objects.get(user_id=self.user.id)
+        self.assertEqual(saved.session_id, response.json()["session_id"])
+
+    @patch("soil.views.find_address_codes", return_value={"stdg_code": "1234567890", "pnu_code": "1234567890100010000"})
+    @patch("soil.views.fetch_fertilizer", return_value=([{"pre_Fert_N": "10"}], {"acid": "6"}))
+    def test_each_analysis_gets_an_independent_id(self, _mock_fertilizer, _mock_codes):
+        payload = json.dumps({
+            "crop_code": "sample",
+            "address": "district query",
+            "PNU_Nm": "selected parcel 1-2",
+        })
+        first = self.client.post(
+            reverse("soil:get_soil_fertilizer_info"), payload, content_type="application/json"
+        ).json()
+        second = self.client.post(
+            reverse("soil:get_soil_fertilizer_info"), payload, content_type="application/json"
+        ).json()
+
+        self.assertNotEqual(first["session_id"], second["session_id"])
+        self.assertEqual(crop_data.objects.filter(user_id=self.user.id).count(), 2)
+
+    def test_delete_removes_only_the_requested_analysis_owned_by_user(self):
+        first = crop_data.objects.create(user_id=self.user.id, session_id="analysis-1")
+        second = crop_data.objects.create(user_id=self.user.id, session_id="analysis-2")
+        other_user = User.objects.create_user(
+            email="soil-other@example.com", username="soil-other", password="test-password"
+        )
+        other = crop_data.objects.create(user_id=other_user.id, session_id="analysis-1")
+
+        response = self.client.delete(
+            reverse("soil:delete_soil_data_by_session", args=["analysis-1"])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(crop_data.objects.filter(pk=first.pk).exists())
+        self.assertTrue(crop_data.objects.filter(pk=second.pk).exists())
+        self.assertTrue(crop_data.objects.filter(pk=other.pk).exists())
 
 
 class SoilCsrfBoundaryTests(TestCase):

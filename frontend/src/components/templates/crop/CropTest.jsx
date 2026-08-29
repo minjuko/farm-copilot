@@ -27,6 +27,25 @@ import {
   RemoveIcon,
 } from '../../../styles/CropTest';
 import { buildPredictionPayload, removeCropAt } from './predictionFlow';
+import { fetchCapabilities, normalizeCapability } from '../../../apis/capabilities';
+
+const ServiceNotice = ({ available }) => (
+  <div
+    role="status"
+    style={{
+      marginBottom: '1rem',
+      padding: '0.75rem',
+      textAlign: 'center',
+      color: available ? '#1f6b4f' : '#5d4a00',
+      backgroundColor: available ? '#e8f5e9' : '#fff8e1',
+      borderRadius: '6px',
+    }}
+  >
+    {available
+      ? 'LIVE · 기상 및 시장가격 외부 API가 설정되어 있습니다.'
+      : 'LIMITED · 외부 API가 설정된 환경에서만 실시간 수익 예측을 제공합니다.'}
+  </div>
+);
 
 const CropTest = () => {
   const { setIsLoading, isLoading } = useLoading();
@@ -44,8 +63,25 @@ const CropTest = () => {
   const [addError, setAddError] = useState("");
   const [selectKey, setSelectKey] = useState(0); // 추가된 key state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serviceCapability, setServiceCapability] = useState({
+    status: 'checking', available: false,
+  });
   const navigate = useNavigate();
   const regionRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchCapabilities()
+      .then((response) => {
+        if (active) {
+          setServiceCapability(normalizeCapability(response?.data, 'prediction'));
+        }
+      })
+      .catch(() => {
+        if (active) setServiceCapability({ status: 'limited', available: false });
+      });
+    return () => { active = false; };
+  }, []);
 
   const fetchCropNames = async () => {
     try {
@@ -83,6 +119,10 @@ const CropTest = () => {
   };
 
   const addCrop = async () => {
+    if (!serviceCapability.available) {
+      setAddError('수익 예측 외부 API가 설정되지 않았습니다.');
+      return;
+    }
     if (landArea && region && currentCrop.name && currentCrop.ratio) {
       const ratio = Number(currentCrop.ratio);
       if (!Number.isFinite(ratio) || ratio <= 0) {
@@ -124,6 +164,13 @@ const CropTest = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+    if (!serviceCapability.available) {
+      setModalContent('수익 예측 외부 API가 설정되지 않아 현재 실시간 예측을 지원하지 않습니다.');
+      setModalTitle('서비스 제한');
+      setIsError(true);
+      setIsModalOpen(true);
+      return;
+    }
     const inputErrors = validateInput();
     if (inputErrors.length > 0) {
       setModalContent(inputErrors.join("\n"));
@@ -157,7 +204,8 @@ const CropTest = () => {
         setIsError(true);
         setIsModalOpen(true);
       } else {
-        navigate(`/sessiondetails/${session_id}`, { state: { session_id } });
+        const savedSessionId = response.data.session_id || session_id;
+        navigate(`/sessiondetails/${savedSessionId}`, { state: { session_id: savedSessionId } });
       }
     } catch (error) {
       console.error('Error fetching prediction');
@@ -199,6 +247,7 @@ const CropTest = () => {
   return (
     <PageContainer>
       {isLoading && <GlobalLoader text="AI 수익 예측 중입니다."/>}
+      <ServiceNotice available={serviceCapability.available} />
       <SummaryTitle $step="1">작물정보 입력</SummaryTitle>
       <InputContainer>
         <Label>재배 면적 (평)</Label>
@@ -268,7 +317,7 @@ const CropTest = () => {
             onChange={(e) => setCurrentCrop({ ...currentCrop, ratio: e.target.value })}
             autoComplete="off"
           />
-          <AddButton onClick={addCrop} disabled={!landArea || !region || !currentCrop.name || !currentCrop.ratio}>
+          <AddButton onClick={addCrop} disabled={!serviceCapability.available || !landArea || !region || !currentCrop.name || !currentCrop.ratio}>
             <FaPlus style={{ marginRight: '0.5rem' }} /> 추가하기
           </AddButton>
         </div>
@@ -296,7 +345,7 @@ const CropTest = () => {
             <RemoveIcon onClick={() => removeCrop(index)}><FaTrash /></RemoveIcon>
           </SummaryItem>
         ))}
-        <Button onClick={handleSubmit} disabled={isSubmitting}>예측 결과 보러가기</Button>
+        <Button onClick={handleSubmit} disabled={isSubmitting || !serviceCapability.available}>예측 결과 보러가기</Button>
       </SummaryContainer>
       <CustomModal
         isOpen={isModalOpen}

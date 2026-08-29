@@ -2,6 +2,7 @@ import json
 import os
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pandas as pd
 import requests
 from django.test import Client, TestCase
@@ -12,7 +13,7 @@ from login.models import User
 
 from .services import fetch_market_prices, fetch_weather_data
 from .models import PredictionResult, PredictionSession
-from .views import fetch_crop_data, read_csv_data
+from .views import _build_price_dataset, fetch_crop_data, predict_prices, read_csv_data
 
 
 class PredictionRuntimeTests(TestCase):
@@ -38,6 +39,41 @@ class PredictionRuntimeTests(TestCase):
         )
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["code"], 2001)
+
+    @patch("prediction.views.fetch_weather_data")
+    def test_prediction_rejects_misaligned_crops_before_external_calls(self, mock_weather):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("prediction:predict_income"),
+            data=json.dumps({
+                "crop_names": ["감자", "고구마"],
+                "crop_ratios": [1],
+                "land_area": 100,
+                "region": "서울",
+            }),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["code"], 1001)
+        mock_weather.assert_not_called()
+
+    @patch("prediction.views.fetch_weather_data")
+    def test_prediction_rejects_ninety_percent_total_before_external_calls(self, mock_weather):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("prediction:predict_income"),
+            data=json.dumps({
+                "crop_names": ["감자", "고구마", "양파"],
+                "crop_ratios": [0.3, 0.3, 0.3],
+                "land_area": 100,
+                "region": "서울",
+            }),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        mock_weather.assert_not_called()
 
     @patch("prediction.services.requests.get", side_effect=requests.Timeout)
     @patch.dict(os.environ, {"DATA_GO_KR_WEATHER_SERVICE_KEY": "test-key"}, clear=True)
@@ -157,6 +193,56 @@ class PredictionRuntimeTests(TestCase):
         self.assertIsNotNone(income)
         self.assertIsInstance(adjusted, dict)
         self.assertIsNotNone(latest_year)
+
+    def test_crop_adjustment_does_not_scale_year_rates_or_unit_price(self):
+        frame = read_csv_data()
+        crop_name = frame["작물명"].dropna().iloc[0]
+        source = frame[frame["작물명"] == crop_name].sort_values("시점").iloc[-1]
+
+        _income, adjusted, latest_year = fetch_crop_data(crop_name, frame, 151.25, 1)
+
+        self.assertEqual(adjusted["시점"], latest_year)
+        self.assertEqual(adjusted["농가수취가격 (원/kg)"], source["농가수취가격 (원/kg)"])
+        self.assertEqual(adjusted["소득률 (%)"], source["소득률 (%)"])
+        self.assertAlmostEqual(adjusted["소득 (원)"], source["소득 (원)"] / 2)
+
+    @staticmethod
+    def _prediction_frame(days=80):
+        dates = pd.date_range("2026-01-01", periods=days, freq="D")
+        price = pd.Series(range(100, 100 + days), dtype=float)
+        return pd.DataFrame({
+            "tm": dates,
+            "avgRhm": 50.0,
+            "minTa": 5.0,
+            "maxTa": 15.0,
+            "maxWs": 3.0,
+            "avgTa": 10.0,
+            "avgWs": 1.0,
+            "sumRn": 0.0,
+            "ddMes": 0.0,
+            "price": price,
+            "itemname": "감자",
+        })
+
+    def test_price_features_use_only_prices_observed_by_feature_date(self):
+        frame = self._prediction_frame()
+        X, y, target = _build_price_dataset(frame)
+
+        feature_date_index = X.index[-1]
+        self.assertEqual(X.loc[feature_date_index, "price_lag_1"], frame.loc[feature_date_index, "price"])
+        self.assertEqual(y.loc[feature_date_index], frame.loc[feature_date_index + 1, "price"])
+        self.assertEqual(target.iloc[0]["price_lag_1"], frame.iloc[-1]["price"])
+
+    def test_price_prediction_is_finite_non_negative_and_does_not_mutate_input(self):
+        frame = self._prediction_frame()
+        original = frame.copy(deep=True)
+
+        price, r2, rmse = predict_prices(frame)
+
+        pd.testing.assert_frame_equal(frame, original)
+        self.assertGreaterEqual(price, 0)
+        self.assertTrue(np.isfinite(r2))
+        self.assertTrue(np.isfinite(rmse))
 
     @patch("prediction.views.fetch_market_prices", side_effect=ServiceUnavailableError("unavailable"))
     def test_session_details_survive_market_chart_outage(self, _mock_market):

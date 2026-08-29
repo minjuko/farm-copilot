@@ -8,6 +8,7 @@ import { useLoading } from "../../../LoadingContext";
 import CustomModal from '../../atoms/CustomModal';
 import SoilResults from "./SoilResults";
 import { buildFertilizerPayload } from "./soilFlow";
+import { fetchCapabilities, normalizeCapability } from '../../../apis/capabilities';
 
 const Container = styled.div`
   display: flex;
@@ -181,6 +182,18 @@ const Divider = styled.hr`
   border: 1px solid #ccc;
 `;
 
+const ServiceNotice = styled.div`
+  width: 100%;
+  max-width: 600px;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  text-align: center;
+  color: ${({ $available }) => ($available ? '#1f6b4f' : '#5d4a00')};
+  background-color: ${({ $available }) => ($available ? '#e8f5e9' : '#fff8e1')};
+  border-radius: 6px;
+`;
+
 const SoilTemplate = () => {
   const { setIsLoading } = useLoading();
   const [cropName, setCropName] = useState('');
@@ -195,11 +208,28 @@ const SoilTemplate = () => {
   const [errorModalIsOpen, setErrorModalIsOpen] = useState(false);
   const [isSoilLoading, setIsSoilLoading] = useState(false);
   const [isFertilizerLoading, setIsFertilizerLoading] = useState(false);
+  const [serviceCapability, setServiceCapability] = useState({
+    status: 'checking', available: false,
+  });
   const navigate = useNavigate();
 
   const inputRef = useRef(null);
   const soilRequestInFlight = useRef(false);
   const fertilizerRequestInFlight = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    fetchCapabilities()
+      .then((response) => {
+        if (active) {
+          setServiceCapability(normalizeCapability(response?.data, 'soil'));
+        }
+      })
+      .catch(() => {
+        if (active) setServiceCapability({ status: 'limited', available: false });
+      });
+    return () => { active = false; };
+  }, []);
 
   const handleCropNameChange = (e) => {
     const value = e.target.value;
@@ -219,6 +249,7 @@ const SoilTemplate = () => {
   };
 
   const handleSampleChange = async (e) => {
+    if (!serviceCapability.available) return;
     if (fertilizerRequestInFlight.current) return;
     const selected = soilData[Number(e.target.value)];
     setSelectedSample(selected);
@@ -276,6 +307,11 @@ const SoilTemplate = () => {
   }, []);
 
   const fetchSoilExamData = async () => {
+    if (!serviceCapability.available) {
+      setError('토양 분석 외부 API가 설정되지 않아 현재 실시간 조회를 지원하지 않습니다.');
+      setErrorModalIsOpen(true);
+      return;
+    }
     if (soilRequestInFlight.current) return;
     try {
       if (!cropNames.includes(cropName) || !address.trim()) {
@@ -357,6 +393,11 @@ const SoilTemplate = () => {
 
   return (
     <Container>
+      <ServiceNotice $available={serviceCapability.available} role="status">
+        {serviceCapability.available
+          ? 'LIVE · 토양검정 및 비료처방 외부 API가 설정되어 있습니다.'
+          : 'LIMITED · 외부 API가 설정된 환경에서만 실시간 토양 분석을 제공합니다.'}
+      </ServiceNotice>
       <BoxContainer>
         <p style={{ color: '#7f8c8d', fontSize: '0.875rem', marginTop: '0.625rem' }}>토양 분석을 위한 작물 이름과 주소를 입력하세요</p>
         <InputContainer ref={inputRef}>
@@ -390,14 +431,14 @@ const SoilTemplate = () => {
               onKeyDown={handleKeyDown}
               placeholder="예) 광주광역시 수완동"
             />
-            <SearchButton onClick={fetchSoilExamData} disabled={isSoilLoading}>주소 검색 <SearchIcon /></SearchButton>
+            <SearchButton onClick={fetchSoilExamData} disabled={isSoilLoading || !serviceCapability.available}>주소 검색 <SearchIcon /></SearchButton>
           </AddressContainer>
           <p style={{ color: '#7f8c8d', fontSize: '0.875rem', marginTop: '0.5rem' }}>예시) 광주광역시 용전동, 전라남도 순천시 용당동</p>
         </InputContainer>
         {soilData.length > 0 && (
           <InputContainer>
             <InputLabel>상세 주소 선택</InputLabel>
-            <Select onChange={handleSampleChange} defaultValue="" disabled={isFertilizerLoading}>
+            <Select onChange={handleSampleChange} defaultValue="" disabled={isFertilizerLoading || !serviceCapability.available}>
               <option value="" disabled>선택하세요</option>
               {soilData.map((sample, index) => (
                 <option key={`${sample.No ?? sample.PNU_Nm}-${index}`} value={index}>

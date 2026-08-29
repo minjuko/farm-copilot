@@ -4,6 +4,7 @@ from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+import numpy as np
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase
@@ -189,6 +190,34 @@ class DetectionModelClassMappingTests(TestCase):
 
         self.assertEqual(views.map_model_class_to_pest_id(2), pest.id)
         self.assertEqual(views.map_model_class_to_pest_id(4), pest.id)
+
+    @patch.object(views, 'import_module')
+    @patch.object(views, 'get_yolo_model')
+    def test_process_image_returns_highest_confidence_mapped_pest(self, get_model, import_module):
+        lower_pest = Pest.objects.create(code='LOWER', pest_name='낮은 신뢰도 병해')
+        higher_pest = Pest.objects.create(code='HIGHER', pest_name='높은 신뢰도 병해')
+        PestModelClass.objects.create(class_id=0, model_label='lower', pest=lower_pest)
+        PestModelClass.objects.create(class_id=1, model_label='higher', pest=higher_pest)
+
+        lower_box = Mock()
+        lower_box.conf.item.return_value = 0.7
+        lower_box.cls.item.return_value = 0
+        higher_box = Mock()
+        higher_box.conf.item.return_value = 0.95
+        higher_box.cls.item.return_value = 1
+        result = Mock(boxes=[lower_box, higher_box])
+        result.plot.return_value = object()
+        get_model.return_value = Mock(return_value=[result])
+        import_module.return_value.imencode.return_value = (True, np.array([1, 2, 3], dtype=np.uint8))
+
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            image_file.write(b'image')
+            image_file.flush()
+            pest_id, confidence, content = views.process_image(image_file.name)
+
+        self.assertEqual(pest_id, higher_pest.id)
+        self.assertEqual(confidence, 95.0)
+        self.assertEqual(content.read(), bytes([1, 2, 3]))
 
 
 class DetectCsrfBoundaryTests(TestCase):

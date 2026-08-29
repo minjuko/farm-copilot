@@ -4,12 +4,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render
 from django.contrib.auth import views as auth_views
+from .views import capabilities
 
 def index(request):
     return render(request,'index.html')
 
 urlpatterns = [
     path('', index),
+    path('api/capabilities/', capabilities, name='capabilities'),
     path("admin/", admin.site.urls),
     path('login/', include('login.urls')),
     path('accounts/', include('django.contrib.auth.urls')),

@@ -40,6 +40,7 @@ test.each([
   { crops: [{ name: '감자', ratio: '' }] },
   { crops: [{ name: '감자', ratio: '-1' }, { name: '고구마', ratio: '2' }] },
   { crops: [{ name: '감자', ratio: '0.2' }, { name: '고구마', ratio: '0.2' }] },
+  { crops: [{ name: '감자', ratio: '0.3' }, { name: '고구마', ratio: '0.3' }, { name: '양파', ratio: '0.3' }] },
 ])('rejects invalid crop ratios', ({ crops }) => {
   expect(buildPredictionPayload({ ...validInput, crops }).error).toMatch(/비율/);
 });

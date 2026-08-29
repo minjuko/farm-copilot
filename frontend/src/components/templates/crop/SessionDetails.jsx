@@ -554,8 +554,8 @@ const SessionDetails = () => {
                 </tbody>
               </InfoTable>
               <ExplanationText>
-                RMSE: 모델 예측값과 실제값 간의 차이를 제곱한 평균을 구한 후 제곱근을 취한 값.<br/>
-                R2 score: 모델의 설명력을 나타내는 지표, 1에 가까울 수록 모델이 데이터를 잘 설명함<br/>
+                RMSE: 최근 20% 기간에서 예측값과 실제값 차이를 가격 단위로 나타낸 값이며, 낮을수록 좋습니다.<br/>
+                R²: 최근 20% 기간을 시간순으로 검증한 설명력입니다. 1에 가까울수록 좋고 0보다 작을 수도 있습니다.<br/>
                 <br/>* 예상 도매가는 실제값과 다를 수 있습니다.
               </ExplanationText>
               <SectionTitle>지난 1년간 일일 도매가</SectionTitle>

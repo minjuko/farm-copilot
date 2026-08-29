@@ -5,8 +5,7 @@ const toFiniteNumber = (value) => {
 
 export const isValidRatioTotal = (ratios) => {
   const total = ratios.reduce((sum, ratio) => sum + ratio, 0);
-  return Math.abs(total - 1) < 1e-9
-    || (ratios.length === 3 && ratios.every((ratio) => ratio === 0.3));
+  return Math.abs(total - 1) < 1e-9;
 };
 
 export const buildPredictionPayload = ({ landArea, region, crops, sessionId }) => {

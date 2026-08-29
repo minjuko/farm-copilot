@@ -171,6 +171,8 @@ CHATBOT_EMBEDDING_MODEL = os.getenv(
 CHATBOT_COLLECTION_NAME = os.getenv(
     'CHATBOT_COLLECTION_NAME', 'agriculture-knowledge'
 )
+SOIL_SERVICE_ENABLED = env_bool('SOIL_SERVICE_ENABLED', True)
+PREDICTION_SERVICE_ENABLED = env_bool('PREDICTION_SERVICE_ENABLED', True)
 
 
 # Internationalization

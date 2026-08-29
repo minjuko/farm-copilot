@@ -5,18 +5,21 @@ from urllib.parse import unquote
 
 import pandas as pd
 import requests
+from django.conf import settings
 
 from aivle_big.exceptions import NotFoundError, ServiceUnavailableError
 
 
 REQUEST_TIMEOUT_SECONDS = 10
 MARKET_API_URL = "https://apis.data.go.kr/B552845/periodWholesale/price"
-WEATHER_API_URL = "http://apis.data.go.kr/1360000/AsosDalyInfoService/getWthrDataList"
+WEATHER_API_URL = "https://apis.data.go.kr/1360000/AsosDalyInfoService/getWthrDataList"
 MARKET_PAGE_SIZE = 1000
 MARKET_MAX_PAGES = 1000
 
 
 def _required_env(name, service_name):
+    if not settings.PREDICTION_SERVICE_ENABLED:
+        raise ServiceUnavailableError(f"{service_name} is disabled.")
     value = os.getenv(name, "").strip()
     if not value:
         raise ServiceUnavailableError(f"{service_name} is not configured.")

@@ -132,6 +132,15 @@ def map_model_class_to_pest_id(model_class_id):
     return mapping.pest_id
 
 
+def image_url_or_none(image_field):
+    if not image_field:
+        return None
+    try:
+        return image_field.url
+    except (ValueError, OSError):
+        return None
+
+
 def process_image(image_path):
     """Run inference and return (Pest PK or None, confidence, image content)."""
     model = get_yolo_model()
@@ -144,12 +153,13 @@ def process_image(image_path):
         if results and len(results) > 0:
             best_result = results[0]
             if best_result.boxes and len(best_result.boxes) > 0:
-                for box in best_result.boxes:
-                    box_confidence = float(box.conf.item())
-                    if box_confidence < CONFIDENCE_THRESHOLD:
-                        continue
-
-                    confidence = box_confidence * 100
+                eligible_boxes = [
+                    box for box in best_result.boxes
+                    if float(box.conf.item()) >= CONFIDENCE_THRESHOLD
+                ]
+                if eligible_boxes:
+                    box = max(eligible_boxes, key=lambda item: float(item.conf.item()))
+                    confidence = float(box.conf.item()) * 100
                     annotated_image = best_result.plot()
                     try:
                         cv2 = import_module('cv2')
@@ -165,11 +175,7 @@ def process_image(image_path):
                     result_image_content = ContentFile(
                         buffer.tobytes(), name=os.path.basename(image_path)
                     )
-                    # Keep model execution and annotation available, but do
-                    # not expose or persist a Pest record until the mapping
-                    # contract is authoritative.
-                    map_model_class_to_pest_id(box.cls.item())
-                    break
+                    pest_id = map_model_class_to_pest_id(box.cls.item())
 
         if result_image_content is None:
             result_image_content = get_original_image_content(image_path)
@@ -219,9 +225,9 @@ def upload_image_for_detection(request):
             'prevention_methods': pest_info.prevention_methods,
             'pesticide_name': pest_info.pesticide_name,
             'confidence': confidence,
-            'user_image_url': detection.image.url, 
+            'user_image_url': image_url_or_none(detection.image),
             'db_image_url': detection.pest.image_url,  
-            'detection_date': detection.detection_date.now().strftime('%Y-%m-%d %H:%M')
+            'detection_date': timezone.localtime(detection.detection_date).strftime('%Y-%m-%d %H:%M')
         }
 
         return JsonResponse(data, status=200)
@@ -248,7 +254,7 @@ def list_detection_sessions(request):
             'pest_name': session.pest.pest_name,
             'detection_date': timezone.localtime(session.detection_date).strftime('%Y-%m-%d %H:%M'),
             'confidence': session.confidence,
-            'user_image_url': session.image.url
+            'user_image_url': image_url_or_none(session.image)
         } for session in sessions]
         return JsonResponse(session_list, safe=False)
     except Exception as e:
@@ -266,9 +272,9 @@ def detection_session_details(request, session_id):
             'symptom_description': session.pest.symptom_description,
             'prevention_methods': session.pest.prevention_methods,
             'pesticide_name': session.pest.pesticide_name,
-            'detection_date': session.detection_date.now().strftime('%Y-%m-%d %H:%M'),
+            'detection_date': timezone.localtime(session.detection_date).strftime('%Y-%m-%d %H:%M'),
             'confidence': session.confidence,
-            'user_image_url': session.image.url,
+            'user_image_url': image_url_or_none(session.image),
             'db_image_url': session.pest.image_url
         }
         return JsonResponse(details)

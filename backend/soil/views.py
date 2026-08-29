@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from django.db import transaction
 from django.http import JsonResponse
@@ -51,24 +52,31 @@ def get_soil_fertilizer_info(request):
     if not crop_name:
         raise MissingPartError("Missing crop code.")
 
-    address_codes = find_address_codes(data.get("address"))
+    # The first address can be a district-level query. Fertilizer V2 requires
+    # the exact parcel selected from the soil-examination result.
+    parcel_address = data.get("PNU_Nm")
+    if not parcel_address:
+        raise MissingPartError("Selected parcel address is required.")
+    address_codes = find_address_codes(parcel_address)
     fertilizer_data, filtered_params = fetch_fertilizer(crop_name, data, address_codes["pnu_code"])
-    if not request.session.session_key:
-        request.session.create()
+    # A soil analysis is an application record, not a browser login session.
+    # Reusing Django's session key caused every analysis made in one login
+    # session to be grouped together and deleted together from the history UI.
+    analysis_id = str(uuid.uuid4())
 
     with transaction.atomic():
         for item in fertilizer_data:
             crop_data.objects.create(
                 user_id=request.user.id,
-                session_id=request.session.session_key,
+                session_id=analysis_id,
                 crop_name=crop_name,
                 address=data.get("address"),
-                detailed_address=data.get("PNU_Nm"),
+                detailed_address=parcel_address,
                 created_at=timezone.now(),
                 soil_data=filtered_params,
                 fertilizer_data=item,
             )
-    return JsonResponse({"data": fertilizer_data})
+    return JsonResponse({"session_id": analysis_id, "data": fertilizer_data})
 
 
 @login_required

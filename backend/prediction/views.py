@@ -5,9 +5,10 @@ from django.http import HttpResponse, JsonResponse
 import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNet
 from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from django.views.decorators.http import require_POST
 from aivle_big.decorators import login_required
 from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, UnauthorizedError, ServiceUnavailableError
@@ -21,8 +22,6 @@ import uuid
 import os
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
-session_id = str(uuid.uuid4())
-
 logger = logging.getLogger(__name__)
 
 CSV_FILE_PATH = 'prediction/all_crop_data.csv'  # 수익률 예측
@@ -63,9 +62,15 @@ def fetch_crop_data(crop_name, df, land_area, crop_ratio):
         latest_year = latest_crop_data['시점']
         adjusted_income = (crop_income / 302.5) * land_area * crop_ratio  
         adjusted_data = latest_crop_data.copy()
+        # The source statistics are per 10a (302.5 pyeong). Scale quantities
+        # and aggregate costs only; year, percentages, and per-kg unit prices
+        # must remain unchanged.
+        non_scalable_columns = {
+            '시점', '농가수취가격 (원/kg)', '부가가치율 (%)', '소득률 (%)', '작물명'
+        }
         for col in adjusted_data.index:
-            if pd.api.types.is_numeric_dtype(adjusted_data[col]):
-                adjusted_data[col] = (adjusted_data[col] / 302.5) * land_area * crop_ratio 
+            if col not in non_scalable_columns and isinstance(adjusted_data[col], (int, float, np.number)):
+                adjusted_data[col] = (adjusted_data[col] / 302.5) * land_area * crop_ratio
         return adjusted_income, adjusted_data.to_dict(), latest_year
     else:
         return None, None, None
@@ -77,36 +82,59 @@ def fetch_market_prices(crop_name, region, start_date, end_date):
 def fetch_weather_data(region):
     return request_weather_data(region, re)
 
-def predict_prices(merged_df, df_2):
+def _build_price_dataset(merged_df):
     if 'price' not in merged_df:
-        logger.error("Merged DataFrame does not contain 'price' column")
-        raise KeyError("Merged DataFrame does not contain 'price' column")
-    
-    merged_df['price'] = merged_df['price'].ffill().shift(-1)
-    merged_df.dropna(subset=['price'], inplace=True)
-    merged_df['year'] = merged_df['tm'].dt.year
-    merged_df['month'] = merged_df['tm'].dt.month
-    merged_df['day'] = merged_df['tm'].dt.day
-    merged_df['month_sin'] = np.sin(2 * np.pi * merged_df['month'] / 12)
-    merged_df['month_cos'] = np.cos(2 * np.pi * merged_df['month'] / 12)
-    merged_df['day_sin'] = np.sin(2 * np.pi * merged_df['day'] / 31)
-    merged_df['day_cos'] = np.cos(2 * np.pi * merged_df['day'] / 31)
+        raise ValidationError("Market data does not contain a price column.")
+
+    frame = merged_df.copy().sort_values('tm').reset_index(drop=True)
+    frame['tm'] = pd.to_datetime(frame['tm'], errors='coerce')
+    frame['observed_price'] = pd.to_numeric(frame['price'], errors='coerce').ffill()
+    frame = frame.dropna(subset=['tm', 'observed_price'])
+    frame['year'] = frame['tm'].dt.year
+    frame['month_sin'] = np.sin(2 * np.pi * frame['tm'].dt.month / 12)
+    frame['month_cos'] = np.cos(2 * np.pi * frame['tm'].dt.month / 12)
+    frame['day_sin'] = np.sin(2 * np.pi * frame['tm'].dt.day / 31)
+    frame['day_cos'] = np.cos(2 * np.pi * frame['tm'].dt.day / 31)
+
+    # Features for day t may use prices observed through day t only. The old
+    # implementation calculated rolling values from the shifted target, which
+    # leaked tomorrow's price into both training and evaluation features.
     for lag in range(1, 8):
-        merged_df[f'price_lag_{lag}'] = merged_df['price'].shift(lag)
-    merged_df['price_ma_7'] = merged_df['price'].rolling(window=7).mean()
-    merged_df['price_ma_30'] = merged_df['price'].rolling(window=30).mean()
-    merged_df['temp_diff'] = merged_df['maxTa'] - merged_df['minTa']
-    merged_df.fillna(0, inplace=True)
-    X = merged_df.drop(['price', 'tm'], axis=1)
-    y = merged_df['price']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
-    model = ElasticNet(alpha=0.1, l1_ratio=0.5, max_iter=10000)
+        frame[f'price_lag_{lag}'] = frame['observed_price'].shift(lag - 1)
+    frame['price_ma_7'] = frame['observed_price'].rolling(window=7).mean()
+    frame['price_ma_30'] = frame['observed_price'].rolling(window=30).mean()
+    frame['temp_diff'] = frame['maxTa'] - frame['minTa']
+    frame['target_price'] = frame['observed_price'].shift(-1)
+
+    excluded = {'tm', 'price', 'observed_price', 'target_price', 'itemname'}
+    feature_columns = [column for column in frame.columns if column not in excluded]
+    frame[feature_columns] = frame[feature_columns].apply(pd.to_numeric, errors='coerce')
+    target_features = frame.iloc[[-1]][feature_columns].dropna(axis=1, how='all')
+    feature_columns = target_features.columns.tolist()
+    training = frame.dropna(subset=feature_columns + ['target_price'])
+    if len(training) < 10 or len(feature_columns) == 0:
+        raise ValidationError("Not enough aligned market and weather data for prediction.")
+    return training[feature_columns], training['target_price'], frame.iloc[[-1]][feature_columns]
+
+
+def predict_prices(merged_df, _weather_df=None):
+    X, y, target = _build_price_dataset(merged_df)
+    split_index = max(1, int(len(X) * 0.8))
+    if len(X) - split_index < 2:
+        raise ValidationError("Not enough evaluation data for prediction.")
+    X_train, X_test = X.iloc[:split_index], X.iloc[split_index:]
+    y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
+    model = make_pipeline(
+        StandardScaler(),
+        ElasticNet(alpha=0.1, l1_ratio=0.5, max_iter=10000),
+    )
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
-    r2 = r2_score(y_test, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-    target = X.iloc[[-1]]
-    pred_value = int(model.predict(target))
+    r2 = float(r2_score(y_test, y_pred))
+    rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
+    if not np.isfinite(r2):
+        r2 = 0.0
+    pred_value = max(0, int(round(float(model.predict(target)[0]))))
     return pred_value, r2, rmse
 
 def convert_values(data):
@@ -129,7 +157,7 @@ def predict_income(request):
     logger.debug("Entered predict_income function")
     try:
         data = json.loads(request.body)
-        session_id = data.get('session_id')
+        session_id = data.get('session_id') or str(uuid.uuid4())
         session_name = data.get('session_name', 'Default Prediction Session')
         land_area = float(data['land_area'])
         
@@ -144,10 +172,21 @@ def predict_income(request):
             return JsonResponse({'error': 'Invalid format for crop_names'}, status=400)
 
         crop_ratios = [float(ratio) for ratio in data['crop_ratios']]
-        
-        if not (sum(crop_ratios) == 1 or (len(crop_ratios) == 3 and crop_ratios == [0.3, 0.3, 0.3])):
+        if len(crop_names) != len(crop_ratios):
+            raise ValidationError('작물과 비율의 개수가 일치해야 합니다.')
+        if not crop_names or any(not name.strip() for name in crop_names):
+            raise ValidationError('작물을 하나 이상 선택해야 합니다.')
+        if len(set(crop_names)) != len(crop_names):
+            raise ValidationError('같은 작물은 중복해서 선택할 수 없습니다.')
+        if land_area <= 0 or any(ratio <= 0 for ratio in crop_ratios):
+            raise ValidationError('면적과 작물 비율은 0보다 커야 합니다.')
+        if not np.isclose(sum(crop_ratios), 1.0, rtol=0, atol=1e-9):
             logger.error("작물 비율의 합은 1이 되어야합니다.")
-            return JsonResponse({'error': '작물 비율의 합은 1이 되어야합니다.'}, status=400)
+            raise ValidationError('작물 비율의 합은 1이 되어야합니다.')
+        if len(str(session_id)) > 36:
+            raise ValidationError('세션 식별자가 너무 깁니다.')
+        if PredictionSession.objects.filter(user=request.user, session_id=session_id).exists():
+            raise ValidationError('이미 존재하는 예측 세션입니다.')
 
         region = data['region']
         df = read_csv_data()
@@ -203,6 +242,7 @@ def predict_income(request):
 
                     pred_value, r2, rmse = predict_prices(merged_df, df_2)
                     logger.debug(f"Predicted prices for {crop_name}: {pred_value}")
+                    r2_scores.append(r2)
 
                     PredictionResult.objects.create(
                         session=prediction_session,
@@ -239,6 +279,7 @@ def predict_income(request):
             return JsonResponse({'error': 'An unexpected error occurred'}, status=500)
         
         return JsonResponse({
+            'session_id': session_id,
             'total_income': int(total_predicted_value),
             'results': crop_results,
             'r2_scores': r2_scores

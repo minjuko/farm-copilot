@@ -197,6 +197,9 @@ kunkunnongsakun/
 -   농촌진흥청 비료사용처방 정보
 -   Kakao Map API
 
+현재 동작 여부와 추가 작업은 [API 및 외부 서비스 상태](./docs/API_STATUS.md)에
+기능별로 기록합니다.
+
 ------------------------------------------------------------------------
 
 ## 현재 Repository 실행 범위
@@ -214,6 +217,20 @@ SQLite·로컬 파일 저장소를 기본값으로 사용하며, 외부 서비�
 | 작물 수익 예측 | 제한 | 기상·시장가격 공공데이터 API 키 필요 |
 | 농업 챗봇 | 비활성 | OpenAI 키, AI 의존성, Chroma 인덱스 필요 |
 | 병해충 진단 | 비활성 | YOLO 실행 환경과 검증된 클래스 매핑 필요 |
+
+Frontend는 `/api/capabilities/` 응답을 기준으로 외부 서비스 상태를 먼저
+확인합니다. 키가 없거나 기능이 비활성화된 경우 요청 후 실패하는 대신 화면에서
+`LIMITED` 상태를 안내하고 실행 버튼을 비활성화합니다. 이 API는 설정 여부만
+반환하며 credential 값은 노출하지 않습니다.
+
+외부 서비스를 운영 환경에서 일시 중지하려면 키를 삭제하지 않고 다음 기능
+플래그를 사용할 수 있습니다.
+
+``` dotenv
+SOIL_SERVICE_ENABLED=false
+PREDICTION_SERVICE_ENABLED=false
+CHATBOT_ENABLED=false
+```
 
 ### 농업 챗봇 선택 실행
 
