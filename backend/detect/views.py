@@ -145,7 +145,13 @@ def process_image(image_path):
     """Run inference and return (Pest PK or None, confidence, image content)."""
     model = get_yolo_model()
     try:
-        results = model(image_path)
+        # TTA restores the inference behavior used for the demonstration
+        # images and is configurable for environments that prioritize speed.
+        results = model(
+            image_path,
+            augment=settings.YOLO_AUGMENTED_INFERENCE,
+            verbose=False,
+        )
         pest_id = None
         confidence = 0.0
         result_image_content = None
@@ -224,6 +230,8 @@ def upload_image_for_detection(request):
             'symptom_description': pest_info.symptom_description,
             'prevention_methods': pest_info.prevention_methods,
             'pesticide_name': pest_info.pesticide_name,
+            'information_source': pest_info.information_source,
+            'information_source_url': pest_info.information_source_url,
             'confidence': confidence,
             'user_image_url': image_url_or_none(detection.image),
             'db_image_url': detection.pest.image_url,  
@@ -272,6 +280,8 @@ def detection_session_details(request, session_id):
             'symptom_description': session.pest.symptom_description,
             'prevention_methods': session.pest.prevention_methods,
             'pesticide_name': session.pest.pesticide_name,
+            'information_source': session.pest.information_source,
+            'information_source_url': session.pest.information_source_url,
             'detection_date': timezone.localtime(session.detection_date).strftime('%Y-%m-%d %H:%M'),
             'confidence': session.confidence,
             'user_image_url': image_url_or_none(session.image),

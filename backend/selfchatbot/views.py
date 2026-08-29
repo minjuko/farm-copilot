@@ -38,6 +38,11 @@ def resolve_vector_db_path():
 VECTOR_DB_PATH = resolve_vector_db_path()
 _rag_chain = None
 
+
+def vector_index_available(path=None):
+    index_path = Path(path or VECTOR_DB_PATH)
+    return index_path.is_dir() and (index_path / 'chroma.sqlite3').is_file()
+
 contextualize_q_system_prompt = (
     "대화 기록과 최신 사용자 질문을 기반으로, "
     "대화 기록 없이도 이해할 수 있는 독립형 질문을 작성하세요. "
@@ -65,7 +70,7 @@ def get_rag_chain():
     openai_api_key = os.getenv('OPENAI_API_KEY')
     if not openai_api_key:
         raise ServiceUnavailableError('Agriculture chatbot requires an OPENAI_API_KEY.')
-    if not VECTOR_DB_PATH.exists():
+    if not vector_index_available():
         raise ServiceUnavailableError(
             'Agriculture chatbot requires the original Chroma database artifact.'
         )
@@ -114,12 +119,18 @@ def get_rag_chain():
     return _rag_chain
 
 
+@login_required
 @require_POST
 def chatbot(request):
     try:
         data = json.loads(request.body)
         query = data.get('question')
-        session_id = data.get('session_id', 'default')
+        session_id = data.get('session_id')
+        if not isinstance(session_id, str) or not session_id.strip():
+            raise ValidationError('Session ID is required.')
+        session_id = session_id.strip()
+        if len(session_id) > 36:
+            raise ValidationError('Session ID is too long.')
         if not isinstance(query, str) or not query.strip():
             return JsonResponse({'error': 'Question must be provided.'}, status=400)
         query = query.strip()
@@ -136,21 +147,22 @@ def chatbot(request):
         except Exception as exc:
             logger.warning('Agriculture chatbot invocation failed: %s', exc)
             raise ServiceUnavailableError('Agriculture chatbot is unavailable.') from exc
-        answer = result['answer']
+        answer = result.get('answer') if isinstance(result, dict) else None
+        if not isinstance(answer, str) or not answer.strip():
+            raise ServiceUnavailableError('Agriculture chatbot returned an invalid response.')
         timestamp = timezone.now()
 
         formatted_answer = format_answer(answer)
 
-        if request.user.is_authenticated:
-            session_name = data.get('session_name', 'Default Session')
-            Chatbot.objects.create(
-                user=request.user,
-                session_id=session_id,
-                session_name=session_name,
-                question_content=query,
-                answer_content=formatted_answer,
-                created_at=timezone.now()
-            )
+        session_name = str(data.get('session_name') or 'Default Session').strip()[:255]
+        Chatbot.objects.create(
+            user=request.user,
+            session_id=session_id,
+            session_name=session_name,
+            question_content=query,
+            answer_content=formatted_answer,
+            created_at=timezone.now()
+        )
 
         return JsonResponse({
             'question': query,
@@ -188,7 +200,7 @@ def format_answer(answer):
 def chatbot_status(request):
     enabled = bool(settings.CHATBOT_ENABLED)
     configured = bool(os.getenv('OPENAI_API_KEY'))
-    artifact_available = VECTOR_DB_PATH.exists()
+    artifact_available = vector_index_available()
     available = (
         enabled
         and configured

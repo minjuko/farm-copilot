@@ -130,6 +130,11 @@ class DetectionRuntimeTests(SimpleTestCase):
         self.assertIsNone(pest_id)
         self.assertEqual(confidence, 0.0)
         self.assertEqual(content.read(), b'image')
+        model.assert_called_once_with(
+            image_path,
+            augment=True,
+            verbose=False,
+        )
 
     @patch.object(views, 'import_module')
     @patch.object(views, 'get_yolo_model')

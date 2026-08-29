@@ -33,6 +33,9 @@ dist/
 backend/database/
 media/
 backend/media/
+# Legacy runtime paths created by custom local storage classes
+backend/pest_detection/
+backend/post_board/
 
 # Logs / temporary
 *.log
@@ -60,3 +63,6 @@ Thumbs.db
 # Local historical refactoring reference
 farm-copilot_reference/
 docs/
+
+# Portfolio documentation is finalized after code work
+/README.md

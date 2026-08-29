@@ -53,6 +53,8 @@ export const normalizeDetectionResult = (data) => {
     symptom_description: data.symptom_description || "정보 없음",
     prevention_methods: data.prevention_methods || "정보 없음",
     pesticide_name: typeof data.pesticide_name === "string" ? data.pesticide_name : "",
+    information_source: data.information_source || "",
+    information_source_url: data.information_source_url || "",
     detection_date: data.detection_date || "정보 없음",
     user_image_url: normalizeMediaUrl(data.user_image_url),
     db_image_url: normalizeMediaUrl(data.db_image_url),

@@ -5,11 +5,13 @@
     "fields": {
       "code": "PEPPER_ANTHRACNOSE",
       "pest_name": "고추 탄저병",
-      "occurrence_environment": null,
-      "symptom_description": null,
-      "prevention_methods": null,
-      "pesticide_name": null,
-      "image_url": null
+      "occurrence_environment": "병든 식물 잔재가 전염원이 되며 비가 잦고 습한 노지 환경에서 포자가 빗물에 튀어 빠르게 퍼질 수 있습니다.",
+      "symptom_description": "과실에 물에 젖은 듯한 움푹한 원형 반점이 생기고, 진행되면 겹무늬 병반과 주황색 포자 덩어리가 나타날 수 있습니다.",
+      "prevention_methods": "건전 종자를 사용하고 병든 과실과 잔재를 즉시 제거합니다. 배수와 통풍을 개선하고, 발생 초기에는 고추 탄저병에 등록된 약제를 안전사용기준에 따라 사용합니다.",
+      "pesticide_name": "최신 등록약제는 농촌진흥청 농약안전정보시스템에서 확인",
+      "image_url": null,
+      "information_source": "농촌진흥청 국가농작물병해충관리시스템",
+      "information_source_url": "https://ncpms.rda.go.kr/npms/SicknsInfoDtlR.np?sicknsListNo=D00000195"
     }
   },
   {
@@ -18,11 +20,13 @@
     "fields": {
       "code": "PEPPER_POWDERY_MILDEW",
       "pest_name": "고추 흰가루병",
-      "occurrence_environment": null,
-      "symptom_description": null,
-      "prevention_methods": null,
-      "pesticide_name": null,
-      "image_url": null
+      "occurrence_environment": "시설재배지와 건조한 가을에 발생이 많고, 분생포자가 공기로 퍼집니다. 발병 적온은 대체로 15~28℃입니다.",
+      "symptom_description": "잎 뒷면에 흰 가루 같은 병징이 시작되어 퍼지고, 잎이 누렇게 얼룩지며 아래 잎부터 말라 떨어질 수 있습니다.",
+      "prevention_methods": "병든 잎을 일찍 제거하고 질소비료 과용과 과번무를 피합니다. 발생 전후에는 고추 흰가루병 등록약제를 안전사용기준에 따라 사용합니다.",
+      "pesticide_name": "최신 등록약제는 농촌진흥청 농약안전정보시스템에서 확인",
+      "image_url": null,
+      "information_source": "농촌진흥청 농사로",
+      "information_source_url": "https://www.nongsaro.go.kr/portal/ps/pss/pssa/sicknsSearchDtl.ps?menuId=PS00202&sicknsCode=D00000197"
     }
   },
   {
@@ -31,11 +35,13 @@
     "fields": {
       "code": "CUCUMBER_DOWNY_MILDEW",
       "pest_name": "오이 노균병",
-      "occurrence_environment": null,
-      "symptom_description": null,
-      "prevention_methods": null,
-      "pesticide_name": null,
-      "image_url": null
+      "occurrence_environment": "병든 식물 조직에서 살아남은 병원균이 전염원이 되며, 시설 내부가 과습하고 잎에 물기가 오래 남을 때 발생이 증가합니다.",
+      "symptom_description": "잎에 엽맥으로 구분되는 황갈색 각진 반점이 생기고, 잎 뒷면에는 흰색 또는 회색 곰팡이가 보일 수 있습니다.",
+      "prevention_methods": "시설 환기와 배수를 철저히 하고 병든 잎을 조기에 제거합니다. 필요하면 오이 노균병 등록약제를 안전사용기준에 따라 사용합니다.",
+      "pesticide_name": "최신 등록약제는 농촌진흥청 농약안전정보시스템에서 확인",
+      "image_url": null,
+      "information_source": "농촌진흥청 국가농작물병해충관리시스템",
+      "information_source_url": "https://ncpms.rda.go.kr/npms/SicknsInfoDtlR.np?sicknsListNo=D00001166"
     }
   },
   {
@@ -44,11 +50,13 @@
     "fields": {
       "code": "TOMATO_POWDERY_MILDEW",
       "pest_name": "토마토 흰가루병",
-      "occurrence_environment": null,
-      "symptom_description": null,
-      "prevention_methods": null,
-      "pesticide_name": null,
-      "image_url": null
+      "occurrence_environment": "시설재배에서 건조한 조건과 환기 불량이 겹칠 때 발생하기 쉬우며 포자가 공기로 전염됩니다.",
+      "symptom_description": "잎이나 줄기에 불규칙한 흰 가루 모양 병징이 생기고, 심해지면 잎 전체로 번져 피해 부위가 말라 죽습니다.",
+      "prevention_methods": "시설이 지나치게 건조하지 않도록 관리하고 통풍과 환기를 확보합니다. 병든 잎과 잔재를 제거하고 등록약제를 안전사용기준에 따라 사용합니다.",
+      "pesticide_name": "최신 등록약제는 농촌진흥청 농약안전정보시스템에서 확인",
+      "image_url": null,
+      "information_source": "농촌진흥청 이달의 농업기술",
+      "information_source_url": "https://www.rda.go.kr/middlePopOpenPopNongsaroDBView.do?no=2131"
     }
   },
   {
@@ -57,11 +65,13 @@
     "fields": {
       "code": "CUCUMBER_POWDERY_MILDEW",
       "pest_name": "오이 흰가루병",
-      "occurrence_environment": null,
-      "symptom_description": null,
-      "prevention_methods": null,
-      "pesticide_name": null,
-      "image_url": null
+      "occurrence_environment": "병든 잔재에서 월동한 병원균과 시설 내 공기 전염이 주요 원인입니다. 15~28℃, 일조 부족, 큰 일교차와 다비재배에서 발생이 늘어납니다.",
+      "symptom_description": "잎 표면에 소량의 흰 가루가 나타난 뒤 잎 전체로 퍼지고, 오래된 병반은 회백색으로 변하며 결국 잎이 고사합니다.",
+      "prevention_methods": "수확 후 병든 잔재를 제거하고 밀식을 피하며 통풍을 개선합니다. 질소비료 과용을 피하고 등록약제를 안전사용기준에 따라 사용합니다.",
+      "pesticide_name": "최신 등록약제는 농촌진흥청 농약안전정보시스템에서 확인",
+      "image_url": null,
+      "information_source": "농촌진흥청 농사로",
+      "information_source_url": "https://www.nongsaro.go.kr/portal/ps/pss/pssa/sicknsSearchDtl.ps?menuId=PS00202&sicknsCode=D00001162"
     }
   },
   {

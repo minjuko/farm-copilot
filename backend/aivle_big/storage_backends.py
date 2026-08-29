@@ -6,13 +6,15 @@ from storages.backends.s3boto3 import S3Boto3Storage
 StorageBackend = S3Boto3Storage if settings.USE_S3 else FileSystemStorage
 
 class PostBoardStorage(StorageBackend):
-    location = 'post_board'
-    default_acl = 'public-read'
+    if settings.USE_S3:
+        location = 'post_board'
+        default_acl = 'public-read'
     file_overwrite = False
 
 class PestDetectionStorage(StorageBackend):
-    location = 'pest_detection'
-    default_acl = 'public-read'
+    if settings.USE_S3:
+        location = 'pest_detection'
+        default_acl = 'public-read'
     file_overwrite = False
 
 

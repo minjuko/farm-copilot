@@ -160,6 +160,8 @@ const InfoTemplate = () => {
     symptom_description,
     prevention_methods,
     pesticide_name,
+    information_source,
+    information_source_url,
     confidence,
     user_image_url,
     db_image_url,
@@ -235,6 +237,16 @@ const InfoTemplate = () => {
                   </tbody>
                 </Table>
               </InfoBox>
+              {information_source_url && (
+                <InfoBox>
+                  <InfoLabel>정보 출처</InfoLabel>
+                  <InfoText>
+                    <a href={information_source_url} target="_blank" rel="noopener noreferrer">
+                      {information_source || "농촌진흥청 병해충 정보"}
+                    </a>
+                  </InfoText>
+                </InfoBox>
+              )}
             </InfoContainer>
       </LayoutContainer>
       <BackButton onClick={() => navigate('/diagnosislist')}>목록으로 돌아가기</BackButton>

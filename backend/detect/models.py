@@ -14,6 +14,8 @@ class Pest(models.Model):
     prevention_methods = models.TextField(blank=True, null=True)
     pesticide_name = models.CharField(max_length=100, blank=True, null=True)
     image_url = models.URLField(max_length=200, blank=True, null=True)  # URL to an informational image
+    information_source = models.CharField(max_length=100, blank=True, null=True)
+    information_source_url = models.URLField(max_length=500, blank=True, null=True)
 
     def __str__(self):
         return self.pest_name
