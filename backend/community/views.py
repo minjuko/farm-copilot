@@ -26,7 +26,10 @@ def post_list(request):
 
 def post_detail(request, post_id):
     try:
-        post = get_object_or_404(Post, pk=post_id)
+        try:
+            post = Post.objects.get(pk=post_id)
+        except Post.DoesNotExist as exc:
+            raise NotFoundError("Post not found") from exc
         comments = list(post.comments.all().values(
             'id', 'content', 'user__username', 'user_id', 'created_at', 'parent_id'
         ))
@@ -49,6 +52,8 @@ def post_detail(request, post_id):
             'comments': comments,
         }
         return JsonResponse(post_data)
+    except NotFoundError:
+        raise
     except DatabaseError as e:
         logger.error(f"Database error on retrieving post details: {str(e)}")
         return JsonResponse({'error': 'Database error occurred while retrieving post details.'}, status=500)
@@ -137,8 +142,18 @@ def comment_create(request, post_id):
             raise ValidationError("Form validation failed")
         comment = form.save(commit=False)
         comment.user = request.user
-        comment.post = get_object_or_404(Post, pk=post_id)
-        comment.parent_id = data.get('parent_id')
+        try:
+            comment.post = Post.objects.get(pk=post_id)
+        except Post.DoesNotExist as exc:
+            raise NotFoundError("Post related to the comment not found") from exc
+
+        parent_id = data.get('parent_id')
+        if parent_id not in (None, ''):
+            try:
+                parent = Comment.objects.get(pk=parent_id, post=comment.post)
+            except (Comment.DoesNotExist, ValueError, TypeError) as exc:
+                raise ValidationError("Parent comment must belong to this post") from exc
+            comment.parent = parent
         comment.save()
         return JsonResponse({
             'id': comment.id,
@@ -148,10 +163,8 @@ def comment_create(request, post_id):
             'created_at': comment.created_at,
             'parent_id': comment.parent_id
         }, status=201)
-    except ValidationError:
+    except (ValidationError, NotFoundError):
         raise
-    except Post.DoesNotExist:
-        raise NotFoundError("Post related to the comment not found")
     except IntegrityError as e:
         logger.error(f"Integrity error on creating comment: {str(e)}")
         raise DuplicateResourceError("Duplicate comment cannot be created.")

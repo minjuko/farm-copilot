@@ -17,6 +17,7 @@ class AuthenticationSmokeTests(TestCase):
     def test_signup_session_auth_check_and_logout(self):
         session = self.client.session
         session['verification_code'] = '1234'
+        session['verification_email'] = 'runtime@example.com'
         session['verification_code_sent_at'] = timezone.now().timestamp()
         session.save()
 
@@ -238,9 +239,49 @@ class RecoverySecurityTests(TestCase):
         self.assertEqual(first.json(), second.json())
         send_mail.assert_called_once()
 
+    @patch('login.views.send_mail')
+    def test_verification_code_is_bound_to_normalized_email(self, send_mail):
+        sent = self.client.post(
+            reverse('login:send_verification_email'),
+            data=json.dumps({'email': '  Bound@Example.COM  '}),
+            content_type='application/json',
+        )
+        self.assertEqual(sent.status_code, 200)
+        self.assertEqual(send_mail.call_args.args[3], ['bound@example.com'])
+        code = self.client.session['verification_code']
+
+        wrong_email = self.client.post(
+            reverse('login:signup'),
+            data=json.dumps({
+                'username': 'wrong-bound-user',
+                'email': 'other@example.com',
+                'password1': 'runtime-password-123',
+                'password2': 'runtime-password-123',
+                'verification_code': code,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(wrong_email.status_code, 400)
+        self.assertFalse(User.objects.filter(email='other@example.com').exists())
+
+        correct_email = self.client.post(
+            reverse('login:signup'),
+            data=json.dumps({
+                'username': 'bound-user',
+                'email': ' BOUND@example.com ',
+                'password1': 'runtime-password-123',
+                'password2': 'runtime-password-123',
+                'verification_code': code,
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(correct_email.status_code, 200)
+        self.assertTrue(User.objects.filter(email='bound@example.com').exists())
+
     def test_invalid_and_reused_verification_code_are_rejected(self):
         session = self.client.session
         session['verification_code'] = '1234'
+        session['verification_email'] = 'new-recovery@example.com'
         session['verification_code_sent_at'] = timezone.now().timestamp()
         session.save()
         payload = {
@@ -268,6 +309,7 @@ class RecoverySecurityTests(TestCase):
     def test_expired_verification_code_is_rejected(self):
         session = self.client.session
         session['verification_code'] = '1234'
+        session['verification_email'] = 'expired@example.com'
         session['verification_code_sent_at'] = (timezone.now() - timedelta(minutes=11)).timestamp()
         session.save()
         response = self.client.post(
@@ -286,6 +328,7 @@ class RecoverySecurityTests(TestCase):
     def test_verification_code_is_discarded_after_failure_limit(self):
         session = self.client.session
         session['verification_code'] = '1234'
+        session['verification_email'] = 'limit@example.com'
         session['verification_code_sent_at'] = timezone.now().timestamp()
         session.save()
         payload = {

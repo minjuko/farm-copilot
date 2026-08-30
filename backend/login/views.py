@@ -62,9 +62,14 @@ def signup(request):
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
+            # Email is an identifier; keep it canonical so signup/login/reset
+            # behave consistently regardless of user input casing or spaces.
+            if 'email' in data and isinstance(data['email'], str):
+                data['email'] = data['email'].strip().lower()
             form = UserRegistrationForm(data)
             submitted_verification_code = data.get('verification_code')
             session_verification_code = request.session.get('verification_code')
+            session_verification_email = request.session.get('verification_email')
             sent_at = request.session.get('verification_code_sent_at')
             if sent_at is None:
                 session_verification_code = None
@@ -76,10 +81,14 @@ def signup(request):
                 except (TypeError, ValueError, OverflowError):
                     session_verification_code = None
 
-            if submitted_verification_code != session_verification_code:
+            if (
+                submitted_verification_code != session_verification_code
+                or data.get('email') != session_verification_email
+            ):
                 failures = request.session.get('verification_code_failures', 0) + 1
                 if failures >= VERIFICATION_FAILURE_LIMIT:
                     request.session.pop('verification_code', None)
+                    request.session.pop('verification_email', None)
                     request.session.pop('verification_code_sent_at', None)
                     request.session.pop('verification_code_failures', None)
                     return JsonResponse({'status': 'error', 'message': 'Verification code expired. Request a new code.'}, status=429)
@@ -89,6 +98,7 @@ def signup(request):
             if form.is_valid():
                 user = form.save()
                 request.session.pop('verification_code', None)
+                request.session.pop('verification_email', None)
                 request.session.pop('verification_code_sent_at', None)
                 request.session.pop('verification_code_failures', None)
                 auth_login(request, user)
@@ -97,6 +107,8 @@ def signup(request):
                 raise ValidationError("Form validation failed")
         except json.JSONDecodeError:
             raise ValidationError("Invalid JSON format")
+        except (ValidationError, DuplicateResourceError):
+            raise
         except IntegrityError:
             raise DuplicateResourceError("A user with similar details already exists.")
         except Exception as e:
@@ -136,6 +148,7 @@ def login(request):
             if not email or not password:
                 raise ValidationError("Email and password are required")
 
+            email = normalized_email
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
@@ -179,7 +192,7 @@ def login(request):
 def send_verification_email(request):
     try:
         data = json.loads(request.body)
-        email = data.get('email')
+        email = (data.get('email') or '').strip().lower()
         if not email:
             return JsonResponse({'error': 'Email field is required'}, status=400)
         now = timezone.now()
@@ -199,6 +212,7 @@ def send_verification_email(request):
             html_message=f'<p>Your verification code is:</p><p>{verification_code}</p>',
         )
         request.session['verification_code'] = verification_code
+        request.session['verification_email'] = email
         request.session['verification_code_sent_at'] = now.timestamp()
         return JsonResponse({'message': GENERIC_RECOVERY_MESSAGE})
     except json.JSONDecodeError:

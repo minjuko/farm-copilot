@@ -89,6 +89,38 @@ class CommunitySmokeTests(TestCase):
         self.assertEqual(edit_response.status_code, 404)
         self.assertEqual(delete_response.status_code, 404)
 
+    def test_missing_post_detail_and_comment_creation_return_not_found(self):
+        self.assertEqual(
+            self.client.get(reverse('community:post_detail', args=[999999])).status_code,
+            404,
+        )
+        response = self.client.post(
+            reverse('community:comment_create', args=[999999]),
+            data=json.dumps({'content': 'Orphan comment'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_reply_parent_must_belong_to_same_post(self):
+        first_post = Post.objects.create(
+            user=self.user, title='First', content='First content', post_type='buy'
+        )
+        second_post = Post.objects.create(
+            user=self.user, title='Second', content='Second content', post_type='sell'
+        )
+        parent = Comment.objects.create(
+            user=self.user, post=first_post, content='Parent'
+        )
+
+        response = self.client.post(
+            reverse('community:comment_create', args=[second_post.id]),
+            data=json.dumps({'content': 'Invalid reply', 'parent_id': parent.id}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Comment.objects.filter(content='Invalid reply').exists())
+
 
 class CommunityCsrfBoundaryTests(TestCase):
     def setUp(self):
