@@ -74,6 +74,8 @@ function App() {
               <Route path="/diagnosislist" element={<DiagnosisListTemplate />} />
               <Route path="/sessiondetails" element={<SessionDetails />} />
               <Route path="/sessiondetails/:sessionId" element={<SessionDetails />} />
+              <Route path="/chatlist" element={<ChatListTemplate />} />
+              <Route path="/chat/:sessionid" element={<ChatTemplate />} />
             </Route>
 
             {/* post */}
@@ -83,9 +85,6 @@ function App() {
             <Route path="exchangeboard" element={<ExchangeBoardTemplate />} />
             <Route path="post/:id" element={<PostDetailTemplate />} />
 
-            {/* chat */}
-            <Route path="chatlist" element={<ChatListTemplate />} />
-            <Route path="chat/:sessionid" element={<ChatTemplate />} />
           </Route>
         </Routes>
         </BrowserRouter>

@@ -390,6 +390,7 @@ const DiagnosisTemplate = () => {
         </ButtonContainer>
         <input
           type="file"
+          aria-label="카메라 이미지 선택"
           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
           capture="camera"
           ref={cameraInputRef}

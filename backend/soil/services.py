@@ -16,6 +16,14 @@ REQUEST_TIMEOUT_SECONDS = 10
 KAKAO_ADDRESS_URL = "https://dapi.kakao.com/v2/local/search/address.json"
 SOIL_EXAM_V2_URL = "https://apis.data.go.kr/1390802/SoilEnviron/SoilExam/V2/getSoilExamList"
 FERTILIZER_V2_URL = "https://apis.data.go.kr/1390802/SoilEnviron_FrtlzrUse_V2/getSoilFrtlzrExamInfo"
+ADDRESS_ALIASES = {
+    "전라북도": "전북특별자치도",
+    "강원도": "강원특별자치도",
+    "제주도": "제주특별자치도",
+}
+MIN_ADDRESS_QUERY_LENGTH = 2
+MAX_ADDRESS_QUERY_LENGTH = 200
+MAX_ADDRESS_RESULTS = 10
 
 
 def _required_env(name):
@@ -83,15 +91,76 @@ def build_pnu_code(b_code, mountain_yn, main_address_no, sub_address_no=""):
     return pnu
 
 
-def _find_address_document(address):
+def normalize_address(address):
     if not isinstance(address, str) or not address.strip():
         raise ValidationError("Address is required.")
+    normalized = " ".join(address.split())
+    if len(normalized) < MIN_ADDRESS_QUERY_LENGTH:
+        raise ValidationError("Address must be at least 2 characters long.")
+    if len(normalized) > MAX_ADDRESS_QUERY_LENGTH:
+        raise ValidationError("Address must not exceed 200 characters.")
+    for legacy_name, current_name in ADDRESS_ALIASES.items():
+        if normalized.startswith(legacy_name):
+            return current_name + normalized[len(legacy_name):]
+    return normalized
+
+
+def search_addresses(address):
+    normalized = normalize_address(address)
     api_key = _required_env("KAKAO_REST_API_KEY")
     try:
         response = requests.get(
             KAKAO_ADDRESS_URL,
             headers={"Authorization": f"KakaoAK {api_key}"},
-            params={"query": address.strip()},
+            params={"query": normalized},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+    except requests.RequestException as exc:
+        raise ServiceUnavailableError("Address search service request failed.") from exc
+
+    if response.status_code != 200:
+        raise ServiceUnavailableError("Address search service request failed.")
+    try:
+        documents = response.json().get("documents", [])
+    except (requests.RequestException, ValueError, AttributeError) as exc:
+        raise ServiceUnavailableError("Address search service returned an invalid response.") from exc
+    if not documents:
+        raise NotFoundError("No address search result was found.")
+
+    results = []
+    seen = set()
+    for document in documents:
+        parcel = document.get("address") or {}
+        road = document.get("road_address") or {}
+        parcel_name = str(parcel.get("address_name") or "").strip()
+        road_name = str(road.get("address_name") or "").strip()
+        if not parcel_name or not parcel.get("b_code"):
+            continue
+        identity = (parcel_name, road_name)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        results.append({
+            "address_name": parcel_name,
+            "road_address_name": road_name,
+            "display_name": road_name or parcel_name,
+            "b_code": str(parcel["b_code"])[:10],
+        })
+        if len(results) >= MAX_ADDRESS_RESULTS:
+            break
+    if not results:
+        raise NotFoundError("No legal district address was found.")
+    return normalized, results
+
+
+def _find_address_document(address):
+    normalized = normalize_address(address)
+    api_key = _required_env("KAKAO_REST_API_KEY")
+    try:
+        response = requests.get(
+            KAKAO_ADDRESS_URL,
+            headers={"Authorization": f"KakaoAK {api_key}"},
+            params={"query": normalized},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
@@ -173,7 +242,14 @@ def fetch_soil_exam(stdg_code):
     ]
     if not result:
         raise NotFoundError("Soil examination data was empty.")
-    return result
+    return sorted(
+        result,
+        key=lambda row: (
+            str(row.get("Exam_Day") or ""),
+            int(row.get("No") or 0) if str(row.get("No") or "").isdigit() else 0,
+        ),
+        reverse=True,
+    )
 
 
 def fetch_fertilizer(crop_name, soil_values, pnu_code=None):

@@ -1,5 +1,6 @@
 // instance.js
 import axios from "axios";
+import { notifyUnauthorized } from "./authSession";
 
 export const BASE_URL =
   process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
@@ -28,6 +29,9 @@ const getCookie = (name) => {
 };
 
 instance.interceptors.request.use((config) => {
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
   const csrftoken = getCookie("csrftoken");
   if (csrftoken) {
     config.headers["X-CSRFToken"] = csrftoken;
@@ -35,15 +39,11 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
-// instance.interceptors.response.use(
-//   (response) => {
-//     return response;
-//   },
-//   (error) => {
-//     if (error.response && error.response.status === 401) {
-//       alert("로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.");
-//       window.location.href = "/login";
-//     }
-//     return Promise.reject(error);
-//   }
-// );
+export const handleResponseError = (error) => {
+  if (error?.response?.status === 401) {
+    notifyUnauthorized();
+  }
+  return Promise.reject(error);
+};
+
+instance.interceptors.response.use((response) => response, handleResponseError);

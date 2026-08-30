@@ -10,7 +10,14 @@ from aivle_big.decorators import login_required
 from aivle_big.exceptions import BadRequestError, MissingPartError, NotFoundError, ValidationError
 
 from .models import crop_data
-from .services import fetch_fertilizer, fetch_soil_exam, find_address_codes, find_legal_district_code, get_crop_names as load_crop_names
+from .services import (
+    fetch_fertilizer,
+    fetch_soil_exam,
+    find_address_codes,
+    find_legal_district_code,
+    get_crop_names as load_crop_names,
+    search_addresses,
+)
 
 
 def _json_body(request):
@@ -23,6 +30,17 @@ def _json_body(request):
 @require_GET
 def get_crop_names(request):
     return JsonResponse({"crop_names": load_crop_names()})
+
+
+@login_required
+@require_GET
+def address_search(request):
+    normalized_query, results = search_addresses(request.GET.get("query"))
+    return JsonResponse({
+        "query": request.GET.get("query", "").strip(),
+        "normalized_query": normalized_query,
+        "results": results,
+    })
 
 
 @login_required

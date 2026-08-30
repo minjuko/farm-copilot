@@ -112,7 +112,7 @@ const Button = styled.button`
   }
 `;
 
-const SoilResults = ({ cropName, selectedSoilSample, fertilizerData, isFertilizerLoading, handleBackToList }) => (
+const SoilResults = ({ cropName, selectedSoilSample, fertilizerData, fertilizerUnavailable, isFertilizerLoading, handleBackToList }) => (
   <RecommendationContainer>
     <CropInfoContainer>
       <CropInfo>작물: <CropInfoText>{cropName}</CropInfoText></CropInfo>
@@ -165,7 +165,8 @@ const SoilResults = ({ cropName, selectedSoilSample, fertilizerData, isFertilize
     </TableContainer>
     <SectionTitle>비료 처방량</SectionTitle>
     {isFertilizerLoading && <p>비료 추천 결과를 불러오는 중입니다.</p>}
-    {!isFertilizerLoading && !fertilizerData && <p>비료 추천 결과를 불러오지 못했습니다.</p>}
+    {!isFertilizerLoading && fertilizerUnavailable && <p>등록된 비료 처방 데이터가 없습니다.</p>}
+    {!isFertilizerLoading && !fertilizerUnavailable && !fertilizerData && <p>상세 주소를 선택하면 비료 처방량을 확인할 수 있습니다.</p>}
     {fertilizerData && <TableContainer>
       <Table>
         <thead>

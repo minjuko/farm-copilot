@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "../../AuthContext";
 import { checkAuthStatus, logoutUser } from "../../apis/user";
+import { notifyUnauthorized } from "../../apis/authSession";
 import AuthRoute from "./AuthRoute";
 import NoAuthRoute from "./NoAuthRoute";
 
@@ -48,14 +49,14 @@ const renderRoutes = (initialPath, extra = null) => render(
           <Route path="/diagnosis" element={<div>detect upload</div>} />
           <Route path="/diagnosislist" element={<div>detect history</div>} />
           <Route path="/info" element={<div>detect result</div>} />
+          <Route path="/chatlist" element={<div>chat list</div>} />
+          <Route path="/chat/:sessionId" element={<div>chat detail</div>} />
         </Route>
         <Route element={<NoAuthRoute />}>
           <Route path="/login" element={<div>login page</div>} />
         </Route>
         <Route path="/main" element={<div>main page</div>} />
         <Route path="/password-reset-confirm" element={<div>reset confirm</div>} />
-        <Route path="/chatlist" element={<div>chat list</div>} />
-        <Route path="/chat/:sessionId" element={<div>chat detail</div>} />
         <Route path="*" element={<Navigate to="/main" />} />
       </Routes>
     </AuthProvider>
@@ -146,9 +147,17 @@ test.each(["/diagnosis", "/diagnosislist", "/info"])("protects Detect route %s",
   expect(await screen.findByText("login page")).toBeInTheDocument();
 });
 
-test.each(["/chatlist", "/chat/session-1"])("keeps Backend-compatible public Chatbot route %s", async (path) => {
+test.each(["/chatlist", "/chat/session-1"])("protects Chatbot route %s", async (path) => {
   checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
-  renderRoutes(path, <AuthControls />);
-  expect(await screen.findByText(/chat (list|detail)/)).toBeInTheDocument();
-  await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated"));
+  renderRoutes(path);
+  expect(await screen.findByText("login page")).toBeInTheDocument();
+});
+
+test("clears an authenticated session when the API reports 401", async () => {
+  checkAuthStatus.mockResolvedValue({ data: { is_authenticated: true, username: "farmer" } });
+  renderRoutes("/main", <AuthControls />);
+
+  await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
+  act(() => notifyUnauthorized());
+  expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated");
 });

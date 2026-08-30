@@ -20,9 +20,7 @@ export const uploadImage = (file) => {
   const formData = new FormData();
   formData.append("image", file);
 
-  return instance.post("/detect/upload/", formData, {
-    headers: { "Content-Type": undefined },
-  });
+  return instance.post("/detect/upload/", formData);
 };
 
 export const getSoilCropData = () => {
@@ -40,18 +38,14 @@ export const getCropNames = () => {
   return instance.get('/soil/get-crop-names/');
 };
 
+export const searchSoilAddresses = (query) => {
+  return instance.get('/soil/address-search/', { params: { query } });
+};
+
 export const getSoilExamData = (cropName, address) => {
-  return instance.post('/soil/soil_exam/', JSON.stringify({ crop_name: cropName, address }), {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  return instance.post('/soil/soil_exam/', { crop_name: cropName, address });
 };
 
 export const getSoilFertilizerInfo = (data) => {
-  return instance.post('/soil/get-soil-fertilizer-info/', JSON.stringify(data), {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  return instance.post('/soil/get-soil-fertilizer-info/', data);
 };

@@ -24,8 +24,8 @@ jest.mock("../../atoms/CustomModal", () => ({ isOpen, content }) => (
   isOpen ? <div role="alert">{content}</div> : null
 ));
 
-const selectValidImage = (container) => {
-  const input = container.querySelector('input[capture="camera"]');
+const selectValidImage = () => {
+  const input = screen.getByLabelText("카메라 이미지 선택");
   const image = new File(["image"], "crop.jpg", { type: "image/jpeg" });
   fireEvent.change(input, { target: { files: [image] } });
 };
@@ -75,8 +75,8 @@ test("blocks diagnosis while the model capability is limited", async () => {
   fetchCapabilities.mockResolvedValue({
     data: { detection: { status: "limited", available: false, reason: "not_configured" } },
   });
-  const { container } = render(<DiagnosisTemplate />);
-  selectValidImage(container);
+  render(<DiagnosisTemplate />);
+  selectValidImage();
 
   const button = await screen.findByRole("button", { name: /진단하기/ });
   await waitFor(() => expect(button).toBeDisabled());

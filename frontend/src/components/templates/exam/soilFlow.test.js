@@ -1,4 +1,4 @@
-import { buildFertilizerPayload, formatSoilValue } from "./soilFlow";
+import { buildFertilizerPayload, formatSoilSampleLabel, formatSoilValue, isFertilizerNotFound } from "./soilFlow";
 
 const selectedSoilItem = {
   No: 17,
@@ -46,4 +46,17 @@ test.each([null, undefined, "", "not-a-number"])(
 test("requires a selected SoilExam item before fertilizer submission", () => {
   expect(buildFertilizerPayload({ cropName: "감자", address: "완주군", soilItem: null }).error)
     .toMatch(/토양 항목/);
+});
+
+test("classifies an absent fertilizer prescription separately from service failures", () => {
+  expect(isFertilizerNotFound({ response: { status: 404 } })).toBe(true);
+  expect(isFertilizerNotFound({ response: { status: 503 } })).toBe(false);
+});
+
+test("distinguishes multiple soil samples from the same parcel by date and sample number", () => {
+  expect(formatSoilSampleLabel({
+    PNU_Nm: "전북특별자치도 전주시 중동 834",
+    Exam_Day: "20260429",
+    No: "17",
+  })).toBe("전북특별자치도 전주시 중동 834 · 검사일 2026-04-29 · 시료 17");
 });

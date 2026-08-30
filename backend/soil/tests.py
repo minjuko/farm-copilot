@@ -10,10 +10,40 @@ from aivle_big.exceptions import NotFoundError, ServiceUnavailableError, Validat
 from login.models import User
 
 from .models import crop_data
-from .services import build_pnu_code, fetch_fertilizer, fetch_soil_exam, find_address_codes, find_legal_district_code, get_crop_code, get_crop_names
+from .services import build_pnu_code, fetch_fertilizer, fetch_soil_exam, find_address_codes, find_legal_district_code, get_crop_code, get_crop_names, normalize_address, search_addresses
 
 
 class SoilServiceTests(TestCase):
+    def test_legacy_province_names_are_normalized(self):
+        self.assertEqual(
+            normalize_address("  전라북도   전주시 덕진구  "),
+            "전북특별자치도 전주시 덕진구",
+        )
+        self.assertEqual(
+            normalize_address("강원도 춘천시"),
+            "강원특별자치도 춘천시",
+        )
+
+    def test_address_query_length_is_bounded(self):
+        with self.assertRaises(ValidationError):
+            normalize_address("전")
+        with self.assertRaises(ValidationError):
+            normalize_address("가" * 201)
+
+    @patch("soil.services.requests.get")
+    @patch.dict(os.environ, {"KAKAO_REST_API_KEY": "test-key"}, clear=True)
+    def test_address_search_returns_safe_standardized_results(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {"documents": [{
+            "address": {"address_name": "전북특별자치도 전주시 덕진구 중동 837", "b_code": "5211313800"},
+            "road_address": {"address_name": "전북특별자치도 전주시 덕진구 농생명로 300"},
+        }]})
+
+        normalized, results = search_addresses("전라북도 전주시 덕진구 농생명로 300")
+
+        self.assertEqual(normalized, "전북특별자치도 전주시 덕진구 농생명로 300")
+        self.assertEqual(results[0]["display_name"], "전북특별자치도 전주시 덕진구 농생명로 300")
+        self.assertEqual(results[0]["address_name"], "전북특별자치도 전주시 덕진구 중동 837")
+        self.assertEqual(mock_get.call_args.kwargs["params"]["query"], normalized)
     @patch.dict(os.environ, {}, clear=True)
     def test_missing_kakao_key_is_controlled(self):
         with self.assertRaises(ServiceUnavailableError):
@@ -89,6 +119,20 @@ class SoilServiceTests(TestCase):
 
     @patch("soil.services.requests.get")
     @patch.dict(os.environ, {"DATA_GO_KR_SOIL_SERVICE_KEY": "test-key"}, clear=True)
+    def test_soil_samples_are_sorted_by_latest_exam_without_dropping_same_parcel_rows(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, content=b"""
+            <response><header><Result_Code>200</Result_Code></header><body><items>
+              <item><No>1</No><Exam_Day>20230101</Exam_Day><PNU_Nm>same</PNU_Nm></item>
+              <item><No>2</No><Exam_Day>20240101</Exam_Day><PNU_Nm>same</PNU_Nm></item>
+              <item><No>3</No><Exam_Day>20240101</Exam_Day><PNU_Nm>same</PNU_Nm></item>
+            </items></body></response>
+        """)
+        result = fetch_soil_exam("1234567890")
+        self.assertEqual([row["No"] for row in result], ["3", "2", "1"])
+        self.assertEqual(len(result), 3)
+
+    @patch("soil.services.requests.get")
+    @patch.dict(os.environ, {"DATA_GO_KR_SOIL_SERVICE_KEY": "test-key"}, clear=True)
     def test_soil_v2_result_error_is_controlled(self, mock_get):
         mock_get.return_value = Mock(status_code=200, content=b"<response><Result_Code>201</Result_Code></response>")
         with self.assertRaises(ValidationError):
@@ -161,6 +205,20 @@ class SoilEndpointTests(TestCase):
             password="test-password",
         )
         self.client.force_login(self.user)
+
+    @patch("soil.views.search_addresses", return_value=(
+        "전북특별자치도 전주시 덕진구 농생명로 300",
+        [{"display_name": "전북특별자치도 전주시 덕진구 농생명로 300"}],
+    ))
+    def test_address_search_endpoint_preserves_frontend_contract(self, mock_search):
+        response = self.client.get(
+            reverse("soil:address_search"),
+            {"query": "전라북도 전주시 덕진구 농생명로 300"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["normalized_query"], "전북특별자치도 전주시 덕진구 농생명로 300")
+        self.assertEqual(len(response.json()["results"]), 1)
+        mock_search.assert_called_once_with("전라북도 전주시 덕진구 농생명로 300")
 
     @patch.dict(os.environ, {}, clear=True)
     def test_missing_credentials_only_disable_soil_endpoint(self):

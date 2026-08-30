@@ -27,3 +27,15 @@ export const formatSoilValue = (value) => {
   if (Number.isInteger(parsedValue)) return parsedValue.toString();
   return parsedValue.toFixed(1);
 };
+
+export const isFertilizerNotFound = (error) => error?.response?.status === 404;
+
+export const formatSoilSampleLabel = (sample) => {
+  const address = sample?.PNU_Nm || "주소 정보 없음";
+  const rawDate = String(sample?.Exam_Day || "");
+  const examDate = /^\d{8}$/.test(rawDate)
+    ? `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
+    : "미상";
+  const sampleNumber = sample?.No ? ` · 시료 ${sample.No}` : "";
+  return `${address} · 검사일 ${examDate}${sampleNumber}`;
+};

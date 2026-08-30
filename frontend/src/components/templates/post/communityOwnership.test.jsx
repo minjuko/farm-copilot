@@ -96,7 +96,6 @@ test.each([
 ])("hides comment owner controls for %s non-owner state", (authStatus, user) => {
   render(<Comment {...commentProps} authStatus={authStatus} user={user} />);
   expect(screen.queryByLabelText("댓글 관리")).not.toBeInTheDocument();
-  if (authStatus !== "authenticated") {
-    expect(screen.queryByPlaceholderText("댓글을 작성하세요")).not.toBeInTheDocument();
-  }
+  expect(Boolean(screen.queryByPlaceholderText("댓글을 작성하세요")))
+    .toBe(authStatus === "authenticated");
 });

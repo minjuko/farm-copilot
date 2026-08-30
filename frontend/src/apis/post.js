@@ -15,29 +15,12 @@ export const fetchPost = (postId) => {
 
 // 게시글 수정
 export const editPost = (postId, formData) => {
-  return instance.post(`/community/post/${postId}/edit/`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  return instance.post(`/community/post/${postId}/edit/`, formData);
 };
 
 // 게시글 생성
 export const createPost = (formData) => {
-  return instance.post("/community/post/create/", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-};
-
-// 댓글 관련 API
-export const fetchComments = (postId) => {
-  return instance.get(`/community/post/${postId}/comments/`);
-};
-
-export const addComment = (postId, commentData) => {
-  return instance.post(`/community/post/${postId}/comments/`, commentData);
+  return instance.post("/community/post/create/", formData);
 };
 
 // 댓글 단 게시글 가져오기
@@ -56,9 +39,7 @@ export const deletePost = (postId) => {
 };
 
 // 게시글 상세 정보 가져오기
-export const fetchPostDetail = (postId) => {
-  return instance.get(`/community/post/${postId}/`);
-};
+export const fetchPostDetail = fetchPost;
 
 // 댓글 작성
 export const createComment = (postId, commentData) => {
@@ -66,9 +47,7 @@ export const createComment = (postId, commentData) => {
 };
 
 // 대댓글 작성
-export const createReply = (postId, replyData) => {
-  return instance.post(`/community/post/${postId}/comment/create/`, replyData);
-};
+export const createReply = createComment;
 
 // 댓글 수정
 export const editComment = (commentId, commentData) => {

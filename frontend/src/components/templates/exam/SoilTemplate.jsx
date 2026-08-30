@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { IoSearch } from 'react-icons/io5';
-import { getCropNames, getSoilExamData, getSoilFertilizerInfo } from "../../../apis/predict";
+import { getCropNames, getSoilExamData, getSoilFertilizerInfo, searchSoilAddresses } from "../../../apis/predict";
 import { getApiErrorMessage, getServiceErrorMessage } from "../../../apis/error";
 import { useLoading } from "../../../LoadingContext";
 import CustomModal from '../../atoms/CustomModal';
 import SoilResults from "./SoilResults";
-import { buildFertilizerPayload } from "./soilFlow";
+import { buildFertilizerPayload, formatSoilSampleLabel, isFertilizerNotFound } from "./soilFlow";
 import { fetchCapabilities, normalizeCapability } from '../../../apis/capabilities';
 
 const Container = styled.div`
@@ -182,6 +182,37 @@ const Divider = styled.hr`
   border: 1px solid #ccc;
 `;
 
+const AddressList = styled.div`
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 1px solid #d8e2dc;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+`;
+
+const AddressItem = styled.button`
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  border: 0;
+  border-bottom: 1px solid #edf1ee;
+  background: #fff;
+  color: #263b33;
+  text-align: left;
+  cursor: pointer;
+
+  &:last-child { border-bottom: 0; }
+  &:hover, &:focus { background: #eef8f3; }
+`;
+
+const AddressMeta = styled.span`
+  display: block;
+  margin-top: 0.2rem;
+  color: #6b7d75;
+  font-size: 0.8rem;
+`;
+
 const ServiceNotice = styled.div`
   width: 100%;
   max-width: 600px;
@@ -201,6 +232,8 @@ const SoilTemplate = () => {
   const [soilData, setSoilData] = useState([]);
   const [selectedSample, setSelectedSample] = useState(null);
   const [fertilizerData, setFertilizerData] = useState(null);
+  const [fertilizerUnavailable, setFertilizerUnavailable] = useState(false);
+  const [addressResults, setAddressResults] = useState([]);
   const [cropNames, setCropNames] = useState([]);
   const [filteredCropNames, setFilteredCropNames] = useState([]);
   const [showCropList, setShowCropList] = useState(false);
@@ -208,6 +241,7 @@ const SoilTemplate = () => {
   const [errorModalIsOpen, setErrorModalIsOpen] = useState(false);
   const [isSoilLoading, setIsSoilLoading] = useState(false);
   const [isFertilizerLoading, setIsFertilizerLoading] = useState(false);
+  const [isAddressSearching, setIsAddressSearching] = useState(false);
   const [serviceCapability, setServiceCapability] = useState({
     status: 'checking', available: false,
   });
@@ -239,6 +273,7 @@ const SoilTemplate = () => {
     setSoilData([]);
     setSelectedSample(null);
     setFertilizerData(null);
+    setFertilizerUnavailable(false);
   };
 
   const handleAddressChange = (e) => {
@@ -246,6 +281,8 @@ const SoilTemplate = () => {
     setSoilData([]);
     setSelectedSample(null);
     setFertilizerData(null);
+    setFertilizerUnavailable(false);
+    setAddressResults([]);
   };
 
   const handleSampleChange = async (e) => {
@@ -254,6 +291,7 @@ const SoilTemplate = () => {
     const selected = soilData[Number(e.target.value)];
     setSelectedSample(selected);
     setFertilizerData(null);
+    setFertilizerUnavailable(false);
 
     const { payload, error: payloadError } = buildFertilizerPayload({
       cropName,
@@ -273,11 +311,18 @@ const SoilTemplate = () => {
       const response = await getSoilFertilizerInfo(payload);
       const fertilizerItems = response?.data?.data;
       if (!Array.isArray(fertilizerItems) || fertilizerItems.length === 0) {
-        throw new Error("EMPTY_FERTILIZER_RESULT");
+        setFertilizerUnavailable(true);
+        return;
       }
       setFertilizerData(fertilizerItems);
+      setFertilizerUnavailable(false);
       setError(null);
     } catch (err) {
+      if (isFertilizerNotFound(err)) {
+        setFertilizerUnavailable(true);
+        setFertilizerData(null);
+        return;
+      }
       setError(getServiceErrorMessage(
         err,
         '비료 추천 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
@@ -306,7 +351,36 @@ const SoilTemplate = () => {
     fetchData();
   }, []);
 
-  const fetchSoilExamData = async () => {
+  const searchAddress = async () => {
+    if (!serviceCapability.available || isAddressSearching) return;
+    if (!address.trim()) {
+      setError('검색할 주소를 입력해 주세요.');
+      setErrorModalIsOpen(true);
+      return;
+    }
+    try {
+      setIsAddressSearching(true);
+      const response = await searchSoilAddresses(address.trim());
+      const results = response?.data?.results;
+      if (!Array.isArray(results) || results.length === 0) {
+        setError('검색된 주소가 없습니다.');
+        setErrorModalIsOpen(true);
+        setAddressResults([]);
+        return;
+      }
+      setAddress(response?.data?.normalized_query || address.trim());
+      setAddressResults(results);
+      setError(null);
+    } catch (err) {
+      setError(getApiErrorMessage(err, '주소 검색 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'));
+      setErrorModalIsOpen(true);
+      setAddressResults([]);
+    } finally {
+      setIsAddressSearching(false);
+    }
+  };
+
+  const fetchSoilExamData = async (selectedAddress = address) => {
     if (!serviceCapability.available) {
       setError('토양 분석 외부 API가 설정되지 않아 현재 실시간 조회를 지원하지 않습니다.');
       setErrorModalIsOpen(true);
@@ -314,7 +388,7 @@ const SoilTemplate = () => {
     }
     if (soilRequestInFlight.current) return;
     try {
-      if (!cropNames.includes(cropName) || !address.trim()) {
+      if (!cropNames.includes(cropName) || !selectedAddress.trim()) {
         setError('작물이름과 주소를 정확히 입력해 주세요.');
         setErrorModalIsOpen(true);
         return;
@@ -325,7 +399,8 @@ const SoilTemplate = () => {
       setIsLoading(true);
       setSelectedSample(null);
       setFertilizerData(null);
-      const response = await getSoilExamData(cropName, address.trim());
+      setFertilizerUnavailable(false);
+      const response = await getSoilExamData(cropName, selectedAddress.trim());
       const soilItems = response?.data?.soil_data;
       if (!Array.isArray(soilItems) || soilItems.length === 0) {
         setError('현재 주소에 해당하는 데이터가 없습니다.');
@@ -352,6 +427,13 @@ const SoilTemplate = () => {
     }
   };
 
+  const handleAddressSelect = (result) => {
+    const selectedAddress = result.display_name || result.address_name;
+    setAddress(selectedAddress);
+    setAddressResults([]);
+    fetchSoilExamData(selectedAddress);
+  };
+
   const handleCropNameClick = () => {
     setShowCropList(true);
   };
@@ -362,6 +444,7 @@ const SoilTemplate = () => {
     setSoilData([]);
     setSelectedSample(null);
     setFertilizerData(null);
+    setFertilizerUnavailable(false);
   };
 
   const handleClickOutside = (event) => {
@@ -385,9 +468,10 @@ const SoilTemplate = () => {
     navigate('/soillist');
   };
 
-  const handleKeyDown = (e) => {
+  const handleAddressKeyDown = (e) => {
     if (e.key === 'Enter') {
-      fetchSoilExamData();
+      e.preventDefault();
+      searchAddress();
     }
   };
 
@@ -407,7 +491,6 @@ const SoilTemplate = () => {
             value={cropName}
             onChange={handleCropNameChange}
             onClick={handleCropNameClick}
-            onKeyDown={handleKeyDown}
             placeholder="작물 이름을 검색하세요"
           />
           {showCropList && filteredCropNames.length > 0 && (
@@ -428,12 +511,26 @@ const SoilTemplate = () => {
               type="text"
               value={address}
               onChange={handleAddressChange}
-              onKeyDown={handleKeyDown}
-              placeholder="예) 광주광역시 수완동"
+              onKeyDown={handleAddressKeyDown}
+              placeholder="도로명 또는 지번 주소를 입력하세요"
             />
-            <SearchButton onClick={fetchSoilExamData} disabled={isSoilLoading || !serviceCapability.available}>주소 검색 <SearchIcon /></SearchButton>
+            <SearchButton type="button" onClick={searchAddress} disabled={isAddressSearching || isSoilLoading || !serviceCapability.available}>
+              {isAddressSearching ? '검색 중' : '주소 검색'} <SearchIcon />
+            </SearchButton>
           </AddressContainer>
-          <p style={{ color: '#7f8c8d', fontSize: '0.875rem', marginTop: '0.5rem' }}>예시) 광주광역시 용전동, 전라남도 순천시 용당동</p>
+          {addressResults.length > 0 && (
+            <AddressList aria-label="주소 검색 결과">
+              {addressResults.map((result, index) => (
+                <AddressItem type="button" key={`${result.address_name}-${index}`} onClick={() => handleAddressSelect(result)}>
+                  {result.display_name}
+                  {result.road_address_name && result.address_name !== result.road_address_name && (
+                    <AddressMeta>지번: {result.address_name}</AddressMeta>
+                  )}
+                </AddressItem>
+              ))}
+            </AddressList>
+          )}
+          <p style={{ color: '#7f8c8d', fontSize: '0.875rem', marginTop: '0.5rem' }}>이전 행정구역 명칭도 자동으로 최신 명칭으로 검색합니다.</p>
         </InputContainer>
         {soilData.length > 0 && (
           <InputContainer>
@@ -442,7 +539,7 @@ const SoilTemplate = () => {
               <option value="" disabled>선택하세요</option>
               {soilData.map((sample, index) => (
                 <option key={`${sample.No ?? sample.PNU_Nm}-${index}`} value={index}>
-                  {sample.PNU_Nm}
+                  {formatSoilSampleLabel(sample)}
                 </option>
               ))}
             </Select>
@@ -466,6 +563,7 @@ const SoilTemplate = () => {
           cropName={cropName}
           selectedSoilSample={selectedSample}
           fertilizerData={fertilizerData}
+          fertilizerUnavailable={fertilizerUnavailable}
           isFertilizerLoading={isFertilizerLoading}
           handleBackToList={handleBackToList}
         />

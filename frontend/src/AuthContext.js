@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { checkAuthStatus, logoutUser } from "./apis/user";
+import { subscribeToUnauthorized } from "./apis/authSession";
 
 const AuthContext = createContext(null);
 
@@ -38,6 +39,8 @@ export const AuthProvider = ({ children }) => {
   const clearSession = useCallback(() => {
     setAuth(unauthenticatedState);
   }, []);
+
+  useEffect(() => subscribeToUnauthorized(clearSession), [clearSession]);
 
   const updateUser = useCallback((updates) => {
     setAuth((current) => current.status === "authenticated"

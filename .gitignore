@@ -36,6 +36,7 @@ dist/
 *.sqlite3
 *.db
 backend/database/
+backend/prediction/data/raw/
 media/
 backend/media/
 # Legacy runtime paths created by custom local storage classes
