@@ -32,6 +32,12 @@
 
 빈 행은 건너뛰지만 일부 값만 누락된 행과 HTTP URL은 인덱스 생성을 중단한다.
 
+OpenAI 키나 AI 패키지 없이 원본 계약만 먼저 검사할 수 있다.
+
+``` powershell
+python manage.py build_chatbot_index --source artifacts/chatbot.csv --validate-only
+```
+
 ## 인덱스 재현 계약
 
 `build_chatbot_index`는 Chroma DB와 함께 `index-manifest.json`을 만든다. Manifest에는

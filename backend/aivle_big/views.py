@@ -28,6 +28,21 @@ def _capability(enabled, configured):
     }
 
 
+def _storage_capability():
+    if not settings.USE_S3:
+        return {'status': 'local', 'available': True, 'reason': None}
+    configured = _configured(
+        'AWS_ACCESS_KEY_ID',
+        'AWS_SECRET_ACCESS_KEY',
+        'AWS_STORAGE_BUCKET_NAME',
+    )
+    return {
+        'status': 's3' if configured else 'limited',
+        'available': configured,
+        'reason': None if configured else 'not_configured',
+    }
+
+
 @require_GET
 def capabilities(request):
     """Expose support state without leaking credentials or provider details."""
@@ -76,9 +91,5 @@ def capabilities(request):
                 'DEFAULT_FROM_EMAIL',
             ),
         ),
-        'storage': {
-            'status': 's3' if settings.USE_S3 else 'local',
-            'available': True,
-            'reason': None,
-        },
+        'storage': _storage_capability(),
     })

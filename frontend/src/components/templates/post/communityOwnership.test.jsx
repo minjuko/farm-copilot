@@ -62,7 +62,7 @@ test("matches an owner by id and falls back to the authenticated username", () =
 
 test("shows post edit and delete UI only to the owner", () => {
   const { rerender } = render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <PostDetail {...postDetailProps} canManagePost />
     </MemoryRouter>
   );
@@ -72,7 +72,7 @@ test("shows post edit and delete UI only to the owner", () => {
   expect(screen.getByText("삭제")).toBeInTheDocument();
 
   rerender(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <PostDetail {...postDetailProps} canManagePost={false} />
     </MemoryRouter>
   );

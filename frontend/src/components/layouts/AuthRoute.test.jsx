@@ -28,7 +28,10 @@ const AuthControls = () => {
 };
 
 const renderRoutes = (initialPath, extra = null) => render(
-  <MemoryRouter initialEntries={[initialPath]}>
+  <MemoryRouter
+    initialEntries={[initialPath]}
+    future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+  >
     <AuthProvider>
       <Location />
       {extra}

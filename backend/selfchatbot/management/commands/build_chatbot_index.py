@@ -25,15 +25,30 @@ class Command(BaseCommand):
             default=os.getenv('CHROMA_DB_PATH', 'artifacts/chroma'),
             help='A new or empty Chroma persistence directory.',
         )
+        parser.add_argument(
+            '--validate-only',
+            action='store_true',
+            help='Validate source rows without API credentials or AI dependencies.',
+        )
 
     def handle(self, *args, **options):
+        source = self._resolve_path(options['source'])
+        if not source.is_file():
+            raise CommandError(f'Chatbot source CSV was not found: {source}')
+
+        if options['validate_only']:
+            documents = self._load_documents(source, self._ValidationDocument)
+            if not documents:
+                raise CommandError('The chatbot source CSV contains no usable rows.')
+            self.stdout.write(self.style.SUCCESS(
+                f'Validated {len(documents)} chatbot source rows in {source}'
+            ))
+            return
+
         if not os.getenv('OPENAI_API_KEY'):
             raise CommandError('OPENAI_API_KEY is required to create embeddings.')
 
-        source = self._resolve_path(options['source'])
         output = self._resolve_path(options['output'])
-        if not source.is_file():
-            raise CommandError(f'Chatbot source CSV was not found: {source}')
         if output.exists() and any(output.iterdir()):
             raise CommandError(
                 f'Output directory must be empty to avoid mixing indexes: {output}'
@@ -88,6 +103,11 @@ class Command(BaseCommand):
     def _resolve_path(value):
         path = Path(value)
         return path if path.is_absolute() else Path(settings.BASE_DIR) / path
+
+    class _ValidationDocument:
+        def __init__(self, page_content, metadata):
+            self.page_content = page_content
+            self.metadata = metadata
 
     @staticmethod
     def _load_documents(source, document_class):

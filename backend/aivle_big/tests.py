@@ -43,6 +43,9 @@ class CapabilityApiTests(SimpleTestCase):
         'DATA_GO_KR_MARKET_SERVICE_KEY': 'configured',
         'OPENAI_API_KEY': 'configured',
         'CHROMA_DB_PATH': 'configured',
+        'AWS_ACCESS_KEY_ID': 'configured',
+        'AWS_SECRET_ACCESS_KEY': 'configured',
+        'AWS_STORAGE_BUCKET_NAME': 'configured-bucket',
         'EMAIL_HOST_USER': 'configured@example.com',
         'EMAIL_HOST_PASSWORD': 'configured',
         'DEFAULT_FROM_EMAIL': 'configured@example.com',
@@ -61,6 +64,17 @@ class CapabilityApiTests(SimpleTestCase):
         self.assertTrue(payload['detection']['available'])
         self.assertTrue(payload['email']['available'])
         self.assertEqual(payload['storage']['status'], 's3')
+
+    @override_settings(USE_S3=True)
+    @patch.dict('os.environ', {}, clear=True)
+    def test_incomplete_s3_configuration_is_reported_as_limited(self):
+        payload = self.client.get('/api/capabilities/').json()
+
+        self.assertEqual(payload['storage'], {
+            'status': 'limited',
+            'available': False,
+            'reason': 'not_configured',
+        })
 
 
 class ExternalServiceCheckCommandTests(SimpleTestCase):

@@ -21,7 +21,11 @@ test("shows backend capability state on every feature card", async () => {
     },
   });
 
-  render(<MemoryRouter><MainTemplate /></MemoryRouter>);
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MainTemplate />
+    </MemoryRouter>,
+  );
 
   expect((await screen.findAllByText("AVAILABLE"))).toHaveLength(2);
   expect(screen.getByText("ARCHIVED")).toBeInTheDocument();
@@ -32,7 +36,11 @@ test("shows backend capability state on every feature card", async () => {
 test("fails closed when capability lookup fails", async () => {
   fetchCapabilities.mockRejectedValue(new Error("offline"));
 
-  render(<MemoryRouter><MainTemplate /></MemoryRouter>);
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MainTemplate />
+    </MemoryRouter>,
+  );
 
   expect((await screen.findAllByText("LIMITED"))).toHaveLength(4);
 });

@@ -1,10 +1,12 @@
 from unittest.mock import Mock, patch
 import json
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.core.management.base import CommandError
+from django.core.management import call_command
 
 from aivle_big.exceptions import ServiceUnavailableError
 from . import views
@@ -136,6 +138,24 @@ class ChatbotSourceContractTests(SimpleTestCase):
                 'source_url': 'https://www.rda.go.kr/',
                 'row': 2,
             })
+
+    @patch.dict('os.environ', {}, clear=True)
+    def test_validate_only_does_not_require_openai_or_chroma(self):
+        with TemporaryDirectory() as directory:
+            source = Path(directory) / 'chatbot.csv'
+            source.write_text(
+                '질문,답변,출처,출처URL\n'
+                '재배 질문,검증된 답변,농촌진흥청,https://www.rda.go.kr/\n',
+                encoding='utf-8',
+            )
+            stdout = StringIO()
+            call_command(
+                'build_chatbot_index',
+                '--source', str(source),
+                '--validate-only',
+                stdout=stdout,
+            )
+            self.assertIn('Validated 1 chatbot source rows', stdout.getvalue())
 
 
 class ChatbotCsrfBoundaryTests(TestCase):
