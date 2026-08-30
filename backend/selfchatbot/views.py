@@ -36,12 +36,28 @@ def resolve_vector_db_path():
 
 
 VECTOR_DB_PATH = resolve_vector_db_path()
+INDEX_MANIFEST_NAME = 'index-manifest.json'
 _rag_chain = None
 
 
 def vector_index_available(path=None):
     index_path = Path(path or VECTOR_DB_PATH)
-    return index_path.is_dir() and (index_path / 'chroma.sqlite3').is_file()
+    database_path = index_path / 'chroma.sqlite3'
+    manifest_path = index_path / INDEX_MANIFEST_NAME
+    if not index_path.is_dir() or not database_path.is_file() or not manifest_path.is_file():
+        return False
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return (
+        manifest.get('embedding_model') == settings.CHATBOT_EMBEDDING_MODEL
+        and manifest.get('collection_name') == settings.CHATBOT_COLLECTION_NAME
+        and isinstance(manifest.get('document_count'), int)
+        and manifest['document_count'] > 0
+        and isinstance(manifest.get('source_sha256'), str)
+        and len(manifest['source_sha256']) == 64
+    )
 
 contextualize_q_system_prompt = (
     "대화 기록과 최신 사용자 질문을 기반으로, "

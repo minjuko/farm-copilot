@@ -234,10 +234,15 @@ CHATBOT_ENABLED=false
 
 ### 농업 챗봇 선택 실행
 
-원본 팀 저장소의 `chatbot.csv`처럼 `질문`, `답변` 열을 가진 자료를
-`backend/artifacts/chatbot.csv`에 준비합니다. AI 의존성 설치 후 다음 명령으로
+출처가 확인된 `질문`, `답변`, `출처`, `출처URL` 열을 가진 자료를
+`backend/artifacts/chatbot.csv`에 준비합니다. 형식은
+`backend/selfchatbot/chatbot_source.example.csv`를 참고합니다. AI 의존성 설치 후 다음 명령으로
 새 Chroma 인덱스를 생성할 수 있습니다. 임베딩 생성 과정에는 OpenAI API
 비용이 발생합니다.
+
+생성된 인덱스에는 원본 SHA-256, 문서 수, 임베딩 모델과 컬렉션을 기록한
+`index-manifest.json`이 포함됩니다. 런타임 설정과 manifest가 다르면 해당 인덱스를
+사용하지 않습니다. 과거 팀 CSV는 전체 출처와 라이선스를 확인할 수 없어 복원하지 않습니다.
 
 ``` powershell
 cd backend

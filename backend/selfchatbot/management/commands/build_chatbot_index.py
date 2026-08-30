@@ -1,9 +1,14 @@
 import csv
+import hashlib
+import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+
+from selfchatbot.views import INDEX_MANIFEST_NAME
 
 
 class Command(BaseCommand):
@@ -61,6 +66,20 @@ class Command(BaseCommand):
         persist = getattr(vector_store, 'persist', None)
         if callable(persist):
             persist()
+        manifest = {
+            'schema_version': 1,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'source_name': source.name,
+            'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
+            'document_count': len(documents),
+            'embedding_model': settings.CHATBOT_EMBEDDING_MODEL,
+            'collection_name': settings.CHATBOT_COLLECTION_NAME,
+            'required_columns': ['질문', '답변', '출처', '출처URL'],
+        }
+        (output / INDEX_MANIFEST_NAME).write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2),
+            encoding='utf-8',
+        )
         self.stdout.write(self.style.SUCCESS(
             f'Built chatbot index with {len(documents)} documents at {output}'
         ))
@@ -75,15 +94,34 @@ class Command(BaseCommand):
         documents = []
         with source.open(encoding='utf-8-sig', newline='') as csv_file:
             reader = csv.DictReader(csv_file)
-            if not reader.fieldnames or not {'질문', '답변'}.issubset(reader.fieldnames):
-                raise CommandError('CSV must contain 질문 and 답변 columns.')
+            required_columns = {'질문', '답변', '출처', '출처URL'}
+            if not reader.fieldnames or not required_columns.issubset(reader.fieldnames):
+                raise CommandError(
+                    'CSV must contain 질문, 답변, 출처, and 출처URL columns.'
+                )
             for row_number, row in enumerate(reader, start=2):
                 question = (row.get('질문') or '').strip()
                 answer = (row.get('답변') or '').strip()
-                if not question or not answer:
+                source_name = (row.get('출처') or '').strip()
+                source_url = (row.get('출처URL') or '').strip()
+                if not question and not answer and not source_name and not source_url:
                     continue
+                if not question or not answer or not source_name:
+                    raise CommandError(f'CSV row {row_number} has missing required content.')
+                if not source_url.startswith('https://'):
+                    raise CommandError(
+                        f'CSV row {row_number} must have an HTTPS source URL.'
+                    )
                 documents.append(document_class(
-                    page_content=f'질문: {question}\n답변: {answer}',
-                    metadata={'source': source.name, 'row': row_number},
+                    page_content=(
+                        f'질문: {question}\n답변: {answer}\n'
+                        f'출처: {source_name}\n출처URL: {source_url}'
+                    ),
+                    metadata={
+                        'source_file': source.name,
+                        'source_name': source_name,
+                        'source_url': source_url,
+                        'row': row_number,
+                    },
                 ))
         return documents

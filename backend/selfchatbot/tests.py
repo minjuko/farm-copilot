@@ -1,11 +1,14 @@
 from unittest.mock import Mock, patch
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.core.management.base import CommandError
 
 from aivle_big.exceptions import ServiceUnavailableError
 from . import views
+from .management.commands.build_chatbot_index import Command
 
 
 class OptionalChatbotRuntimeTests(SimpleTestCase):
@@ -38,7 +41,27 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
             index_path = Path(directory)
             self.assertFalse(views.vector_index_available(index_path))
             (index_path / 'chroma.sqlite3').touch()
+            self.assertFalse(views.vector_index_available(index_path))
+            (index_path / views.INDEX_MANIFEST_NAME).write_text(json.dumps({
+                'embedding_model': 'text-embedding-3-small',
+                'collection_name': 'agriculture-knowledge',
+                'document_count': 1,
+                'source_sha256': 'a' * 64,
+            }), encoding='utf-8')
             self.assertTrue(views.vector_index_available(index_path))
+
+    @override_settings(CHATBOT_EMBEDDING_MODEL='expected-model')
+    def test_vector_index_rejects_mismatched_embedding_contract(self):
+        with TemporaryDirectory() as directory:
+            index_path = Path(directory)
+            (index_path / 'chroma.sqlite3').touch()
+            (index_path / views.INDEX_MANIFEST_NAME).write_text(json.dumps({
+                'embedding_model': 'another-model',
+                'collection_name': 'agriculture-knowledge',
+                'document_count': 1,
+                'source_sha256': 'a' * 64,
+            }), encoding='utf-8')
+            self.assertFalse(views.vector_index_available(index_path))
 
     @patch.object(views, 'CHATBOT_DEPENDENCIES_AVAILABLE', False)
     @override_settings(CHATBOT_ENABLED=True)
@@ -78,6 +101,41 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
             'status': 'archived',
             'available': False,
         })
+
+
+class ChatbotSourceContractTests(SimpleTestCase):
+    class Document:
+        def __init__(self, page_content, metadata):
+            self.page_content = page_content
+            self.metadata = metadata
+
+    def test_source_csv_requires_attribution_and_https_url(self):
+        with TemporaryDirectory() as directory:
+            source = Path(directory) / 'chatbot.csv'
+            source.write_text(
+                '질문,답변,출처,출처URL\n질문,답변,농촌진흥청,http://example.com\n',
+                encoding='utf-8',
+            )
+            with self.assertRaisesMessage(CommandError, 'HTTPS source URL'):
+                Command._load_documents(source, self.Document)
+
+    def test_source_csv_preserves_provenance_metadata(self):
+        with TemporaryDirectory() as directory:
+            source = Path(directory) / 'chatbot.csv'
+            source.write_text(
+                '질문,답변,출처,출처URL\n재배 질문,검증된 답변,농촌진흥청,https://www.rda.go.kr/\n',
+                encoding='utf-8',
+            )
+            documents = Command._load_documents(source, self.Document)
+            self.assertEqual(len(documents), 1)
+            self.assertIn('출처: 농촌진흥청', documents[0].page_content)
+            self.assertIn('https://www.rda.go.kr/', documents[0].page_content)
+            self.assertEqual(documents[0].metadata, {
+                'source_file': 'chatbot.csv',
+                'source_name': '농촌진흥청',
+                'source_url': 'https://www.rda.go.kr/',
+                'row': 2,
+            })
 
 
 class ChatbotCsrfBoundaryTests(TestCase):
