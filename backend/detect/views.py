@@ -28,6 +28,15 @@ logger = logging.getLogger(__name__)
 DEFAULT_MODEL_PATH = Path(settings.BASE_DIR) / 'best.pt'
 CONFIDENCE_THRESHOLD = 0.6
 MAPPING_UNAVAILABLE_MESSAGE = '병해 탐지 모델의 상세정보 매핑이 준비되지 않았습니다.'
+MODEL_CONTRACT_MISMATCH_MESSAGE = '병해 탐지 모델의 클래스 계약이 일치하지 않습니다.'
+EXPECTED_MODEL_CLASS_NAMES = {
+    0: '고추 탄저병',
+    1: '고추 흰가루병',
+    2: '오이 노균병',
+    3: '토마토 흰가루병',
+    4: '오이 노균병',
+    5: '오이 흰가루병',
+}
 MODEL_PATH = DEFAULT_MODEL_PATH
 _yolo_model = None
 
@@ -44,6 +53,15 @@ def resolve_model_path():
 MODEL_PATH = resolve_model_path()
 
 
+def validate_model_contract(model):
+    try:
+        model_names = {int(class_id): label for class_id, label in model.names.items()}
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ServiceUnavailableError(MODEL_CONTRACT_MISMATCH_MESSAGE) from exc
+    if model_names != EXPECTED_MODEL_CLASS_NAMES:
+        raise ServiceUnavailableError(MODEL_CONTRACT_MISMATCH_MESSAGE)
+
+
 def get_yolo_model():
     global _yolo_model
 
@@ -57,7 +75,11 @@ def get_yolo_model():
 
     try:
         yolo_class = import_module('ultralytics').YOLO
-        _yolo_model = yolo_class(str(MODEL_PATH))
+        model = yolo_class(str(MODEL_PATH))
+        validate_model_contract(model)
+        _yolo_model = model
+    except ServiceUnavailableError:
+        raise
     except Exception as exc:
         logger.warning('Image detection runtime is unavailable: %s', exc)
         raise ServiceUnavailableError(

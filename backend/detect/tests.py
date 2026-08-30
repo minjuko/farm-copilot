@@ -63,6 +63,19 @@ class DetectionRuntimeTests(SimpleTestCase):
         self.assertEqual(context.exception.status_code, 503)
         self.assertNotIn('corrupt model', context.exception.message)
 
+    def test_model_class_contract_accepts_expected_metadata(self):
+        model = SimpleNamespace(names=views.EXPECTED_MODEL_CLASS_NAMES.copy())
+        views.validate_model_contract(model)
+
+    def test_model_class_contract_rejects_another_artifact(self):
+        model = SimpleNamespace(names={0: 'different class'})
+        with self.assertRaises(ServiceUnavailableError) as context:
+            views.validate_model_contract(model)
+        self.assertEqual(
+            context.exception.message,
+            views.MODEL_CONTRACT_MISMATCH_MESSAGE,
+        )
+
     def test_model_path_relative_environment_value_is_based_on_base_dir(self):
         with patch.dict(os.environ, {'YOLO_MODEL_PATH': 'artifacts/best.pt'}):
             self.assertEqual(
@@ -223,6 +236,29 @@ class DetectionModelClassMappingTests(TestCase):
         self.assertEqual(pest_id, higher_pest.id)
         self.assertEqual(confidence, 95.0)
         self.assertEqual(content.read(), bytes([1, 2, 3]))
+
+
+class DetectionFixtureContractTests(TestCase):
+    fixtures = ['model_classes.json']
+
+    def test_fixture_covers_every_model_class_with_verified_details(self):
+        mappings = {
+            mapping.class_id: mapping
+            for mapping in PestModelClass.objects.select_related('pest').all()
+        }
+        self.assertEqual(
+            {class_id: mapping.model_label for class_id, mapping in mappings.items()},
+            views.EXPECTED_MODEL_CLASS_NAMES,
+        )
+        self.assertEqual(set(mappings), set(range(6)))
+        for mapping in mappings.values():
+            with self.subTest(class_id=mapping.class_id):
+                self.assertTrue(mapping.pest.code)
+                self.assertTrue(mapping.pest.occurrence_environment)
+                self.assertTrue(mapping.pest.symptom_description)
+                self.assertTrue(mapping.pest.prevention_methods)
+                self.assertTrue(mapping.pest.information_source)
+                self.assertTrue(mapping.pest.information_source_url.startswith('https://'))
 
 
 class DetectCsrfBoundaryTests(TestCase):
