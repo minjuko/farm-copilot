@@ -135,6 +135,7 @@ class ChatbotSourceContractTests(SimpleTestCase):
             self.assertEqual(documents[0].metadata, {
                 'source_file': 'chatbot.csv',
                 'source_name': '농촌진흥청',
+                'source_type': '',
                 'source_url': 'https://www.rda.go.kr/',
                 'row': 2,
             })

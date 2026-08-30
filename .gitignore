@@ -5,6 +5,10 @@
 !**/.env.example
 !**/.env.production.example
 
+# Documentation (kept locally, not tracked)
+*.md
+*.markdown
+
 # Python
 __pycache__/
 *.py[cod]

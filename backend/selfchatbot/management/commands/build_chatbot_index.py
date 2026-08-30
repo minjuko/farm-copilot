@@ -123,6 +123,7 @@ class Command(BaseCommand):
                 question = (row.get('질문') or '').strip()
                 answer = (row.get('답변') or '').strip()
                 source_name = (row.get('출처') or '').strip()
+                source_type = (row.get('출처유형') or '').strip()
                 source_url = (row.get('출처URL') or '').strip()
                 if not question and not answer and not source_name and not source_url:
                     continue
@@ -135,11 +136,13 @@ class Command(BaseCommand):
                 documents.append(document_class(
                     page_content=(
                         f'질문: {question}\n답변: {answer}\n'
-                        f'출처: {source_name}\n출처URL: {source_url}'
+                        f'출처: {source_name}\n'
+                        f'출처유형: {source_type}\n출처URL: {source_url}'
                     ),
                     metadata={
                         'source_file': source.name,
                         'source_name': source_name,
+                        'source_type': source_type,
                         'source_url': source_url,
                         'row': row_number,
                     },
