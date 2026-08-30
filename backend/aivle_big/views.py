@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from django.conf import settings
 from django.http import JsonResponse
@@ -30,6 +31,19 @@ def _capability(enabled, configured):
 @require_GET
 def capabilities(request):
     """Expose support state without leaking credentials or provider details."""
+    from selfchatbot.views import (
+        CHATBOT_DEPENDENCIES_AVAILABLE,
+        vector_index_available,
+    )
+
+    chatbot_configured = (
+        _configured('OPENAI_API_KEY')
+        and CHATBOT_DEPENDENCIES_AVAILABLE
+        and vector_index_available()
+    )
+    model_path = Path(os.getenv('YOLO_MODEL_PATH', settings.BASE_DIR / 'best.pt'))
+    if not model_path.is_absolute():
+        model_path = settings.BASE_DIR / model_path
     return JsonResponse({
         'soil': _capability(
             settings.SOIL_SERVICE_ENABLED,
@@ -48,7 +62,19 @@ def capabilities(request):
         ),
         'chatbot': _capability(
             settings.CHATBOT_ENABLED,
-            _configured('OPENAI_API_KEY', 'CHROMA_DB_PATH'),
+            chatbot_configured,
+        ),
+        'detection': _capability(
+            True,
+            model_path.is_file(),
+        ),
+        'email': _capability(
+            True,
+            _configured(
+                'EMAIL_HOST_USER',
+                'EMAIL_HOST_PASSWORD',
+                'DEFAULT_FROM_EMAIL',
+            ),
         ),
         'storage': {
             'status': 's3' if settings.USE_S3 else 'local',

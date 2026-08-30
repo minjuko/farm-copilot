@@ -260,6 +260,27 @@ OPENAI_API_KEY=your-api-key
 
 API 키는 Frontend 코드나 Git에 포함하지 않고 Backend 환경변수로만 관리합니다.
 
+### 외부 서비스 안전 점검
+
+키 값을 출력하거나 외부 요청을 보내지 않고 구성 여부만 확인합니다.
+
+``` powershell
+cd backend
+.\.venv\Scripts\python.exe manage.py check_external_services
+```
+
+실제 종단 호출은 확인할 서비스만 명시적으로 선택합니다.
+
+``` powershell
+.\.venv\Scripts\python.exe manage.py check_external_services --live kakao soil fertilizer weather market
+```
+
+비료 API는 대표 표본에 처방이 없어도 인증과 정상 응답 형식이 확인되면 접속 정상·무자료로
+보고합니다. 명령은 credential 값을 출력하지 않습니다.
+
+운영 환경에서는 `DJANGO_DEBUG=false`, Secure 쿠키, HTTPS 리다이렉트와 HSTS를 사용합니다.
+TLS를 로드밸런서나 프록시에서 종료할 때만 `DJANGO_BEHIND_HTTPS_PROXY=true`를 설정합니다.
+
 ### 병해충 모델 선택 실행
 
 팀 프로젝트의 YOLO checkpoint에서 확인한 6개 클래스는 숫자 DB PK가 아닌
