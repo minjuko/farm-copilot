@@ -12,6 +12,7 @@ import { FaCamera, FaFile } from "react-icons/fa";
 import CustomModal from '../../atoms/CustomModal';
 import GlobalLoader from '../../atoms/GlobalLoader';
 import { useLoading } from "../../../LoadingContext";
+import { fetchCapabilities, normalizeCapability } from "../../../apis/capabilities";
 
 const PageContainer = styled.div`
   display: flex;
@@ -205,6 +206,17 @@ const ExplanationText = styled.p`
   text-align: center;
 `;
 
+const ServiceNotice = styled.div`
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  text-align: center;
+  border-radius: 6px;
+  color: ${({ $available }) => ($available ? "#1f6b4f" : "#5d4a00")};
+  background: ${({ $available }) => ($available ? "#e8f5e9" : "#fff8e1")};
+`;
+
 const DiagnosisTemplate = () => {
   const { setIsLoading, isLoading } = useLoading();
   const [image, setImage] = useState(null);
@@ -215,6 +227,23 @@ const DiagnosisTemplate = () => {
   const cameraInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const uploadInFlight = useRef(false);
+  const [serviceCapability, setServiceCapability] = useState({
+    status: "checking", available: false,
+  });
+
+  useEffect(() => {
+    let active = true;
+    fetchCapabilities()
+      .then((response) => {
+        if (active) {
+          setServiceCapability(normalizeCapability(response?.data, "detection"));
+        }
+      })
+      .catch(() => {
+        if (active) setServiceCapability({ status: "limited", available: false });
+      });
+    return () => { active = false; };
+  }, []);
 
   const selectFile = useCallback((file) => {
     const validationError = validateDetectionFile(file);
@@ -256,6 +285,11 @@ const DiagnosisTemplate = () => {
   });
 
   const handleDiagnose = async () => {
+    if (!serviceCapability.available) {
+      setModalContent("LIMITED · 진단 모델이 준비된 환경에서만 실행할 수 있습니다.");
+      setIsModalOpen(true);
+      return;
+    }
     const validationError = validateDetectionFile(selectedFile);
     if (validationError) {
       setModalContent(validationError);
@@ -310,6 +344,11 @@ const DiagnosisTemplate = () => {
     <PageContainer>
       {isLoading && <GlobalLoader text="AI 진단 중입니다." />}
       <Content>
+        <ServiceNotice role="status" $available={serviceCapability.available}>
+          {serviceCapability.available
+            ? "AVAILABLE · 병해충 진단 모델이 준비되어 있습니다."
+            : "LIMITED · 진단 모델이 준비된 환경에서만 실행할 수 있습니다."}
+        </ServiceNotice>
         <UploadText>병해충 진단을 위한 사진을 업로드해주세요</UploadText>
         <ExplanationText>
           &#60;탐지 가능 병해충 목록&#62;<br/>
@@ -341,7 +380,10 @@ const DiagnosisTemplate = () => {
           )}
         </UploadContainer>
         <ButtonContainer>
-          <DiagnoseButton onClick={handleDiagnose} disabled={isLoading}>
+          <DiagnoseButton
+            onClick={handleDiagnose}
+            disabled={isLoading || !serviceCapability.available}
+          >
             <FaFile />
             진단하기
           </DiagnoseButton>

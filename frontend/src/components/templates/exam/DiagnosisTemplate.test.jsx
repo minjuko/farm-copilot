@@ -2,6 +2,7 @@ import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { uploadImage } from "../../../apis/predict";
 import DiagnosisTemplate from "./DiagnosisTemplate";
+import { fetchCapabilities } from "../../../apis/capabilities";
 
 const mockNavigate = jest.fn();
 const mockSetIsLoading = jest.fn();
@@ -11,6 +12,10 @@ jest.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
 }));
 jest.mock("../../../apis/predict", () => ({ uploadImage: jest.fn() }));
+jest.mock("../../../apis/capabilities", () => ({
+  fetchCapabilities: jest.fn(),
+  normalizeCapability: (payload, name) => payload[name],
+}));
 jest.mock("../../../LoadingContext", () => ({
   useLoading: () => ({ isLoading: false, setIsLoading: mockSetIsLoading }),
 }));
@@ -30,7 +35,12 @@ beforeAll(() => {
   URL.revokeObjectURL = jest.fn();
 });
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  fetchCapabilities.mockResolvedValue({
+    data: { detection: { status: "available", available: true, reason: null } },
+  });
+});
 
 test("does not navigate to details for mapping-unavailable 503", async () => {
   uploadImage.mockRejectedValue({
@@ -41,7 +51,9 @@ test("does not navigate to details for mapping-unavailable 503", async () => {
   });
   const { container } = render(<DiagnosisTemplate />);
   selectValidImage(container);
-  fireEvent.click(screen.getByRole("button", { name: /진단하기/ }));
+  const button = await screen.findByRole("button", { name: /진단하기/ });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
 
   expect(await screen.findByRole("alert")).toHaveTextContent("상세정보 연결");
   expect(mockNavigate).not.toHaveBeenCalled();
@@ -51,9 +63,23 @@ test("blocks duplicate upload clicks while a request is in flight", async () => 
   uploadImage.mockReturnValue(new Promise(() => {}));
   const { container } = render(<DiagnosisTemplate />);
   selectValidImage(container);
-  const button = screen.getByRole("button", { name: /진단하기/ });
+  const button = await screen.findByRole("button", { name: /진단하기/ });
+  await waitFor(() => expect(button).toBeEnabled());
   fireEvent.click(button);
   fireEvent.click(button);
 
   await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(1));
+});
+
+test("blocks diagnosis while the model capability is limited", async () => {
+  fetchCapabilities.mockResolvedValue({
+    data: { detection: { status: "limited", available: false, reason: "not_configured" } },
+  });
+  const { container } = render(<DiagnosisTemplate />);
+  selectValidImage(container);
+
+  const button = await screen.findByRole("button", { name: /진단하기/ });
+  await waitFor(() => expect(button).toBeDisabled());
+  expect(screen.getByRole("status")).toHaveTextContent("LIMITED");
+  expect(uploadImage).not.toHaveBeenCalled();
 });
