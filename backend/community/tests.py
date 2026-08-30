@@ -1,5 +1,6 @@
 import json
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -120,6 +121,52 @@ class CommunitySmokeTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertFalse(Comment.objects.filter(content='Invalid reply').exists())
+
+    def test_invalid_list_filter_and_wrong_methods_are_rejected(self):
+        invalid_filter = self.client.get(
+            reverse('community:post_list'), {'post_type': 'invalid'}
+        )
+        self.assertEqual(invalid_filter.status_code, 400)
+        self.assertEqual(
+            self.client.post(reverse('community:post_list')).status_code,
+            405,
+        )
+
+        post = Post.objects.create(
+            user=self.user, title='Method target', content='Content', post_type='buy'
+        )
+        self.assertEqual(
+            self.client.post(reverse('community:post_detail', args=[post.id])).status_code,
+            405,
+        )
+
+    def test_post_list_is_newest_first(self):
+        older = Post.objects.create(
+            user=self.user, title='Older', content='Content', post_type='buy'
+        )
+        newer = Post.objects.create(
+            user=self.user, title='Newer', content='Content', post_type='sell'
+        )
+        response = self.client.get(reverse('community:post_list'))
+        self.assertEqual([item['id'] for item in response.json()[:2]], [newer.id, older.id])
+
+    def test_post_image_larger_than_five_mb_is_rejected(self):
+        oversized_gif = SimpleUploadedFile(
+            'oversized.gif',
+            b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;' + b'\x00' * (5 * 1024 * 1024),
+            content_type='image/gif',
+        )
+        response = self.client.post(
+            reverse('community:post_create'),
+            data={
+                'title': 'Oversized image',
+                'content': 'Content',
+                'post_type': 'buy',
+                'image': oversized_gif,
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Post.objects.filter(title='Oversized image').exists())
 
 
 class CommunityCsrfBoundaryTests(TestCase):

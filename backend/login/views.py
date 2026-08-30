@@ -11,17 +11,13 @@ from django.core.mail import send_mail
 from django.views.decorators.http import require_http_methods, require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import User
-from cryptography.fernet import Fernet
-from django.conf import settings
-from django.contrib.auth import logout
 from aivle_big.decorators import login_required
-from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, UnauthorizedError, InvalidRequestError, DuplicateResourceError
+from aivle_big.exceptions import ValidationError, InternalServerError, UnauthorizedError, InvalidRequestError, DuplicateResourceError
 from django.db import DatabaseError, IntegrityError
 from django.utils import timezone
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -286,54 +282,10 @@ def password_reset(request):
         return JsonResponse({'error': 'Password reset confirmation failed'}, status=400)
 
 
-def _legacy_send_verification_email(request):
-    try:
-        data = json.loads(request.body)
-        email = data['email']
-        if User.objects.filter(email=email).exists():
-            raise DuplicateResourceError("이미 사용중인 이메일입니다.")
-        now = timezone.now()
-        previous_sent_at = request.session.get('verification_code_sent_at')
-        if previous_sent_at is not None:
-            try:
-                sent_time = timezone.datetime.fromtimestamp(float(previous_sent_at), tz=dt_timezone.utc)
-                if now - sent_time < VERIFICATION_RESEND_COOLDOWN:
-                    return JsonResponse({'message': GENERIC_RECOVERY_MESSAGE})
-            except (TypeError, ValueError, OverflowError):
-                pass
-
-        if False and User.objects.filter(email=email).exists():
-            return JsonResponse({'message': GENERIC_RECOVERY_MESSAGE})
-        verification_code = f'{secrets.randbelow(10000):04d}'
-        html_message = f'''
-        <html>
-        <body>
-            <p style="font-size: 18px;">Your verification code is:</p>
-            <p style="font-size: 24px; font-weight: bold;">{verification_code}</p>
-        </body>
-        </html>
-        '''
-        send_mail(
-            'Your Verification Code',
-            '',
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-            html_message=html_message,
-        )
-        request.session['verification_code'] = verification_code
-        request.session['verification_code_sent_at'] = now.timestamp()
-        return JsonResponse({'message': GENERIC_RECOVERY_MESSAGE})
-        return JsonResponse({'message': '이메일로 인증번호가 발송되었습니다.'})
-    except KeyError:
-        raise ValidationError("Email field is required")
-    except json.JSONDecodeError:
-        raise ValidationError("Invalid JSON format")
-    except DuplicateResourceError as e:
-        return JsonResponse({'message': str(e)}, status=409)
-    except Exception:
-        logger.error("Error sending verification email", exc_info=True)
-        raise InternalServerError("Failed to send verification email")
+@require_GET
+def password_reset_page(request):
+    frontend_base = getattr(settings, 'FRONTEND_BASE_URL', 'http://localhost:3000').rstrip('/')
+    return redirect(f'{frontend_base}/password_reset')
 
 def logout_view(request):
     try:
@@ -456,64 +408,3 @@ def change_username(request):
             return JsonResponse({'status': 'error', 'message': 'Failed to change username', 'code': 2001, 'status_code': 500}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'POST method only allowed', 'code': 1002, 'status_code': 405}, status=405)
-
-@ensure_csrf_cookie
-def _legacy_password_reset_request(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            email = data.get('email')
-
-            if not email:
-                raise ValueError('이메일 주소가 필요합니다.')
-
-            user = User.objects.filter(email=email).first()
-            if user is not None:
-                temporary_password = ''.join(secrets.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890') for _ in range(10))
-                user.set_password(temporary_password)
-                user.save()
-                send_mail(
-                    '비밀번호 재설정',
-                    f'임시 비밀번호는 {temporary_password} 입니다.',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                    fail_silently=False,
-                )
-                return JsonResponse({'message': '이메일로 임시 비밀번호가 전송되었습니다.'})
-            else:
-                raise ValueError('해당 이메일 주소로 등록된 사용자가 없습니다.')
-
-        except Exception:
-            logger.error("Password recovery request failed", exc_info=True)
-            return JsonResponse({'error': 'Password recovery request failed'}, status=400)
-
-    else:
-        return JsonResponse({'error': 'POST 요청만 지원됩니다.'}, status=405)
-    
-@ensure_csrf_cookie
-def _legacy_password_reset(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            email = data.get('email')
-            temporary_password = data.get('temporary_password')
-            new_password = data.get('new_password')
-
-            if not email or not temporary_password or not new_password:
-                raise ValueError('이메일, 임시 비밀번호, 새로운 비밀번호가 필요합니다.')
-
-            user = User.objects.filter(email=email).first()
-            if user is not None and user.check_password(temporary_password):
-                user.set_password(new_password)
-                user.save()
-                return JsonResponse({'status': 'success', 'message': '새로운 비밀번호로 변경되었습니다.'})
-            else:
-                raise ValueError('잘못된 이메일 또는 임시 비밀번호입니다.')
-
-        except Exception:
-            logger.error("Password reset confirmation failed", exc_info=True)
-            return JsonResponse({'error': 'Password reset confirmation failed'}, status=400)
-
-    else:
-        return JsonResponse({'error': 'POST 요청만 지원됩니다.'}, status=405)
-    

@@ -1,36 +1,43 @@
-from django.shortcuts import render, get_object_or_404, redirect
 from aivle_big.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.db import DatabaseError, IntegrityError
 from django.db.models import Count
 from .models import Post, Comment
 from .forms import PostForm, CommentForm
-from aivle_big.exceptions import ResourceAccessForbiddenError, ValidationError, NotFoundError, InternalServerError, InvalidRequestError, DuplicateResourceError
+from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, DuplicateResourceError
 import logging
 import json
-from django.views.decorators.http import require_GET
 
 logger = logging.getLogger(__name__)
 
 def post_list(request):
+    if request.method != 'GET':
+        raise InvalidRequestError("GET method only allowed")
     try:
         post_type = request.GET.get('post_type')
+        valid_post_types = {choice for choice, _ in PostForm.POST_TYPE_CHOICES}
+        if post_type and post_type not in valid_post_types:
+            raise ValidationError("Invalid post type")
         if post_type:
-            posts = Post.objects.filter(post_type=post_type).annotate(comment_count=Count('comments')).values('id', 'title', 'content', 'user__username', 'creation_date', 'comment_count')
+            posts = Post.objects.filter(post_type=post_type).annotate(comment_count=Count('comments')).order_by('-creation_date', '-id').values('id', 'title', 'content', 'user__username', 'creation_date', 'comment_count')
         else:
-            posts = Post.objects.annotate(comment_count=Count('comments')).values('id', 'title', 'content', 'user__username', 'creation_date', 'comment_count')
+            posts = Post.objects.annotate(comment_count=Count('comments')).order_by('-creation_date', '-id').values('id', 'title', 'content', 'user__username', 'creation_date', 'comment_count')
         return JsonResponse(list(posts), safe=False)
+    except ValidationError:
+        raise
     except DatabaseError as e:
         logger.error(f"Database error while fetching posts: {str(e)}")
         raise InternalServerError("Database error occurred while fetching posts.")
 
 def post_detail(request, post_id):
+    if request.method != 'GET':
+        raise InvalidRequestError("GET method only allowed")
     try:
         try:
             post = Post.objects.get(pk=post_id)
         except Post.DoesNotExist as exc:
             raise NotFoundError("Post not found") from exc
-        comments = list(post.comments.all().values(
+        comments = list(post.comments.order_by('created_at', 'id').values(
             'id', 'content', 'user__username', 'user_id', 'created_at', 'parent_id'
         ))
 
@@ -121,10 +128,7 @@ def post_delete(request, post_id):
         except Post.DoesNotExist as exc:
             raise NotFoundError("Post not found.") from exc
         post.delete()
-        return JsonResponse({'status': 'success'}, status=204)
-    except ResourceAccessForbiddenError as e:
-        logger.error(f"Permission denied: {e}")
-        raise ResourceAccessForbiddenError("Permission denied.")
+        return HttpResponse(status=204)
     except (InvalidRequestError, NotFoundError):
         raise
     except Exception as e:
@@ -218,7 +222,7 @@ def comment_delete(request, comment_id):
         except Comment.DoesNotExist as exc:
             raise NotFoundError("Comment not found") from exc
         comment.delete()
-        return JsonResponse({'status': 'success'}, status=204)
+        return HttpResponse(status=204)
     except (NotFoundError, ValidationError):
         raise
     except Exception as e:
@@ -226,22 +230,24 @@ def comment_delete(request, comment_id):
         raise InternalServerError("Failed to delete comment")
 
 @login_required
-@require_GET
 def my_post_list(request):
+    if request.method != 'GET':
+        raise InvalidRequestError("GET method only allowed")
     try:
-        posts = Post.objects.filter(user=request.user).values('id', 'title', 'content', 'user__username', 'creation_date')
+        posts = Post.objects.filter(user=request.user).order_by('-creation_date', '-id').values('id', 'title', 'content', 'user__username', 'creation_date')
         return JsonResponse(list(posts), safe=False)
     except DatabaseError as e:
         logger.error(f"Database error fetching user's posts: {str(e)}")
         raise InternalServerError("Database error occurred while fetching user's posts")
 
 @login_required
-@require_GET
 def my_commented_posts(request):
+    if request.method != 'GET':
+        raise InvalidRequestError("GET method only allowed")
     try:
         comments = Comment.objects.filter(user=request.user).values('post').distinct()
         post_ids = [comment['post'] for comment in comments]
-        posts = Post.objects.filter(id__in=post_ids).values('id', 'title', 'content', 'user__username', 'creation_date')
+        posts = Post.objects.filter(id__in=post_ids).order_by('-creation_date', '-id').values('id', 'title', 'content', 'user__username', 'creation_date')
         return JsonResponse(list(posts), safe=False)
     except DatabaseError as e:
         logger.error(f"Database error fetching commented posts: {str(e)}")

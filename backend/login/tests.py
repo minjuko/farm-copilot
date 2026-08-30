@@ -14,6 +14,14 @@ from .models import User
 
 
 class AuthenticationSmokeTests(TestCase):
+    def test_password_reset_page_redirects_to_frontend(self):
+        response = self.client.get(reverse('login:password_reset'))
+        self.assertRedirects(
+            response,
+            'http://localhost:3000/password_reset',
+            fetch_redirect_response=False,
+        )
+
     def test_signup_session_auth_check_and_logout(self):
         session = self.client.session
         session['verification_code'] = '1234'
