@@ -8,20 +8,12 @@ import Pagination from '../../molecules/Pagination';
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
+import { EmptyState, ListPage } from "../../../styles/primitives";
 import {
   formatDetectionConfidence,
   normalizeDetectionResult,
   normalizeMediaUrl,
 } from "./detectFlow";
-
-const PageContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.5rem;
-  width: 100%;
-  margin: 0 auto;
-`;
 
 const Content = styled.div`
   display: flex;
@@ -148,13 +140,6 @@ const AddButtonIcon = styled(FaPlus)`
 const AddButtonText = styled.span`
   font-size: 1rem;
   font-weight: 600;
-`;
-
-const EmptyMessage = styled.div`
-  text-align: center;
-  color: #888;
-  font-size: 1rem; 
-  margin: 2rem 0;
 `;
 
 const getDiagnosisHistoryError = () => (
@@ -292,7 +277,7 @@ const DiagnosisListTemplate = () => {
   };
 
   return (
-    <PageContainer>
+    <ListPage>
       {(isLoading || isDeleting) && <GlobalLoader />}
       <AddButtonContainer onClick={handleAddClick} aria-label="새 진단 시작하기">
         <AddButtonIcon />
@@ -301,9 +286,9 @@ const DiagnosisListTemplate = () => {
 
       <Content>
         {(loadError || actionError) ? (
-          <EmptyMessage role="alert">{loadError || actionError}</EmptyMessage>
+          <EmptyState $error={Boolean(loadError || actionError)} role="alert">{loadError || actionError}</EmptyState>
         ) : sessions.length === 0 ? (
-          <EmptyMessage>진단 목록이 존재하지 않습니다. 첫 진단을 시작해보세요!</EmptyMessage>
+          <EmptyState>진단 목록이 존재하지 않습니다. 첫 진단을 시작해보세요!</EmptyState>
         ) : (
           <>
             <SessionList>
@@ -348,7 +333,7 @@ const DiagnosisListTemplate = () => {
         cancelColor="#4aaa87"
         cancelHoverColor="#3b8b6d"
       />
-    </PageContainer>
+    </ListPage>
   );
 };
 

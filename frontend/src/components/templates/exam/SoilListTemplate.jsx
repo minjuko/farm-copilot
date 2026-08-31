@@ -7,15 +7,7 @@ import { getSoilCropData, deleteSoilData } from "../../../apis/predict";
 import { useLoading } from "../../../LoadingContext";
 import Pagination from "../../molecules/Pagination";
 import useAsyncResource from "../../../hooks/useAsyncResource";
-
-const PageContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.5rem 0.8rem;
-  background-color: #f9f9f9;
-  min-height: 100vh;
-`;
+import { EmptyState, ListPage } from "../../../styles/primitives";
 
 const SessionList = styled.div`
   width: 100%;
@@ -142,12 +134,6 @@ const PaginationContainer = styled.div`
   }
 `;
 
-const NoDataText = styled.p`
-  font-size: 1rem;
-  color: #888;
-  margin-top: 2rem;
-`;
-
 const formatDateTime = (dateString) => {
   const options = {
     year: 'numeric',
@@ -242,12 +228,12 @@ const SoilListTemplate = () => {
   }, {})).length / sessionsPerPage);
 
   return (
-    <PageContainer>
+    <ListPage>
       <AddButton onClick={handleAddClick}>새 토양 데이터 추가</AddButton>
       {(loadError || actionError) ? (
-        <NoDataText role="alert">{loadError || actionError}</NoDataText>
+        <EmptyState $error={Boolean(loadError || actionError)} role="alert">{loadError || actionError}</EmptyState>
       ) : currentSessions.length === 0 ? (
-        <NoDataText>목록이 존재하지 않습니다. 첫 토양 분석을 진행해보세요</NoDataText>
+        <EmptyState>목록이 존재하지 않습니다. 첫 토양 분석을 진행해보세요</EmptyState>
       ) : (
         <SessionList>
           {currentSessions.map(sessionId => (
@@ -283,7 +269,7 @@ const SoilListTemplate = () => {
         cancelColor="#4aaa87"
         cancelHoverColor="#3b8b6d"
       />
-    </PageContainer>
+    </ListPage>
   );
 };
 
