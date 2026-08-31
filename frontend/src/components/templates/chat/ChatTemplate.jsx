@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { fetchChatbotStatus, fetchChatHistory, sendChatMessage } from '../../../apis/chat';
+import { sendChatMessage } from '../../../apis/chat';
 import { useAuth } from '../../../AuthContext';
+import useChatSession from './useChatSession';
 import {
   buildChatPayload,
   getChatErrorMessage,
-  normalizeChatHistory,
   normalizeChatResponse,
 } from './chatFlow';
 import SyncLoader from 'react-spinners/SyncLoader';
@@ -207,50 +207,16 @@ const ChatTemplate = () => {
   const { sessionId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [chatbotStatus, setChatbotStatus] = useState('checking');
   const { status } = useAuth();
+  const { messages, setMessages, errorMessage, setErrorMessage, chatbotStatus } = useChatSession(sessionId, status);
 
   const chatBoxRef = useRef(null);
   const requestInFlight = useRef(false);
 
   const params = new URLSearchParams(location.search);
   const sessionName = params.get('session_name');
-
-  useEffect(() => {
-    let active = true;
-    fetchChatbotStatus()
-      .then((response) => {
-        if (active) setChatbotStatus(response?.data?.status || 'limited');
-      })
-      .catch(() => {
-        if (active) setChatbotStatus('limited');
-      });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      const fetchHistory = async () => {
-        try {
-          const response = await fetchChatHistory(sessionId);
-          const orderedMessages = normalizeChatHistory(response?.data);
-          if (!orderedMessages) throw new Error('MALFORMED_CHAT_HISTORY');
-          setMessages(orderedMessages);
-          setErrorMessage('');
-        } catch (error) {
-          setErrorMessage('채팅 기록을 불러오는 중 오류가 발생했습니다.');
-        }
-      };
-
-      fetchHistory();
-    } else if (status === 'unauthenticated') {
-      setMessages([]);
-    }
-  }, [sessionId, status]);
 
   useEffect(() => {
     if (chatBoxRef.current) {

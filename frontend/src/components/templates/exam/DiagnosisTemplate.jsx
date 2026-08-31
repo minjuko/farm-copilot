@@ -12,7 +12,7 @@ import { FaCamera, FaFile } from "react-icons/fa";
 import CustomModal from '../../atoms/CustomModal';
 import GlobalLoader from '../../atoms/GlobalLoader';
 import { useLoading } from "../../../LoadingContext";
-import { fetchCapabilities, normalizeCapability } from "../../../apis/capabilities";
+import useServiceCapability from "../../../hooks/useServiceCapability";
 
 const PageContainer = styled.div`
   display: flex;
@@ -227,23 +227,7 @@ const DiagnosisTemplate = () => {
   const cameraInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const uploadInFlight = useRef(false);
-  const [serviceCapability, setServiceCapability] = useState({
-    status: "checking", available: false,
-  });
-
-  useEffect(() => {
-    let active = true;
-    fetchCapabilities()
-      .then((response) => {
-        if (active) {
-          setServiceCapability(normalizeCapability(response?.data, "detection"));
-        }
-      })
-      .catch(() => {
-        if (active) setServiceCapability({ status: "limited", available: false });
-      });
-    return () => { active = false; };
-  }, []);
+  const serviceCapability = useServiceCapability("detection");
 
   const selectFile = useCallback((file) => {
     const validationError = validateDetectionFile(file);

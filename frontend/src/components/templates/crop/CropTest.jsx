@@ -27,7 +27,7 @@ import {
   RemoveIcon,
 } from '../../../styles/CropTest';
 import { buildPredictionPayload, removeCropAt } from './predictionFlow';
-import { fetchCapabilities, normalizeCapability } from '../../../apis/capabilities';
+import useServiceCapability from '../../../hooks/useServiceCapability';
 
 const ServiceNotice = ({ available }) => (
   <div
@@ -63,25 +63,9 @@ const CropTest = () => {
   const [addError, setAddError] = useState("");
   const [selectKey, setSelectKey] = useState(0); // 추가된 key state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [serviceCapability, setServiceCapability] = useState({
-    status: 'checking', available: false,
-  });
+  const serviceCapability = useServiceCapability('prediction');
   const navigate = useNavigate();
   const regionRef = useRef(null);
-
-  useEffect(() => {
-    let active = true;
-    fetchCapabilities()
-      .then((response) => {
-        if (active) {
-          setServiceCapability(normalizeCapability(response?.data, 'prediction'));
-        }
-      })
-      .catch(() => {
-        if (active) setServiceCapability({ status: 'limited', available: false });
-      });
-    return () => { active = false; };
-  }, []);
 
   const fetchCropNames = async () => {
     try {

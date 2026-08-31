@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Bar, Line } from 'react-chartjs-2';
-import { getSessionDetails } from '../../../apis/crop';
 import Chart from 'chart.js/auto';
 import { CategoryScale, TimeScale } from 'chart.js';
 import 'chartjs-adapter-date-fns';
-import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
-import { getServiceErrorMessage } from '../../../apis/error';
-import { finiteNumberOrZero, normalizePredictionResult } from './predictionFlow';
+import { finiteNumberOrZero } from './predictionFlow';
+import useSessionDetails from './useSessionDetails';
 
 Chart.register(CategoryScale, TimeScale);
 
@@ -368,17 +366,13 @@ const formatNumber = (num) => {
 };
 
 const SessionDetails = () => {
-  const location = useLocation();
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [selectedCropIndex, setSelectedCropIndex] = useState(0);
-  const [sessionDetails, setSessionDetails] = useState(null);
   const [barChartData, setBarChartData] = useState(null);
   const [lineChartData, setLineChartData] = useState(null);
-  const { setIsLoading, isLoading } = useLoading();
   const [isChartLoading, setIsChartLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isFetching, setIsFetching] = useState(true);
+  const { sessionDetails, errorMessage, isFetching, isLoading } = useSessionDetails(sessionId);
 
   const updateCharts = (details, index) => {
     if (!details.results[index]) return;
@@ -390,38 +384,9 @@ const SessionDetails = () => {
     setLineChartData(lineData);
   };
 
-  useEffect(() => {
-    const fetchSessionDetails = async () => {
-      const session_id = sessionId || location.state?.session_id;
-      if (!session_id) {
-        setErrorMessage('세션 ID가 없습니다. 목록에서 다시 선택해주세요.');
-        setIsFetching(false);
-        return;
-      }
-      try {
-        setIsLoading(true);
-        const response = await getSessionDetails(session_id);
-        const normalized = normalizePredictionResult(response.data);
-        if (normalized.results.length === 0) {
-          setErrorMessage('표시할 예측 결과가 없습니다.');
-          return;
-        }
-        setSessionDetails(normalized);
-        updateCharts(normalized, 0);
-      } catch (error) {
-        if (error.response && error.response.status === 401) {
-          navigate('/login');
-        } else {
-          setErrorMessage(getServiceErrorMessage(error, '세션 상세 정보를 불러오지 못했습니다.'));
-        }
-      } finally {
-        setIsLoading(false);
-        setIsFetching(false);
-      }
-    };
-
-    fetchSessionDetails();
-  }, [location.state, navigate, sessionId, setIsLoading]);
+  React.useEffect(() => {
+    if (sessionDetails) updateCharts(sessionDetails, 0);
+  }, [sessionDetails]);
 
   const handleTabClick = (index) => {
     setSelectedCropIndex(index);
