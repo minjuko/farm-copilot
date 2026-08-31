@@ -1,10 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import styled from 'styled-components';
 import { loginUser } from "../../../apis/user";
 import CustomModal from "../../atoms/CustomModal";
 import { useLoading } from '../../../LoadingContext';
 import { useAuth } from '../../../AuthContext';
+import {
+  getEmailError,
+  getLoginValidation,
+  getPasswordError,
+  hasValidationErrors,
+} from './formValidation';
 
 const Container = styled.div`
   display: flex;
@@ -109,46 +115,20 @@ const LoginTemplate = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
   const [modalTitle, setModalTitle] = useState("");
   const [isError, setIsError] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const { email, password } = formData;
-    setIsButtonDisabled(!email || !password || emailError !== "" || passwordError !== "");
-  }, [formData, emailError, passwordError]);
-
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validatePassword = (password) => {
-    return /^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
-  };
+  const validation = getLoginValidation(formData);
+  const isButtonDisabled = hasValidationErrors(validation);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    if (name === "email") {
-      if (!validateEmail(value)) {
-        setEmailError("올바른 이메일 형식을 입력하세요.");
-      } else {
-        setEmailError("");
-      }
-    }
-
-    if (name === "password") {
-      if (!validatePassword(value)) {
-        setPasswordError("비밀번호는 영소문자, 숫자, 특수문자를 하나 이상 포함하여 8자 이상으로 입력하세요.");
-      } else {
-        setPasswordError("");
-      }
-    }
+    if (name === "email") setEmailError(getEmailError(value));
+    if (name === "password") setPasswordError(getPasswordError(value));
   };
 
   const handleSubmit = (e) => {
@@ -156,6 +136,12 @@ const LoginTemplate = () => {
     if (isLoading) return;
 
     const { email, password } = formData;
+    const errors = getLoginValidation(formData);
+    if (hasValidationErrors(errors)) {
+      setEmailError(errors.email);
+      setPasswordError(errors.password);
+      return;
+    }
 
     setLoginError("");
     setIsLoading(true);

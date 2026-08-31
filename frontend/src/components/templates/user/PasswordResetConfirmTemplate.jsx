@@ -6,6 +6,7 @@ import { getApiErrorMessage } from '../../../apis/error';
 import GlobalLoader from '../../atoms/GlobalLoader';
 import { useLoading } from '../../../LoadingContext';
 import { useAuth } from '../../../AuthContext';
+import { getPasswordConfirmationError, getPasswordError } from './formValidation';
 
 const Container = styled.div`
   display: flex;
@@ -83,7 +84,10 @@ const PasswordResetConfirmTemplate = () => {
   const [message, setMessage] = useState('');
 
   const hasValidLink = Boolean(uid && token);
-  const passwordsMatch = newPassword === confirmPassword;
+  const passwordError = getPasswordError(newPassword);
+  const confirmationError = getPasswordConfirmationError(newPassword, confirmPassword);
+  const fieldError = (newPassword || confirmPassword) ? passwordError || confirmationError : '';
+  const isFormValid = Boolean(newPassword && confirmPassword && !fieldError);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -91,12 +95,8 @@ const PasswordResetConfirmTemplate = () => {
       setError('유효하지 않은 비밀번호 재설정 링크입니다.');
       return;
     }
-    if (!newPassword || !confirmPassword) {
-      setError('새 비밀번호를 입력해주세요.');
-      return;
-    }
-    if (!passwordsMatch) {
-      setError('새 비밀번호가 일치하지 않습니다.');
+    if (!isFormValid) {
+      setError(fieldError || '새 비밀번호를 입력해주세요.');
       return;
     }
 
@@ -150,8 +150,9 @@ const PasswordResetConfirmTemplate = () => {
           />
         </InputGroup>
         {message && <Message>{message}</Message>}
+        {fieldError && <Message $error>{fieldError}</Message>}
         {error && <Message $error>{error}</Message>}
-        <Button type="submit" disabled={isLoading || !newPassword || !confirmPassword}>
+        <Button type="submit" disabled={isLoading || !isFormValid}>
           비밀번호 변경하기
         </Button>
       </Form>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Modal from "react-modal";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import { FaTimes } from "react-icons/fa";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import { useLoading } from "../../../LoadingContext";
 import { useAuth } from "../../../AuthContext";
+import { getPasswordConfirmationError, getPasswordError } from "./formValidation";
 
 const ModalContainer = styled(Modal)`
   display: flex;
@@ -108,36 +109,33 @@ const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
     new_password2: ""
   });
   const [error, setError] = useState("");
-  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [modalContent, setModalContent] = useState("");
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const { old_password, new_password1, new_password2 } = formData;
-    setIsButtonDisabled(!(old_password && new_password1 && new_password2));
-  }, [formData]);
-
-  const validatePassword = (password) => {
-    return /^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
-  };
+  const passwordError = getPasswordError(formData.new_password1);
+  const confirmationError = getPasswordConfirmationError(
+    formData.new_password1,
+    formData.new_password2
+  );
+  const fieldError = (formData.new_password1 || formData.new_password2)
+    ? passwordError || confirmationError
+    : "";
+  const isButtonDisabled = !formData.old_password
+    || !formData.new_password1
+    || !formData.new_password2
+    || Boolean(fieldError)
+    || isLoading;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-
-    if (name === "new_password1") {
-      if (!validatePassword(value)) {
-        setError("비밀번호는 영소문자, 숫자, 특수문자를 하나 이상 포함하여 8자 이상으로 입력하세요");
-      } else {
-        setError("");
-      }
-    }
+    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isButtonDisabled) return;
     setIsLoading(true);
     try {
       const response = await changePassword(formData);
@@ -196,7 +194,7 @@ const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
               required
             />
           </InputGroup>
-          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {(fieldError || error) && <ErrorMessage role="alert">{fieldError || error}</ErrorMessage>}
           <InputGroup>
             <Label htmlFor="new_password2">새 비밀번호 확인</Label>
             <Input

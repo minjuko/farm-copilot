@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { checkUsername, sendVerificationEmail, signupUser } from "../../../apis/user";
 import { useNavigate } from "react-router-dom";
 import CustomModal from "../../atoms/CustomModal";
 import { Container, Form, InputGroup, Label, Input, Button, ErrorMessage, SuccessMessage } from "../../../styles/Form";
+import {
+  getEmailError,
+  getPasswordConfirmationError,
+  getPasswordError,
+  getSignupValidation,
+  hasValidationErrors,
+  isValidEmail,
+} from "./formValidation";
 
 const SignupTemplate = () => {
   const [formData, setFormData] = useState({
@@ -21,46 +29,27 @@ const SignupTemplate = () => {
   const [verificationCodeError, setVerificationCodeError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [signupError, setSignupError] = useState("");
-  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
   const [modalTitle, setModalTitle] = useState("오류"); // 모달 타이틀 상태 추가
   const [isSignupSuccess, setIsSignupSuccess] = useState(false); // 회원가입 성공 상태 추가
   const [isSendingCode, setIsSendingCode] = useState(false); // 인증번호 발송 중 상태 추가
-
-  useEffect(() => {
-    const { username, email, verification_code, password1, password2 } = formData;
-    const isFormFilled = username && email && verification_code && password1 && password2;
-    setIsButtonDisabled(!isFormFilled || usernameError || emailError || passwordError);
-  }, [formData, usernameError, emailError, passwordError]);
-
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validatePassword = (password) => {
-    return /^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
-  };
+  const clientValidation = getSignupValidation(formData);
+  const isButtonDisabled = hasValidationErrors(clientValidation)
+    || Boolean(usernameError || emailError || passwordError || verificationCodeError);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    if (name === "email") {
-      if (!validateEmail(value)) {
-        setEmailError("올바른 이메일 형식을 입력하세요.");
-      } else {
-        setEmailError("");
-      }
-    }
-
+    if (name === "email") setEmailError(getEmailError(value));
     if (name === "password1") {
-      if (!validatePassword(value)) {
-        setPasswordError("비밀번호는 영소문자, 숫자, 특수문자를 하나 이상 포함하여 8자 이상으로 입력하세요");
-      } else {
-        setPasswordError("");
-      }
+      setPasswordError(getPasswordError(value) || (
+        formData.password2 ? getPasswordConfirmationError(value, formData.password2) : ""
+      ));
+    }
+    if (name === "password2") {
+      setPasswordError(getPasswordConfirmationError(formData.password1, value));
     }
   };
 
@@ -93,8 +82,8 @@ const SignupTemplate = () => {
       setEmailError("이메일을 입력해주세요");
       return;
     }
-    if (!validateEmail(email)) {
-      setEmailError("올바른 이메일 형식을 입력하세요.");
+    if (!isValidEmail(email)) {
+      setEmailError(getEmailError(email));
       return;
     }
     setIsSendingCode(true);
@@ -122,11 +111,14 @@ const SignupTemplate = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const { username, email, verification_code, password1, password2 } = formData;
-
-    if (password1 !== password2) {
-      setPasswordError("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+    const validation = getSignupValidation(formData);
+    if (hasValidationErrors(validation)) {
+      setUsernameError(validation.username);
+      setEmailError(validation.email);
+      setVerificationCodeError(validation.verification_code);
+      setPasswordError(validation.password1 || validation.password2);
       setModalTitle("오류");
-      setModalContent("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+      setModalContent(Object.values(validation).find(Boolean));
       setIsModalOpen(true);
       return;
     }
@@ -211,7 +203,7 @@ const SignupTemplate = () => {
           {emailError && <ErrorMessage>{emailError}</ErrorMessage>}
           {verificationCodeError && <ErrorMessage>{verificationCodeError}</ErrorMessage>}
           {verificationCodeSent && !verificationCodeError && <SuccessMessage>{verificationCodeSuccess}</SuccessMessage>}
-            <Button type="button" onClick={handleSendVerificationCode} disabled={!validateEmail(formData.email) || isSendingCode}>
+            <Button type="button" onClick={handleSendVerificationCode} disabled={!isValidEmail(formData.email) || isSendingCode}>
               {isSendingCode ? "인증번호 발송 중..." : "인증번호 전송"}
             </Button>
         </InputGroup>
