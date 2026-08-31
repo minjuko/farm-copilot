@@ -297,6 +297,39 @@ class SoilEndpointTests(TestCase):
         self.assertTrue(crop_data.objects.filter(pk=second.pk).exists())
         self.assertTrue(crop_data.objects.filter(pk=other.pk).exists())
 
+    def test_soil_detail_returns_only_the_authenticated_users_analysis(self):
+        crop_data.objects.create(
+            user_id=self.user.id,
+            session_id="analysis-detail",
+            crop_name="pepper",
+            detailed_address="parcel 1-2",
+            soil_data={"acid": "6.5"},
+            fertilizer_data={"pre_Fert_N": "10"},
+        )
+
+        response = self.client.get(
+            reverse("soil:get_soil_data_by_session", args=["analysis-detail"])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["crop_name"], "pepper")
+        self.assertEqual(response.json()["soil_data"], {"acid": "6.5"})
+        self.assertEqual(response.json()["fertilizer_data"], {"pre_Fert_N": "10"})
+
+    def test_soil_detail_hides_another_users_analysis(self):
+        other_user = User.objects.create_user(
+            email="soil-detail-other@example.com",
+            username="soil-detail-other",
+            password="test-password",
+        )
+        crop_data.objects.create(user_id=other_user.id, session_id="private-analysis")
+
+        response = self.client.get(
+            reverse("soil:get_soil_data_by_session", args=["private-analysis"])
+        )
+
+        self.assertEqual(response.status_code, 404)
+
 
 class SoilCsrfBoundaryTests(TestCase):
     def setUp(self):

@@ -115,6 +115,27 @@ def get_crop_data_by_user(request):
 
 
 @login_required
+@require_GET
+def get_soil_data_by_session(request, session_id):
+    row = crop_data.objects.filter(
+        user_id=request.user.id,
+        session_id=session_id,
+    ).order_by("id").first()
+    if row is None:
+        raise NotFoundError("Soil session not found.")
+
+    return JsonResponse({
+        "session_id": row.session_id,
+        "crop_name": row.crop_name,
+        "address": row.address,
+        "detailed_address": row.detailed_address,
+        "created_at": timezone.localtime(row.created_at).strftime("%Y-%m-%d %H:%M:%S"),
+        "soil_data": row.soil_data,
+        "fertilizer_data": row.fertilizer_data,
+    })
+
+
+@login_required
 @require_http_methods(["DELETE"])
 def delete_soil_data_by_session(request, session_id):
     deleted_count, _ = crop_data.objects.filter(

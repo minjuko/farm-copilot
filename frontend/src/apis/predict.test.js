@@ -1,5 +1,5 @@
 import { instance } from "./instance";
-import { searchSoilAddresses, uploadImage } from "./predict";
+import { getSoilDataDetails, searchSoilAddresses, uploadImage } from "./predict";
 
 jest.mock("./instance", () => ({
   instance: { get: jest.fn(), post: jest.fn() },
@@ -35,4 +35,9 @@ test("searches standardized soil addresses through the backend", () => {
   expect(instance.get).toHaveBeenCalledWith("/soil/address-search/", {
     params: { query: "전라북도 전주시" },
   });
+});
+
+test("fetches one owned soil analysis by its stable session URL", () => {
+  getSoilDataDetails("soil-42");
+  expect(instance.get).toHaveBeenCalledWith("/soil/crop_data/soil-42/");
 });

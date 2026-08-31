@@ -1,6 +1,7 @@
-import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
+import { getSoilDataDetails } from "../../../apis/predict";
 
 const PageContainer = styled.div`
   display: flex;
@@ -127,17 +128,73 @@ const formatValue = (value) => {
 
 const SoilDataDetails = () => {
   const { state } = useLocation();
-  const { soilData, fertilizerData, crop, crop_add } = state || {};
+  const { sessionId } = useParams();
   const navigate = useNavigate();
+  const [details, setDetails] = useState(() => state?.soilData ? {
+    soilData: state.soilData,
+    fertilizerData: state.fertilizerData || {},
+    crop: state.crop,
+    crop_add: state.crop_add,
+  } : null);
+  const [isLoading, setIsLoading] = useState(Boolean(sessionId));
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    if (!sessionId) return undefined;
+
+    let isActive = true;
+    const loadDetails = async () => {
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const response = await getSoilDataDetails(sessionId);
+        const data = response?.data;
+        if (!data || !data.soil_data) throw new Error("MALFORMED_SOIL_DETAIL");
+        if (isActive) {
+          setDetails({
+            soilData: data.soil_data,
+            fertilizerData: data.fertilizer_data || {},
+            crop: data.crop_name,
+            crop_add: data.detailed_address,
+          });
+        }
+      } catch (error) {
+        if (!isActive) return;
+        setDetails(null);
+        setLoadError(error?.response?.status === 404
+          ? "토양 분석 결과를 찾을 수 없습니다."
+          : "토양 분석 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
+    };
+
+    loadDetails();
+    return () => { isActive = false; };
+  }, [sessionId]);
+
+  const { soilData, fertilizerData = {}, crop, crop_add } = details || {};
 
   const handleBackToList = () => {
     navigate('/soillist');
   };
 
+  if (isLoading && !details) {
+    return <PageContainer><p>토양 분석 결과를 불러오는 중입니다.</p></PageContainer>;
+  }
+
+  if (!details) {
+    return (
+      <PageContainer>
+        <p>{loadError || "표시할 수 있는 토양 분석 결과가 없습니다."}</p>
+        <Button onClick={handleBackToList}>목록으로 돌아가기</Button>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer>
-      {soilData && (
-        <RecommendationContainer>
+      <RecommendationContainer>
           <CropInfoContainer>
             <CropInfo>작물: <CropInfoText>{crop}</CropInfoText></CropInfo>
             <CropInfo>상세 주소: <CropInfoText>{crop_add}</CropInfoText></CropInfo>
@@ -243,8 +300,7 @@ const SoilDataDetails = () => {
           <ButtonContainer>
             <Button onClick={handleBackToList}>목록으로 돌아가기</Button>
           </ButtonContainer>
-        </RecommendationContainer>
-      )}
+      </RecommendationContainer>
     </PageContainer>
   );
 };

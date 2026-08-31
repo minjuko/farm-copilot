@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
+import { fetchSessionDetails } from "../../../apis/predict";
 import { formatDetectionConfidence, normalizeDetectionResult } from "./detectFlow";
 
 const PageContainer = styled.div`
@@ -137,7 +138,12 @@ const BackButton = styled.button`
 const InfoTemplate = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const diagnosisResult = normalizeDetectionResult(location.state?.diagnosisResult);
+  const { sessionId } = useParams();
+  const [diagnosisResult, setDiagnosisResult] = useState(
+    () => normalizeDetectionResult(location.state?.diagnosisResult)
+  );
+  const [isLoading, setIsLoading] = useState(Boolean(sessionId));
+  const [loadError, setLoadError] = useState("");
   const [userImageFailed, setUserImageFailed] = useState(false);
   const [dbImageFailed, setDbImageFailed] = useState(false);
 
@@ -145,10 +151,41 @@ const InfoTemplate = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  useEffect(() => {
+    if (!sessionId) return undefined;
+
+    let isActive = true;
+    const loadResult = async () => {
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const response = await fetchSessionDetails(sessionId);
+        const result = normalizeDetectionResult(response?.data);
+        if (!result) throw new Error("MALFORMED_DETECTION_RESULT");
+        if (isActive) setDiagnosisResult(result);
+      } catch (error) {
+        if (!isActive) return;
+        setDiagnosisResult(null);
+        setLoadError(error?.response?.status === 404
+          ? "진단 결과를 찾을 수 없습니다."
+          : "진단 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
+    };
+
+    loadResult();
+    return () => { isActive = false; };
+  }, [sessionId]);
+
+  if (isLoading && !diagnosisResult) {
+    return <PageContainer><p>진단 결과를 불러오는 중입니다.</p></PageContainer>;
+  }
+
   if (!diagnosisResult) {
     return (
       <PageContainer>
-        <p>표시할 수 있는 진단 결과가 없습니다.</p>
+        <p>{loadError || "표시할 수 있는 진단 결과가 없습니다."}</p>
         <BackButton onClick={() => navigate('/diagnosislist')}>목록으로 돌아가기</BackButton>
       </PageContainer>
     );

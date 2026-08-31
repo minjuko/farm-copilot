@@ -247,6 +247,7 @@ def upload_image_for_detection(request):
         detection.save()
 
         data = {
+            'session_id': detection.id,
             'pest_name': pest_info.pest_name,
             'occurrence_environment': pest_info.occurrence_environment,
             'symptom_description': pest_info.symptom_description,

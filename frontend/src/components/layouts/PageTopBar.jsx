@@ -93,11 +93,13 @@ const PageTopBar = () => {
     "/soil": "토양 분석",
     "/diagnosis": "병해충 진단",
     "/info": "병해충 진단 결과",
+    "/info/:sessionId": "병해충 진단 결과",
     "/croptest": "작물조합 등록",
     "/diagnosislist": "병해충 진단 목록",
     "/cropselection": "작물 조합 목록",
     "/soillist": "토양 데이터 목록",
     "/soil_details": "토양 데이터 상세",
+    "/soil_details/:sessionId": "토양 데이터 상세",
     "/sessiondetails": "수익 예측 결과",
     "/signup": "회원가입",
     "/password_reset": "비밀번호 찾기",
@@ -113,7 +115,7 @@ const PageTopBar = () => {
     const pathKeys = Object.keys(pageTitles);
 
     for (const pathKey of pathKeys) {
-      const regex = new RegExp(`^${pathKey.replace(/:\w+/g, "\\w+")}$`);
+      const regex = new RegExp(`^${pathKey.replace(/:\w+/g, "[^/]+")}$`);
       if (regex.test(pathname)) {
         return pageTitles[pathKey];
       }

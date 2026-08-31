@@ -306,7 +306,10 @@ const DiagnosisTemplate = () => {
       if (!diagnosisResult) {
         throw new Error("MALFORMED_DETECTION_RESPONSE");
       }
-      navigate('/info', { state: { diagnosisResult } });
+      const resultPath = diagnosisResult.session_id
+        ? `/info/${diagnosisResult.session_id}`
+        : '/info';
+      navigate(resultPath, { state: { diagnosisResult } });
     } catch (error) {
       setModalContent(getDetectionErrorMessage(error));
       setIsModalOpen(true);

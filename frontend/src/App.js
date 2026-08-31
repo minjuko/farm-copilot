@@ -69,8 +69,10 @@ function App() {
               <Route path="/soil" element={<SoilTemplate />} />
               <Route path="/soillist" element={<SoilListTemplate />} />
               <Route path="/soil_details" element={<SoilDataDetails />} />
+              <Route path="/soil_details/:sessionId" element={<SoilDataDetails />} />
               <Route path="/diagnosis" element={<DiagnosisTemplate />} />
               <Route path="/info" element={<InfoTemplate />} />
+              <Route path="/info/:sessionId" element={<InfoTemplate />} />
               <Route path="/diagnosislist" element={<DiagnosisListTemplate />} />
               <Route path="/sessiondetails" element={<SessionDetails />} />
               <Route path="/sessiondetails/:sessionId" element={<SessionDetails />} />

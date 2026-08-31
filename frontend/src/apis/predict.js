@@ -27,6 +27,10 @@ export const getSoilCropData = () => {
   return instance.get('/soil/crop_data/');
 };
 
+export const getSoilDataDetails = (sessionId) => {
+  return instance.get(`/soil/crop_data/${sessionId}/`);
+};
+
 export const deleteSoilData = (sessionId) => {
   return instance.delete(`/soil/delete_soil_data/${sessionId}/`, {
     headers: {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { fetchDetectionSessions, fetchSessionDetails, deleteDetectionSession } from "../../../apis/predict";
+import { fetchDetectionSessions, deleteDetectionSession } from "../../../apis/predict";
 import { FaTrash, FaPlus } from 'react-icons/fa';
 import ConfirmModal from '../../atoms/ConfirmModal';
 import ReactPaginate from 'react-paginate';
@@ -254,20 +254,8 @@ const DiagnosisListTemplate = () => {
     fetchSessions();
   }, [setIsLoading]);
 
-  const handleSessionClick = async (sessionId) => {
-    try {
-      setIsLoading(true);
-      setLoading(true);
-      const response = await fetchSessionDetails(sessionId);
-      const diagnosisResult = normalizeDetectionResult(response?.data);
-      if (!diagnosisResult) throw new Error("MALFORMED_DETECTION_RESULT");
-      navigate('/info', { state: { diagnosisResult } });
-    } catch (error) {
-      alert('세션을 불러오는데 실패했습니다. 다시 시도해주세요.');
-    } finally {
-      setIsLoading(false);
-      setLoading(false);
-    }
+  const handleSessionClick = (sessionId) => {
+    navigate(`/info/${sessionId}`);
   };
 
   const handleDeleteSession = async () => {

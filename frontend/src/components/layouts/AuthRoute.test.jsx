@@ -46,9 +46,11 @@ const renderRoutes = (initialPath, extra = null) => render(
           <Route path="/soil" element={<div>soil exam</div>} />
           <Route path="/soillist" element={<div>soil list</div>} />
           <Route path="/soil_details" element={<div>soil detail</div>} />
+          <Route path="/soil_details/:sessionId" element={<div>soil detail</div>} />
           <Route path="/diagnosis" element={<div>detect upload</div>} />
           <Route path="/diagnosislist" element={<div>detect history</div>} />
           <Route path="/info" element={<div>detect result</div>} />
+          <Route path="/info/:sessionId" element={<div>detect result</div>} />
           <Route path="/chatlist" element={<div>chat list</div>} />
           <Route path="/chat/:sessionId" element={<div>chat detail</div>} />
         </Route>
@@ -135,13 +137,13 @@ test.each(["/cropselection", "/sessiondetails/session-1"])("protects prediction 
   expect(await screen.findByText("login page")).toBeInTheDocument();
 });
 
-test.each(["/soil", "/soillist", "/soil_details"])("protects soil route %s", async (path) => {
+test.each(["/soil", "/soillist", "/soil_details", "/soil_details/session-1"])("protects soil route %s", async (path) => {
   checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
   renderRoutes(path);
   expect(await screen.findByText("login page")).toBeInTheDocument();
 });
 
-test.each(["/diagnosis", "/diagnosislist", "/info"])("protects Detect route %s", async (path) => {
+test.each(["/diagnosis", "/diagnosislist", "/info", "/info/session-1"])("protects Detect route %s", async (path) => {
   checkAuthStatus.mockResolvedValue({ data: { is_authenticated: false } });
   renderRoutes(path);
   expect(await screen.findByText("login page")).toBeInTheDocument();
