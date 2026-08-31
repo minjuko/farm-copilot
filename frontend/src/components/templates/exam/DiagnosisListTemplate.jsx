@@ -9,6 +9,7 @@ import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
 import { EmptyState, ListPage } from "../../../styles/primitives";
+import { color, shadow } from "../../../styles/theme";
 import {
   formatDetectionConfidence,
   normalizeDetectionResult,
@@ -45,14 +46,14 @@ const SessionItem = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 0.625rem;
-  border: 1px solid #ccc;
+  border: 1px solid ${color("borderStrong")};
   border-radius: 0.625rem; 
-  background-color: #f9f9f9;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+  background-color: ${color("background")};
+  box-shadow: ${shadow("sm")};
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   &:hover {
-    background-color: #f0f0f0;
+    background-color: ${color("surfaceHover")};
     transform: translateY(-0.125rem); 
     box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
   }
@@ -96,12 +97,12 @@ const DeleteButton = styled.button`
   right: 0.5rem; 
   background: none;
   border: none;
-  color: #e53e3e;
+  color: ${color("danger")};
   cursor: pointer;
   font-size: 1.2rem; 
 
   &:hover {
-    color: #c53030;
+    color: ${color("dangerHover")};
   }
 `;
 
@@ -111,16 +112,16 @@ const AddButtonContainer = styled.button`
   cursor: pointer;
   padding: 0.5rem 1rem;
   margin-top: 0.5rem;
-  background-color: #4aaa87;
+  background-color: ${color("primary")};
   color: white;
   border: none;
   border-radius: 0.3rem;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+  box-shadow: ${shadow("sm")};
   transition: background-color 0.3s;
   font-size: clamp(1rem, 2.5vw, 1.2rem);
 
   &:hover {
-    background-color: #6dc4b0;
+    background-color: ${color("primaryFocus")};
   }
 
   &:focus {
@@ -129,7 +130,7 @@ const AddButtonContainer = styled.button`
   }
 
   &:active {
-    background-color: #6dc4b0;
+    background-color: ${color("primaryFocus")};
   }
 `;
 

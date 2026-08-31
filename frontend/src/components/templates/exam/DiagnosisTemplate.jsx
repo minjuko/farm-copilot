@@ -13,6 +13,7 @@ import CustomModal from '../../atoms/CustomModal';
 import GlobalLoader from '../../atoms/GlobalLoader';
 import { useLoading } from "../../../LoadingContext";
 import useServiceCapability from "../../../hooks/useServiceCapability";
+import { color, shadow } from "../../../styles/theme";
 
 const PageContainer = styled.div`
   display: flex;
@@ -40,7 +41,7 @@ const Content = styled.div`
 
 const UploadText = styled.p`
   font-size: 1rem;
-  color: #333;
+  color: ${color("text")};
 
   @media (min-width: 768px) {
     font-size: 1.25rem; 
@@ -65,7 +66,7 @@ const UploadButton = styled.div`
   display: flex;
   align-items: center;
   background-color: white;
-  border: 1px solid #4aaa87;
+  border: 1px solid ${color("primary")};
   border-radius: 5px;
   padding: 0.5rem 1rem;
   cursor: pointer;
@@ -77,8 +78,8 @@ const UploadButton = styled.div`
   transition: background-color 0.3s, border-color 0.3s;
 
   &:hover {
-    background-color: #e8f5e9;
-    border-color: #388e3c;
+    background-color: ${color("primarySoft")};
+    border-color: ${color("primaryHover")};
   }
 
   @media (min-width: 768px) {
@@ -90,7 +91,7 @@ const CameraButton = styled.div`
   display: flex;
   align-items: center;
   background-color: white;
-  border: 1px solid #4aaa87;
+  border: 1px solid ${color("primary")};
   border-radius: 5px;
   padding: 0.5rem 1rem;
   cursor: pointer;
@@ -102,8 +103,8 @@ const CameraButton = styled.div`
   transition: background-color 0.3s, border-color 0.3s;
 
   &:hover {
-    background-color: #e8f5e9;
-    border-color: #388e3c;
+    background-color: ${color("primarySoft")};
+    border-color: ${color("primaryHover")};
   }
 
   @media (min-width: 768px) {
@@ -116,14 +117,14 @@ const UploadContainer = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border: 1px solid #4aaa87;
+  border: 1px solid ${color("primary")};
   width: 18rem;
   max-width: 33rem;
   height: 18rem;
   text-align: center;
   margin-bottom: 1.25rem;
   margin-top: 1.25rem;
-  background-color: #fff;
+  background-color: ${color("surface")};
   border-radius: 0.625rem;
   overflow: hidden;
   cursor: pointer;
@@ -143,7 +144,7 @@ const ImagePreview = styled.img`
 
 const PlaceholderIcon = styled.div`
   font-size: 3rem;
-  color: #ccc;
+  color: ${color("disabled")};
 
   @media (min-width: 768px) {
     font-size: 4rem; 
@@ -152,7 +153,7 @@ const PlaceholderIcon = styled.div`
 
 const PlaceholderText = styled.p`
   font-size: 1rem;
-  color: #aaa;
+  color: ${color("textMuted")};
 
   @media (min-width: 768px) {
     font-size: 1.25rem; 
@@ -174,7 +175,7 @@ const ButtonContainer = styled.div`
 `;
 
 const DiagnoseButton = styled.button`
-  background-color: #4aaa87;
+  background-color: ${color("primary")};
   color: white;
   padding: 0.75rem 2.5rem;
   border: none;
@@ -182,7 +183,7 @@ const DiagnoseButton = styled.button`
   cursor: pointer;
   font-size: 1.2rem;
   font-weight: 600;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+  box-shadow: ${shadow("sm")};
   display: flex;
   justify-content: center;
   align-items: center;
@@ -191,7 +192,7 @@ const DiagnoseButton = styled.button`
   transition: background-color 0.3s;
 
   &:hover {
-    background-color: #3b8b6d;
+    background-color: ${color("primaryHover")};
   }
 
   @media (min-width: 768px) {
@@ -202,7 +203,7 @@ const DiagnoseButton = styled.button`
 
 const ExplanationText = styled.p`
   font-size: 0.8rem;
-  color: #666;
+  color: ${color("textMuted")};
   text-align: center;
 `;
 
@@ -213,8 +214,8 @@ const ServiceNotice = styled.div`
   padding: 0.75rem;
   text-align: center;
   border-radius: 6px;
-  color: ${({ $available }) => ($available ? "#1f6b4f" : "#5d4a00")};
-  background: ${({ $available }) => ($available ? "#e8f5e9" : "#fff8e1")};
+  color: ${({ $available, theme }) => ($available ? theme?.colors?.primaryHover || "#3b8b6d" : theme?.colors?.textMuted || "#666")};
+  background: ${({ $available, theme }) => ($available ? theme?.colors?.primarySoft || "#e8f5e9" : theme?.colors?.surfaceHover || "#f5f5f5")};
 `;
 
 const DiagnosisTemplate = () => {

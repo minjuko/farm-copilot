@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import styled from 'styled-components';
 import Select from 'react-select';
 import { useNavigate } from 'react-router-dom';
 import { getCropNames, predictCrops, getRegionNames } from "../../../apis/crop";
@@ -28,6 +29,13 @@ import {
 } from '../../../styles/CropTest';
 import { buildPredictionPayload, removeCropAt } from './predictionFlow';
 import useServiceCapability from '../../../hooks/useServiceCapability';
+import { appTheme } from '../../../styles/theme';
+
+const Hint = styled.p`
+  color: ${appTheme.colors.textMuted};
+  font-size: 0.875rem;
+  margin-top: ${appTheme.spacing.sm};
+`;
 
 const ServiceNotice = ({ available }) => (
   <div
@@ -262,7 +270,7 @@ const CropTest = () => {
             </List>
           )}
         </div>
-        <p style={{ color: '#7f8c8d', fontSize: '0.875rem', marginTop: '0.625rem' }}>원하는 작물과 비율을 선택하여 추가하기를 눌러주세요.</p>
+        <Hint>원하는 작물과 비율을 선택하여 추가하기를 눌러주세요.</Hint>
         <Label>작물 이름</Label>
         <Select
           key={selectKey}
@@ -303,7 +311,7 @@ const CropTest = () => {
             <FaPlus style={{ marginRight: '0.5rem' }} /> 추가하기
           </AddButton>
         </div>
-        <p style={{ color: '#7f8c8d', fontSize: '0.875rem', marginTop: '0.625rem' }}>각 작물별 비율은 합해서 1이 되어야 합니다.</p>
+        <Hint>각 작물별 비율은 합해서 1이 되어야 합니다.</Hint>
         {addError && <ErrorMessage>{addError}</ErrorMessage>}
       </InputContainer>
       <SummaryTitle $step="2">입력 정보 확인</SummaryTitle>

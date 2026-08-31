@@ -12,13 +12,14 @@ import {
 import SyncLoader from 'react-spinners/SyncLoader';
 import { IoMenu } from "react-icons/io5";
 import { FaPaperPlane } from "react-icons/fa";
+import { color, shadow } from "../../../styles/theme";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100%;
-  background-color: #ffffff;
+  background-color: ${color("surface")};
   box-sizing: border-box;
   overflow: hidden;
   padding-bottom: 4.375rem; 
@@ -30,7 +31,7 @@ const Header = styled.div`
   align-items: center;
   justify-content: center;
   padding: 1rem; 
-  background-color: #4AAA87;
+  background-color: ${color("primary")};
   color: white;
   font-size: 1.25rem; 
   font-weight: bold;
@@ -53,7 +54,7 @@ const ChatListButton = styled.button`
   padding: 0.625rem 0.75rem; 
   font-weight: 600;
   color: white;
-  background-color: #4AAA87;
+  background-color: ${color("primary")};
   border: none;
   border-radius: 1.25rem; 
   cursor: pointer;
@@ -68,7 +69,7 @@ const ChatBox = styled.div`
   flex-direction: column;
   flex: 1;
   padding: 1rem; 
-  background-color: #E6F8E0;
+  background-color: ${color("primarySoft")};
   overflow-y: auto;
 `;
 
@@ -98,7 +99,7 @@ const Message = styled.div`
   border-radius: 1.25rem; 
   background-color: ${({ $isUser }) => ($isUser ? '#F7FE2E' : 'white')};
   position: relative;
-  box-shadow: 0 0.0625rem 0.0625rem rgba(0, 0, 0, 0.1); 
+  box-shadow: ${shadow("sm")};
   word-break: break-word;
   margin-top: 0.5rem;
 
@@ -115,7 +116,7 @@ const MessageText = styled.div`
 const MessageTime = styled.small`
   margin-top: 0.25rem;
   font-size: 0.8em;
-  color: #666;
+  color: ${color("textMuted")};
   ${({ $isUser }) => $isUser ? css`align-self: flex-end;` : css`align-self: flex-start;`}
 `;
 
@@ -138,8 +139,8 @@ const InputBox = styled.form`
   display: flex;
   align-items: center; 
   padding: 1.25rem 0.75rem; 
-  background-color: #f0f0f0;
-  border-top: 1px solid #ddd;
+  background-color: ${color("background")};
+  border-top: 1px solid ${color("border")};
   width: 100%;
   box-sizing: border-box;
   position: fixed;
@@ -155,13 +156,13 @@ const InputBox = styled.form`
 const Input = styled.input`
   flex-grow: 1;
   padding: 0.8rem; 
-  border: 1px solid #ddd;
+  border: 1px solid ${color("border")};
   border-radius: 1rem; 
   margin-right: 0.5rem; 
   font-size: 1rem; 
   &:focus {
     outline: none;
-    border-color: #4aaa87;
+    border-color: ${color("primary")};
   }
 
   @media (max-width: 768px) {
@@ -175,12 +176,12 @@ const Button = styled.button`
   padding: 0.625rem 1rem; 
   font-size: 0.875rem; 
   color: white;
-  background-color: #4aaa87;
+  background-color: ${color("primary")};
   border: none;
   border-radius: 1rem;
   cursor: pointer;
   &:hover {
-    background-color: #6dc4b0;
+    background-color: ${color("primaryFocus")};
   }
 
   @media (max-width: 768px) {
@@ -199,8 +200,8 @@ const ErrorMessage = styled.div`
 const LimitedNotice = styled.div`
   padding: 0.75rem;
   text-align: center;
-  background-color: #fff8e1;
-  color: #5d4a00;
+  background-color: ${color("primarySoft")};
+  color: ${color("textMuted")};
 `;
 
 const ChatTemplate = () => {

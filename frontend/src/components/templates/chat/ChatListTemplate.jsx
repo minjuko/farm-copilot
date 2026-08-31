@@ -12,13 +12,14 @@ import GlobalLoader from "../../atoms/GlobalLoader";
 import { useAuth } from '../../../AuthContext';
 import { normalizeSessionName } from './chatFlow';
 import useAsyncResource from '../../../hooks/useAsyncResource';
+import { color, radius, shadow, space } from '../../../styles/theme';
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 24px;
-  background-color: #f9f9f9;
+  background-color: ${color("background")};
   height: 100%;
   width: 100%;
   box-sizing: border-box;
@@ -41,18 +42,18 @@ const ChatListItem = styled.li`
   align-items: center;
   padding: 8px 12px;
   border-radius: 4px;
-  border: 1px solid #ccc;
+  border: 1px solid ${color("borderStrong")};
   margin-bottom: 12px;
-  background-color: #f1f1f1;
+  background-color: ${color("background")};
   cursor: pointer;
   &:hover {
-    background-color: #ddd;
+    background-color: ${color("surfaceHover")};
   }
 `;
 
 const NoChatMessage = styled.div`
   font-size: 16px;
-  color: #666;
+  color: ${color("textMuted")};
   margin-top: 50px;
 `;
 
@@ -73,18 +74,18 @@ const Button = styled.button`
 const DeleteButton = styled.button`
   background: none;
   border: none;
-  color: #e53e3e;
+  color: ${color("danger")};
   cursor: pointer;
   font-size: 18px;
   &:hover {
-    color: #c53030;
+    color: ${color("dangerHover")};
   }
 `;
 
 const EditButton = styled.button`
   background: none;
   border: none;
-  color: #4aaa87;
+  color: ${color("primary")};
   cursor: pointer;
   font-size: 18px;
   &:hover {
@@ -106,9 +107,9 @@ const ModalContainer = styled(Modal)`
   justify-content: center;  
   padding: 24px;
   background-color: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid ${color("border")};
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: ${shadow("md")};
   position: absolute;
   top: 40%;
   left: 50%;
@@ -130,7 +131,7 @@ const CloseButton = styled.button`
 const ModalTitle = styled.h2`
   font-size: 24px;
   margin-bottom: 30px;
-  color: #333;
+  color: ${color("text")};
 `;
 
 const ModalContent = styled.div`
@@ -151,7 +152,7 @@ const InputContainer = styled.div`
 const Input = styled.input`
   padding: 12px;
   font-size: 16px;
-  border: 1px solid #ccc;
+  border: 1px solid ${color("borderStrong")};
   border-radius: 4px;
   width: 100%; 
 `;
@@ -165,7 +166,7 @@ const ErrorMessage = styled.div`
 
 const LimitedNotice = styled.div`
   margin-top: 1rem;
-  color: #5d4a00;
+  color: ${color("textMuted")};
   text-align: center;
 `;
 

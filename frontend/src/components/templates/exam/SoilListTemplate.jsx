@@ -8,6 +8,7 @@ import { useLoading } from "../../../LoadingContext";
 import Pagination from "../../molecules/Pagination";
 import useAsyncResource from "../../../hooks/useAsyncResource";
 import { EmptyState, ListPage } from "../../../styles/primitives";
+import { color, shadow } from "../../../styles/theme";
 
 const SessionList = styled.div`
   width: 100%;
@@ -23,10 +24,10 @@ const SessionItem = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 0.625rem;
-  border: 1px solid #ccc;
+  border: 1px solid ${color("borderStrong")};
   border-radius: 0.625rem;
-  background-color: #fff;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+  background-color: ${color("surface")};
+  box-shadow: ${shadow("sm")};
   cursor: pointer;
   position: relative;
   margin: 0 0.5rem;
@@ -49,13 +50,13 @@ const SessionInfo = styled.div`
 
 const SessionDate = styled.div`
   font-size: 0.875rem;
-  color: #888;
+  color: ${color("textMuted")};
 `;
 
 const DeleteButton = styled.button`
   background: none;
   border: none;
-  color: #e53e3e;
+  color: ${color("danger")};
   cursor: pointer;
   font-size: 1.125rem;
   position: absolute;
@@ -63,23 +64,23 @@ const DeleteButton = styled.button`
   right: 0.625rem;
 
   &:hover {
-    color: #c53030;
+    color: ${color("dangerHover")};
   }
 `;
 
 const AddButton = styled.button`
-  background-color: #4aaa87;
+  background-color: ${color("primary")};
   color: white;
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 0.3125rem;
   cursor: pointer;
   font-size: 1.3rem;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+  box-shadow: ${shadow("sm")};
   margin-top: 0.2rem;
 
   &:hover {
-    background-color: #3b8b6d;
+    background-color: ${color("primaryHover")};
   }
 
   @media (max-width: 37.5rem) {

@@ -8,13 +8,14 @@ import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
 import { EmptyState, ListPage } from "../../../styles/primitives";
+import { color, radius, shadow, space } from "../../../styles/theme";
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 16px;
-  background-color: #f9f9f9;
+  background-color: ${color("background")};
   max-width: 75rem;
   width: 100%;
   margin: 0 auto;
@@ -30,26 +31,26 @@ const PostList = styled.div`
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
+  background-color: ${color("surface")};
+  box-shadow: ${shadow("sm")};
+  border-radius: ${radius("md")};
   overflow: hidden;
 `;
 
 const TableHeader = styled.thead`
-  background-color: #4aaa87;
-  color: white;
+  background-color: ${color("primary")};
+  color: ${color("surface")};
 `;
 
 const TableRow = styled.tr`
   &:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: ${color("background")};
   }
 `;
 
 const TableCell = styled.td`
   padding: 12px;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid ${color("borderStrong")};
   font-size: 14px;
   color: ${(props) => (props.$header ? "aliceblue" : "black")};
   text-align: left;
@@ -63,7 +64,7 @@ const StyledLink = styled(Link)`
 const PostTitle = styled.span`
   font-size: 14px;
   font-weight: bold;
-  color: #4aaa87;
+  color: ${color("primary")};
   display: inline-block;
   max-width: 150px;
   white-space: nowrap;
