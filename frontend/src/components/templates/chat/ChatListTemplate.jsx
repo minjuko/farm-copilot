@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { useLoading } from '../../../LoadingContext';
 import GlobalLoader from "../../atoms/GlobalLoader";
 import { useAuth } from '../../../AuthContext';
 import { normalizeSessionName } from './chatFlow';
+import useAsyncResource from '../../../hooks/useAsyncResource';
 
 const Container = styled.div`
   display: flex;
@@ -214,9 +215,10 @@ const PaginationContainer = styled.div`
   }
 `;
 
+const getChatSessionsError = () => '채팅 세션을 불러오는 중 오류가 발생했습니다.';
+
 const ChatListTemplate = () => {
   const { setIsLoading } = useLoading();
-  const [chatSessions, setChatSessions] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
@@ -230,28 +232,22 @@ const ChatListTemplate = () => {
   const isLoggedIn = status === 'authenticated';
   const actionInFlight = useRef(false);
   const sessionsPerPage = 5;
+  const loadChatSessions = useCallback(async () => {
+    const response = await fetchChatSessions();
+    if (!Array.isArray(response?.data)) throw new Error('MALFORMED_CHAT_SESSIONS');
+    return response.data.filter(session => session.session_id !== null);
+  }, []);
+  const {
+    data: chatSessions,
+    error: loadError,
+    setData: setChatSessions,
+  } = useAsyncResource(loadChatSessions, {
+    enabled: isLoggedIn,
+    getError: getChatSessionsError,
+    initialData: [],
+  });
   const pageCount = Math.ceil(chatSessions.length / sessionsPerPage);
   const offset = currentPage * sessionsPerPage;
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      const fetchSessions = async () => {
-        setIsLoading(true);
-        try {
-          const response = await fetchChatSessions();
-          if (!Array.isArray(response?.data)) throw new Error('MALFORMED_CHAT_SESSIONS');
-          const filteredSessions = response.data.filter(session => session.session_id !== null);
-          setChatSessions(filteredSessions);
-        } catch (error) {
-          setErrorMessage('채팅 세션을 불러오는 중 오류가 발생했습니다.');
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchSessions();
-    }
-  }, [isLoggedIn, setIsLoading]);
 
   const startNewChat = () => {
     setNewSessionName('');
@@ -351,7 +347,7 @@ const ChatListTemplate = () => {
     <Container>
       <GlobalLoader />
       <LimitedNotice>ARCHIVED / LIMITED · 환경이 준비된 경우에만 챗봇 답변을 제공합니다.</LimitedNotice>
-      {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+      {(loadError || errorMessage) && <ErrorMessage role="alert">{loadError || errorMessage}</ErrorMessage>}
       {status === 'checking' ? null : isLoggedIn ? (
         <>
           <NewChatButton onClick={startNewChat}>새 대화 시작하기</NewChatButton>

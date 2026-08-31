@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTrash, FaEdit, FaPlus } from 'react-icons/fa';
 import { getCropList, deleteCrop, updateSessionName } from '../../../apis/crop';
@@ -8,6 +8,7 @@ import { useLoading } from '../../../LoadingContext';
 import GlobalLoader from "../../atoms/GlobalLoader";
 import { getApiErrorMessage } from '../../../apis/error';
 import { finiteNumberOrZero } from './predictionFlow';
+import useAsyncResource from '../../../hooks/useAsyncResource';
 import {
   PageContainer,
   ContentContainer,
@@ -26,9 +27,13 @@ import {
   EmptyMessage
 } from '../../../styles/CropSelectionStyle';
 
+const getPredictionSessionsError = (error) => getApiErrorMessage(
+  error,
+  '세션 정보를 불러오는 중 오류가 발생했습니다.'
+);
+
 const CropSelectionPage = () => {
   const { setIsLoading } = useLoading();
-  const [sessions, setSessions] = useState([]);
   const [error, setError] = useState(null);
   const [editingSession, setEditingSession] = useState(null);
   const [newSessionName, setNewSessionName] = useState('');
@@ -54,31 +59,28 @@ const CropSelectionPage = () => {
     }
   };
 
-  const fetchSessions = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await getCropList();
-      const updatedSessions = response.data.map(session => ({
-        ...session,
-        session_name: session.session_name === "Default Prediction Session" ? session.crop_names : session.session_name,
-      }));
-      setSessions(updatedSessions);
-    } catch (err) {
-      setError(getApiErrorMessage(err, '세션 정보를 불러오는 중 오류가 발생했습니다.'));
-    }
-    setIsLoading(false);
-  }, [setIsLoading]);
-
-  useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
+  const loadSessions = useCallback(async () => {
+    const response = await getCropList();
+    if (!Array.isArray(response?.data)) throw new Error('MALFORMED_PREDICTION_SESSIONS');
+    return response.data.map(session => ({
+      ...session,
+      session_name: session.session_name === "Default Prediction Session" ? session.crop_names : session.session_name,
+    }));
+  }, []);
+  const {
+    data: sessions,
+    error: loadError,
+    setData: setSessions,
+  } = useAsyncResource(loadSessions, {
+    getError: getPredictionSessionsError,
+    initialData: [],
+  });
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
       await deleteCrop(sessionIdToDelete);
-      const updatedSessions = sessions.filter(session => session.session_id !== sessionIdToDelete);
-      setSessions(updatedSessions);
+      setSessions((current) => current.filter(session => session.session_id !== sessionIdToDelete));
       setIsModalOpen(false);
       setSessionIdToDelete(null);
     } catch (err) {
@@ -108,7 +110,7 @@ const CropSelectionPage = () => {
     setSavingSessionId(sessionId);
     try {
       await updateSessionName(sessionId, trimmedName);
-      const updatedSessions = sessions.map(session => {
+      setSessions((current) => current.map(session => {
         if (session.session_id === sessionId) {
           return {
             ...session,
@@ -116,8 +118,7 @@ const CropSelectionPage = () => {
           };
         }
         return session;
-      });
-      setSessions(updatedSessions);
+      }));
       setEditingSession(null);
       setError(null);
     } catch (error) {
@@ -154,7 +155,7 @@ const CropSelectionPage = () => {
         <Button onClick={() => navigate('/croptest')}>
           <FaPlus /> 작물 조합 추가
         </Button>
-        {error && <p>{error}</p>}
+        {(loadError || error) && <p role="alert">{loadError || error}</p>}
         <ContentContainer>
           <SessionListContainer>
             {sessions.length === 0 ? (

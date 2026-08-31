@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { FaTrash } from 'react-icons/fa';
@@ -6,6 +6,7 @@ import ConfirmModal from "../../atoms/ConfirmModal";
 import { getSoilCropData, deleteSoilData } from "../../../apis/predict";
 import { useLoading } from "../../../LoadingContext";
 import ReactPaginate from "react-paginate";
+import useAsyncResource from "../../../hooks/useAsyncResource";
 
 const PageContainer = styled.div`
   display: flex;
@@ -158,30 +159,30 @@ const formatDateTime = (dateString) => {
   return new Date(dateString).toLocaleDateString('ko-KR', options);
 };
 
+const getSoilHistoryError = () => (
+  "토양 분석 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+);
+
 const SoilListTemplate = () => {
   const { setIsLoading } = useLoading();
-  const [soilData, setSoilData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const navigate = useNavigate();
   const sessionsPerPage = 4;
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await getSoilCropData();
-        setSoilData(response.data);
-      } catch {
-        console.error('Failed to fetch soil data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [setIsLoading]);
+  const loadSoilHistory = useCallback(async () => {
+    const response = await getSoilCropData();
+    if (!Array.isArray(response?.data)) throw new Error("MALFORMED_SOIL_HISTORY");
+    return response.data;
+  }, []);
+  const {
+    data: soilData,
+    error: loadError,
+    setData: setSoilData,
+  } = useAsyncResource(loadSoilHistory, {
+    getError: getSoilHistoryError,
+    initialData: [],
+  });
 
   const handleSoilDataClick = (data) => {
     navigate(`/soil_details/${data.session_id}`, {
@@ -193,7 +194,7 @@ const SoilListTemplate = () => {
     try {
       setIsLoading(true);
       await deleteSoilData(selectedSessionId);
-      setSoilData(soilData.filter(soil => soil.session_id !== selectedSessionId));
+      setSoilData((current) => current.filter(soil => soil.session_id !== selectedSessionId));
       closeModal();
     } catch {
       alert("토양 데이터 삭제에 실패했습니다. 다시 시도해주세요.");
@@ -241,7 +242,9 @@ const SoilListTemplate = () => {
   return (
     <PageContainer>
       <AddButton onClick={handleAddClick}>새 토양 데이터 추가</AddButton>
-      {currentSessions.length === 0 ? (
+      {loadError ? (
+        <NoDataText role="alert">{loadError}</NoDataText>
+      ) : currentSessions.length === 0 ? (
         <NoDataText>목록이 존재하지 않습니다. 첫 토양 분석을 진행해보세요</NoDataText>
       ) : (
         <SessionList>

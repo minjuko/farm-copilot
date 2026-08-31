@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { FaPen } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { useAuth } from "../../../AuthContext";
 import { fetchPosts } from "../../../apis/post";
 import { getApiErrorMessage } from "../../../apis/error";
-import { useLoading } from "../../../LoadingContext";
+import useAsyncResource from "../../../hooks/useAsyncResource";
 import Pagination from "../../molecules/Pagination";
 
 const POSTS_PER_PAGE = 5;
@@ -44,38 +44,26 @@ const PostTitle = styled.span`
 `;
 const CommentCount = styled.span`font-size: 14px; color: gray; margin-left: 8px;`;
 const Status = styled.p`width: 100%; padding: 2rem 1rem; text-align: center; color: #666;`;
+const getPostLoadError = (error) => getApiErrorMessage(
+  error,
+  "게시글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+);
 
 const PostBoardPage = ({ boardLabel, postType }) => {
   const { status: authStatus } = useAuth();
-  const { setIsLoading } = useLoading();
-  const [posts, setPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    const loadPosts = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetchPosts(postType);
-        if (!Array.isArray(response?.data)) throw new Error("MALFORMED_POST_LIST");
-        const sortedPosts = [...response.data].sort(
-          (a, b) => new Date(b.creation_date) - new Date(a.creation_date)
-        );
-        if (active) { setPosts(sortedPosts); setError(""); }
-      } catch (requestError) {
-        if (active) {
-          setPosts([]);
-          setError(getApiErrorMessage(requestError, "게시글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."));
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadPosts();
-    return () => { active = false; };
-  }, [postType, setIsLoading]);
+  const loadPosts = useCallback(async () => {
+    const response = await fetchPosts(postType);
+    if (!Array.isArray(response?.data)) throw new Error("MALFORMED_POST_LIST");
+    return [...response.data].sort(
+      (a, b) => new Date(b.creation_date) - new Date(a.creation_date)
+    );
+  }, [postType]);
+  const { data: posts, error } = useAsyncResource(loadPosts, {
+    getError: getPostLoadError,
+    initialData: [],
+  });
 
   const filteredPosts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();

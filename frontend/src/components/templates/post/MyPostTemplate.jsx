@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import ReactPaginate from "react-paginate";
@@ -6,6 +6,7 @@ import { fetchMyPosts, deletePost } from "../../../apis/post";
 import ConfirmModal from "../../atoms/ConfirmModal";
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
+import useAsyncResource from "../../../hooks/useAsyncResource";
 
 const Container = styled.div`
   display: flex;
@@ -115,9 +116,10 @@ const PaginationContainer = styled.div`
   }
 `;
 
+const getMyPostsError = () => "내 게시글을 불러오지 못했습니다.";
+
 const MyPostTemplate = () => {
   const { setIsLoading, isLoading } = useLoading();
-  const [posts, setPosts] = useState([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -126,26 +128,21 @@ const MyPostTemplate = () => {
   const pageCount = Math.ceil(posts.length / postsPerPage);
   const offset = currentPage * postsPerPage;
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetchMyPosts();
-        const sortedPosts = response.data.sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
-        setPosts(sortedPosts);
-      } catch (error) {
-        alert("게시글을 불러오는데 실패했습니다. 다시 시도해주세요.");
-      }
-      setIsLoading(false);
-    };
-    fetchPosts();
-  }, [setIsLoading]);
+  const loadPosts = useCallback(async () => {
+    const response = await fetchMyPosts();
+    if (!Array.isArray(response?.data)) throw new Error("MALFORMED_MY_POSTS");
+    return [...response.data].sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
+  }, []);
+  const { data: posts, error: loadError, setData: setPosts } = useAsyncResource(loadPosts, {
+    getError: getMyPostsError,
+    initialData: [],
+  });
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
       await deletePost(selectedPostId);
-      setPosts(posts.filter((post) => post.id !== selectedPostId));
+      setPosts((current) => current.filter((post) => post.id !== selectedPostId));
       setIsDeleteModalOpen(false);
       setSelectedPostId(null);
     } catch (error) {
@@ -166,6 +163,7 @@ const MyPostTemplate = () => {
   return (
     <Container>
       <GlobalLoader isLoading={isLoading} />
+      {loadError && <p role="alert">{loadError}</p>}
       <PostList>
         <Table>
           <TableHeader>

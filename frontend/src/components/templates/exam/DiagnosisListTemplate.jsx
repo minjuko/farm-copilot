@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { fetchDetectionSessions, deleteDetectionSession } from "../../../apis/predict";
@@ -7,6 +7,7 @@ import ConfirmModal from '../../atoms/ConfirmModal';
 import ReactPaginate from 'react-paginate';
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
+import useAsyncResource from "../../../hooks/useAsyncResource";
 import {
   formatDetectionConfidence,
   normalizeDetectionResult,
@@ -156,6 +157,10 @@ const EmptyMessage = styled.div`
   margin: 2rem 0;
 `;
 
+const getDiagnosisHistoryError = () => (
+  "진단 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+);
+
 const PaginationContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -223,36 +228,30 @@ const PaginationContainer = styled.div`
 
 const DiagnosisListTemplate = () => {
   const { setIsLoading } = useLoading();
-  const [sessions, setSessions] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionIdToDelete, setSessionIdToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
+
+  const loadSessions = useCallback(async () => {
+    const response = await fetchDetectionSessions();
+    if (!Array.isArray(response?.data)) throw new Error("MALFORMED_DETECTION_HISTORY");
+    return response.data;
+  }, []);
+  const {
+    data: sessions,
+    error: loadError,
+    isLoading,
+    setData: setSessions,
+  } = useAsyncResource(loadSessions, {
+    getError: getDiagnosisHistoryError,
+    initialData: [],
+  });
 
   const sessionsPerPage = 4;
   const pageCount = Math.ceil(sessions.length / sessionsPerPage);
   const offset = currentPage * sessionsPerPage;
-
-  useEffect(() => {
-    const fetchSessions = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetchDetectionSessions();
-        if (!Array.isArray(response?.data)) throw new Error("MALFORMED_DETECTION_HISTORY");
-        setSessions(response.data);
-        setLoadError("");
-      } catch (error) {
-        setSessions([]);
-        setLoadError("진단 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
-      }
-      setIsLoading(false);
-      setLoading(false);
-    };
-
-    fetchSessions();
-  }, [setIsLoading]);
 
   const handleSessionClick = (sessionId) => {
     navigate(`/info/${sessionId}`);
@@ -260,15 +259,16 @@ const DiagnosisListTemplate = () => {
 
   const handleDeleteSession = async () => {
     try {
-      setIsLoading(true);      setLoading(true);
+      setIsLoading(true);
+      setIsDeleting(true);
       await deleteDetectionSession(sessionIdToDelete);
-      setSessions(sessions.filter(session => session.session_id !== sessionIdToDelete));
+      setSessions((current) => current.filter(session => session.session_id !== sessionIdToDelete));
       setIsModalOpen(false);
     } catch (error) {
       alert('세션 삭제에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
-      setLoading(false);
+      setIsDeleting(false);
     }
   };
 
@@ -291,7 +291,7 @@ const DiagnosisListTemplate = () => {
 
   return (
     <PageContainer>
-      {loading && <GlobalLoader />}
+      {(isLoading || isDeleting) && <GlobalLoader />}
       <AddButtonContainer onClick={handleAddClick} aria-label="새 진단 시작하기">
         <AddButtonIcon />
         <AddButtonText>새 진단 시작하기</AddButtonText>

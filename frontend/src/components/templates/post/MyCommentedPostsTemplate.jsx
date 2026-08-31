@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import ReactPaginate from "react-paginate";
 import { fetchMyCommentedPosts } from "../../../apis/post";
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
+import useAsyncResource from "../../../hooks/useAsyncResource";
 
 const Container = styled.div`
   display: flex;
@@ -16,6 +17,10 @@ const Container = styled.div`
   width: 100%;
   margin: 0 auto;
 `;
+
+const getMyCommentedPostsError = () => (
+  "댓글을 작성한 게시글을 불러오지 못했습니다."
+);
 
 const PostList = styled.div`
   display: grid;
@@ -114,27 +119,21 @@ const PaginationContainer = styled.div`
 `;
 
 const MyCommentedPostsTemplate = () => {
-  const { setIsLoading, isLoading } = useLoading();
-  const [posts, setPosts] = useState([]);
+  const { isLoading } = useLoading();
   const [currentPage, setCurrentPage] = useState(0);
   const postsPerPage = 5;
   const pageCount = Math.ceil(posts.length / postsPerPage);
   const offset = currentPage * postsPerPage;
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetchMyCommentedPosts();
-        const sortedPosts = response.data.sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
-        setPosts(sortedPosts);
-      } catch {
-        console.error("Failed to fetch posts");
-      }
-      setIsLoading(false);
-    };
-    fetchPosts();
-  }, [setIsLoading]);
+  const loadPosts = useCallback(async () => {
+    const response = await fetchMyCommentedPosts();
+    if (!Array.isArray(response?.data)) throw new Error("MALFORMED_MY_COMMENTED_POSTS");
+    return [...response.data].sort((a, b) => new Date(b.creation_date) - new Date(a.creation_date));
+  }, []);
+  const { data: posts, error: loadError } = useAsyncResource(loadPosts, {
+    getError: getMyCommentedPostsError,
+    initialData: [],
+  });
 
   const handlePageClick = ({ selected }) => {
     setCurrentPage(selected);
@@ -143,6 +142,7 @@ const MyCommentedPostsTemplate = () => {
   return (
     <Container>
       <GlobalLoader isLoading={isLoading} />
+      {loadError && <p role="alert">{loadError}</p>}
       <PostList>
         <Table>
           <TableHeader>
