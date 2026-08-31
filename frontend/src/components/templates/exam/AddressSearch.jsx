@@ -1,6 +1,7 @@
 import React from "react";
 import { IoSearch } from "react-icons/io5";
 import styled from "styled-components";
+import { color, radius, space } from "../../../styles/theme";
 
 const Field = styled.div`
   width: 100%;
@@ -8,30 +9,30 @@ const Field = styled.div`
   display: flex;
   flex-direction: column;
 `;
-const Label = styled.label`font-size: 16px; margin-bottom: 8px; color: #333;`;
+const Label = styled.label`font-size: 16px; margin-bottom: ${space("sm")}; color: ${color("text")};`;
 const Row = styled.div`display: flex; width: 100%; align-items: center;`;
 const Input = styled.input`
-  padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+  padding: ${space("sm")}; border: 1px solid ${color("borderStrong")}; border-radius: ${radius("sm")};
   width: calc(100% - 110px); height: 40px; box-sizing: border-box; font-size: 16px;
 `;
 const Button = styled.button`
   margin-left: 10px; height: 40px; display: flex; align-items: center; justify-content: center;
-  background: #4aaa87; color: white; border: 0; border-radius: 5px; cursor: pointer;
-  &:hover { background: #3b8b6d; }
+  background: ${color("primary")}; color: ${color("surface")}; border: 0; border-radius: ${radius("sm")}; cursor: pointer;
+  &:hover { background: ${color("primaryHover")}; }
   &:disabled { cursor: not-allowed; opacity: 0.6; }
 `;
 const Results = styled.div`
   width: 100%; margin-top: 0.5rem; border: 1px solid #d8e2dc;
-  border-radius: 6px; background: #fff; overflow: hidden;
+  border-radius: ${radius("md")}; background: ${color("surface")}; overflow: hidden;
 `;
 const Result = styled.button`
   display: block; width: 100%; padding: 0.75rem; border: 0;
-  border-bottom: 1px solid #edf1ee; background: #fff; text-align: left; cursor: pointer;
+  border-bottom: 1px solid ${color("border")}; background: ${color("surface")}; text-align: left; cursor: pointer;
   &:hover, &:focus { background: #eef8f3; }
   &:last-child { border-bottom: 0; }
 `;
-const Meta = styled.span`display: block; margin-top: 0.2rem; color: #6b7d75; font-size: 0.8rem;`;
-const Help = styled.p`color: #7f8c8d; font-size: 0.875rem; margin-top: 0.5rem;`;
+const Meta = styled.span`display: block; margin-top: 0.2rem; color: ${color("textMuted")}; font-size: 0.8rem;`;
+const Help = styled.p`color: ${color("textMuted")}; font-size: 0.875rem; margin-top: ${space("sm")};`;
 
 const AddressSearch = ({
   address, disabled, isSearching, onChange, onSearch, onSelect, results,

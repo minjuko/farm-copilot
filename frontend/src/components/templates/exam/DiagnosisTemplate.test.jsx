@@ -80,6 +80,6 @@ test("blocks diagnosis while the model capability is limited", async () => {
 
   const button = await screen.findByRole("button", { name: /진단하기/ });
   await waitFor(() => expect(button).toBeDisabled());
-  expect(screen.getByRole("status")).toHaveTextContent("LIMITED");
+  expect(screen.queryByText("LIMITED")).not.toBeInTheDocument();
   expect(uploadImage).not.toHaveBeenCalled();
 });

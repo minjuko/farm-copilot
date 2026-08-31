@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import { fetchCapabilities, normalizeCapability } from "../../apis/capabilities";
 
 const Container = styled.div`
   position: relative;
@@ -52,18 +51,6 @@ const MenuCard = styled(Link)`
   }
 `;
 
-const StatusBadge = styled.span`
-  position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
-  padding: 0.2rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: ${({ $available }) => ($available ? "#176b48" : "#755800")};
-  background: ${({ $available }) => ($available ? "#dff5ea" : "#fff1bd")};
-`;
-
 const ListContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -94,44 +81,16 @@ const services = [
   { key: "soil", to: "/soillist", title: "토양 분석", description: "토양 분석과 비료 추천" },
 ];
 
-const statusLabel = (capability) => {
-  if (capability.status === "checking") return "CHECKING";
-  if (capability.available) return "AVAILABLE";
-  return capability.status === "archived" ? "ARCHIVED" : "LIMITED";
-};
-
 const MainTemplate = () => {
-  const [capabilities, setCapabilities] = useState(null);
-
-  useEffect(() => {
-    let active = true;
-    fetchCapabilities()
-      .then((response) => {
-        if (active) setCapabilities(response?.data || {});
-      })
-      .catch(() => {
-        if (active) setCapabilities({});
-      });
-    return () => { active = false; };
-  }, []);
-
   return (
     <Container>
       <GridContainer>
-        {services.map((service) => {
-          const capability = capabilities === null
-            ? { status: "checking", available: false }
-            : normalizeCapability(capabilities, service.key);
-          return (
+        {services.map((service) => (
             <MenuCard key={service.key} to={service.to}>
-              <StatusBadge $available={capability.available}>
-                {statusLabel(capability)}
-              </StatusBadge>
               <h2>{service.title}</h2>
               <p>{service.description}</p>
             </MenuCard>
-          );
-        })}
+        ))}
       </GridContainer>
       <ListContainer>
         <ListItem to="/mypage"><h2>마이페이지</h2></ListItem>

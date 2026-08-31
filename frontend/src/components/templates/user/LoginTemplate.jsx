@@ -5,6 +5,7 @@ import { loginUser } from "../../../apis/user";
 import CustomModal from "../../atoms/CustomModal";
 import { useLoading } from '../../../LoadingContext';
 import { useAuth } from '../../../AuthContext';
+import { color, radius, shadow, space } from '../../../styles/theme';
 import {
   getEmailError,
   getLoginValidation,
@@ -16,8 +17,8 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px;
-  background-color: #f9f9f9;
+  padding: ${space("md")};
+  background-color: ${color("background")};
   height: 100%;
   width: 100%;
   box-sizing: border-box;
@@ -26,7 +27,7 @@ const Container = styled.div`
 const Title = styled.h1`
   font-size: 24px;
   margin-bottom: 32px;
-  color: #333;
+  color: ${color("text")};
 `;
 
 const Form = styled.form`
@@ -34,11 +35,11 @@ const Form = styled.form`
   flex-direction: column;
   width: 100%;
   max-width: 600px;
-  background-color: white;
-  padding: 24px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background-color: ${color("surface")};
+  padding: ${space("md")};
+  border: 1px solid ${color("border")};
+  border-radius: ${radius("md")};
+  box-shadow: ${shadow("md")};
 `;
 
 const InputGroup = styled.div`
@@ -49,18 +50,18 @@ const InputGroup = styled.div`
 
 const Label = styled.label`
   font-size: 14px;
-  color: #666;
-  margin-bottom: 8px;
+  color: ${color("textMuted")};
+  margin-bottom: ${space("sm")};
 `;
 
 const Input = styled.input`
   font-size: 14px;
   padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid ${color("border")};
+  border-radius: ${radius("sm")};
   &:focus {
     outline: none;
-    border-color: #2faa9a;
+    border-color: ${color("primary")};
   }
 `;
 
@@ -69,13 +70,13 @@ const Button = styled.button`
   font-size: 16px;
   font-weight: bold;
   height: 44px; 
-  color: white;
-  background-color: ${({ disabled }) => (disabled ? '#9e9e9e' : '#4aaa87')};
+  color: ${color("surface")};
+  background-color: ${({ disabled, theme }) => (disabled ? theme?.colors?.disabled || '#9e9e9e' : theme?.colors?.primary || '#4aaa87')};
   border: none;
   border-radius: 4px;
   cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
   &:hover {
-    background-color: ${({ disabled }) => (disabled ? '#9e9e9e' : '#6dc4b0')};
+    background-color: ${({ disabled, theme }) => (disabled ? theme?.colors?.disabled || '#9e9e9e' : theme?.colors?.primaryFocus || '#6dc4b0')};
   }
 `;
 
@@ -97,7 +98,7 @@ const StyledLink = styled(RouterLink)`
   font-size: 16px;
   font-weight: 500;
   margin-right: 16px;
-  color: #4aaa87;
+  color: ${color("primary")};
   text-decoration: none;
   &:hover {
     text-decoration: underline;

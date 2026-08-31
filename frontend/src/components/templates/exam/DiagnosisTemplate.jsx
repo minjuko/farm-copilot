@@ -207,17 +207,6 @@ const ExplanationText = styled.p`
   text-align: center;
 `;
 
-const ServiceNotice = styled.div`
-  width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  text-align: center;
-  border-radius: 6px;
-  color: ${({ $available, theme }) => ($available ? theme?.colors?.primaryHover || "#3b8b6d" : theme?.colors?.textMuted || "#666")};
-  background: ${({ $available, theme }) => ($available ? theme?.colors?.primarySoft || "#e8f5e9" : theme?.colors?.surfaceHover || "#f5f5f5")};
-`;
-
 const DiagnosisTemplate = () => {
   const { setIsLoading, isLoading } = useLoading();
   const [image, setImage] = useState(null);
@@ -332,11 +321,6 @@ const DiagnosisTemplate = () => {
     <PageContainer>
       {isLoading && <GlobalLoader text="AI 진단 중입니다." />}
       <Content>
-        <ServiceNotice role="status" $available={serviceCapability.available}>
-          {serviceCapability.available
-            ? "AVAILABLE · 병해충 진단 모델이 준비되어 있습니다."
-            : "LIMITED · 진단 모델이 준비된 환경에서만 실행할 수 있습니다."}
-        </ServiceNotice>
         <UploadText>병해충 진단을 위한 사진을 업로드해주세요</UploadText>
         <ExplanationText>
           &#60;탐지 가능 병해충 목록&#62;<br/>

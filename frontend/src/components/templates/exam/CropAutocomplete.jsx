@@ -1,25 +1,26 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
+import { color, radius, shadow, space } from "../../../styles/theme";
 
 const Field = styled.div`
   position: relative;
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: ${space("md")};
   display: flex;
   flex-direction: column;
 `;
 
 const Label = styled.label`
   font-size: 16px;
-  margin-bottom: 8px;
-  color: #333;
+  margin-bottom: ${space("sm")};
+  color: ${color("text")};
   align-self: flex-start;
 `;
 
 const Input = styled.input`
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: ${space("sm")};
+  border: 1px solid ${color("borderStrong")};
+  border-radius: ${radius("sm")};
   width: 100%;
   height: 40px;
   box-sizing: border-box;
@@ -31,23 +32,23 @@ const List = styled.div`
   max-width: 400px;
   max-height: 200px;
   overflow-y: auto;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background: ${color("surface")};
+  border: 1px solid ${color("borderStrong")};
+  border-radius: ${radius("sm")};
+  box-shadow: ${shadow("sm")};
   z-index: 1;
 `;
 
 const Item = styled.button`
   display: block;
-  padding: 8px;
+  padding: ${space("sm")};
   width: 100%;
   border: 0;
-  border-bottom: 1px solid #ccc;
-  background: #fff;
+  border-bottom: 1px solid ${color("borderStrong")};
+  background: ${color("surface")};
   text-align: center;
   cursor: pointer;
-  &:hover, &:focus { background-color: #f1f1f1; }
+  &:hover, &:focus { background-color: ${color("surfaceHover")}; }
   &:last-child { border-bottom: 0; }
 `;
 

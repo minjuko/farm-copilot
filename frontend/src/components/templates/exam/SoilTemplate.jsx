@@ -37,18 +37,6 @@ const Divider = styled.hr`
   border: 1px solid #ccc;
 `;
 
-const ServiceNotice = styled.div`
-  width: 100%;
-  max-width: 600px;
-  box-sizing: border-box;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  text-align: center;
-  color: ${({ $available }) => ($available ? "#1f6b4f" : "#5d4a00")};
-  background-color: ${({ $available }) => ($available ? "#e8f5e9" : "#fff8e1")};
-  border-radius: 6px;
-`;
-
 const Help = styled.p`
   color: #7f8c8d;
   font-size: 0.875rem;
@@ -62,11 +50,6 @@ const SoilTemplate = () => {
 
   return (
     <Container>
-      <ServiceNotice $available={serviceAvailable} role="status">
-        {serviceAvailable
-          ? "LIVE · 토양 검사 및 비료 처방 외부 API가 설정되어 있습니다."
-          : "LIMITED · 외부 API가 설정된 환경에서만 실시간 토양 분석을 제공합니다."}
-      </ServiceNotice>
       <BoxContainer>
         <Help>토양 분석을 위한 작물 이름과 주소를 입력하세요.</Help>
         <CropAutocomplete

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import Pagination from '../../molecules/Pagination';
-import { fetchChatSessions, deleteChatSession, updateSessionName } from '../../../apis/chat';
+import { fetchChatSessions } from '../../../apis/chat';
 import { FaTrash, FaEdit, FaTimes } from 'react-icons/fa';
 import ConfirmModal from '../../atoms/ConfirmModal';
 import Modal from 'react-modal';
@@ -12,6 +12,7 @@ import GlobalLoader from "../../atoms/GlobalLoader";
 import { useAuth } from '../../../AuthContext';
 import { normalizeSessionName } from './chatFlow';
 import useAsyncResource from '../../../hooks/useAsyncResource';
+import useChatSessionActions from './useChatSessionActions';
 import { color, radius, shadow, space } from '../../../styles/theme';
 
 const Container = styled.div`
@@ -164,12 +165,6 @@ const ErrorMessage = styled.div`
   text-align: center; 
 `;
 
-const LimitedNotice = styled.div`
-  margin-top: 1rem;
-  color: ${color("textMuted")};
-  text-align: center;
-`;
-
 const PaginationContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -247,6 +242,11 @@ const ChatListTemplate = () => {
     getError: getChatSessionsError,
     initialData: [],
   });
+  const { rename, remove } = useChatSessionActions({
+    setSessions: setChatSessions,
+    setLoading: setIsLoading,
+    setError: setErrorMessage,
+  });
   const pageCount = Math.ceil(chatSessions.length / sessionsPerPage);
   const offset = currentPage * sessionsPerPage;
 
@@ -272,24 +272,11 @@ const ChatListTemplate = () => {
     setError('');
     setErrorMessage('');
     if (editingSession) {
-      actionInFlight.current = true;
-      setIsLoading(true);
-      try {
-        await updateSessionName(editingSession.session_id, trimmedSessionName);
-        setChatSessions((current) => current.map(session => (
-          session.session_id === editingSession.session_id
-            ? { ...session, session_name: trimmedSessionName }
-            : session
-        )));
-        setEditingSession(null);
-        setIsModalOpen(false);
-        setNewSessionName('');
-      } catch (error) {
-        setErrorMessage('세션 이름을 업데이트하는 중 오류가 발생했습니다.');
-      } finally {
-        actionInFlight.current = false;
-        setIsLoading(false);
-      }
+      const succeeded = await rename(editingSession, trimmedSessionName);
+      if (!succeeded) return;
+      setEditingSession(null);
+      setIsModalOpen(false);
+      setNewSessionName('');
     } else {
       const newSessionId = uuidv4();
       navigate(`/chat/${newSessionId}?session_name=${encodeURIComponent(trimmedSessionName)}`);
@@ -309,17 +296,7 @@ const ChatListTemplate = () => {
 
   const deleteSession = async () => {
     if (sessionToDelete && !actionInFlight.current) {
-      actionInFlight.current = true;
-      setIsLoading(true);
-      try {
-        await deleteChatSession(sessionToDelete);
-        setChatSessions((current) => current.filter(session => session.session_id !== sessionToDelete));
-      } catch (error) {
-        setErrorMessage('세션을 삭제하는 중 오류가 발생했습니다.');
-      } finally {
-        actionInFlight.current = false;
-        setIsLoading(false);
-      }
+      await remove(sessionToDelete);
       setIsConfirmModalOpen(false);
       setSessionToDelete(null);
     }
@@ -347,7 +324,6 @@ const ChatListTemplate = () => {
   return (
     <Container>
       <GlobalLoader />
-      <LimitedNotice>ARCHIVED / LIMITED · 환경이 준비된 경우에만 챗봇 답변을 제공합니다.</LimitedNotice>
       {(loadError || errorMessage) && <ErrorMessage role="alert">{loadError || errorMessage}</ErrorMessage>}
       {status === 'checking' ? null : isLoggedIn ? (
         <>

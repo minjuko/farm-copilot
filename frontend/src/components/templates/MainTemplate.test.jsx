@@ -11,7 +11,7 @@ jest.mock("../../apis/capabilities", () => ({
   },
 }));
 
-test("shows backend capability state on every feature card", async () => {
+test("renders feature cards without environment status labels", async () => {
   fetchCapabilities.mockResolvedValue({
     data: {
       detection: { status: "available", available: true },
@@ -27,13 +27,11 @@ test("shows backend capability state on every feature card", async () => {
     </MemoryRouter>,
   );
 
-  expect((await screen.findAllByText("AVAILABLE"))).toHaveLength(2);
-  expect(screen.getByText("ARCHIVED")).toBeInTheDocument();
-  expect(screen.getByText("LIMITED")).toBeInTheDocument();
-  expect(fetchCapabilities).toHaveBeenCalledTimes(1);
+  expect(screen.getByText("병해충 진단")).toBeInTheDocument();
+  expect(screen.queryByText("AVAILABLE")).not.toBeInTheDocument();
 });
 
-test("fails closed when capability lookup fails", async () => {
+test("renders feature cards when capability lookup fails", async () => {
   fetchCapabilities.mockRejectedValue(new Error("offline"));
 
   render(
@@ -42,5 +40,6 @@ test("fails closed when capability lookup fails", async () => {
     </MemoryRouter>,
   );
 
-  expect((await screen.findAllByText("LIMITED"))).toHaveLength(4);
+  expect(screen.getByText("토양 분석")).toBeInTheDocument();
+  expect(screen.queryByText("LIMITED")).not.toBeInTheDocument();
 });

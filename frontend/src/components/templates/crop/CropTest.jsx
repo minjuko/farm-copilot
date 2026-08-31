@@ -37,24 +37,6 @@ const Hint = styled.p`
   margin-top: ${appTheme.spacing.sm};
 `;
 
-const ServiceNotice = ({ available }) => (
-  <div
-    role="status"
-    style={{
-      marginBottom: '1rem',
-      padding: '0.75rem',
-      textAlign: 'center',
-      color: available ? '#1f6b4f' : '#5d4a00',
-      backgroundColor: available ? '#e8f5e9' : '#fff8e1',
-      borderRadius: '6px',
-    }}
-  >
-    {available
-      ? 'LIVE · 기상 및 시장가격 외부 API가 설정되어 있습니다.'
-      : 'LIMITED · 외부 API가 설정된 환경에서만 실시간 수익 예측을 제공합니다.'}
-  </div>
-);
-
 const CropTest = () => {
   const { setIsLoading, isLoading } = useLoading();
   const [landArea, setLandArea] = useState("");
@@ -237,7 +219,6 @@ const CropTest = () => {
   return (
     <PageContainer>
       {isLoading && <GlobalLoader text="AI 수익 예측 중입니다."/>}
-      <ServiceNotice available={serviceCapability.available} />
       <SummaryTitle $step="1">작물정보 입력</SummaryTitle>
       <InputContainer>
         <Label>재배 면적 (평)</Label>

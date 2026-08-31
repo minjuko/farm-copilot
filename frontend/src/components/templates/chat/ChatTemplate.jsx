@@ -197,13 +197,6 @@ const ErrorMessage = styled.div`
   text-align: center; 
 `;
 
-const LimitedNotice = styled.div`
-  padding: 0.75rem;
-  text-align: center;
-  background-color: ${color("primarySoft")};
-  color: ${color("textMuted")};
-`;
-
 const ChatTemplate = () => {
   const { sessionId } = useParams();
   const location = useLocation();
@@ -268,11 +261,6 @@ const ChatTemplate = () => {
         <Title>{sessionName || '농업 GPT'}</Title>
         <ChatListButton onClick={() => navigate('/chatlist')}><IoMenu />  목록 보기</ChatListButton>
       </Header>
-      <LimitedNotice>
-        {chatbotStatus === 'available'
-          ? 'LIVE · 농업 RAG 챗봇이 활성화되어 있습니다.'
-          : 'ARCHIVED / LIMITED · 환경이 준비된 경우에만 챗봇 답변을 제공합니다.'}
-      </LimitedNotice>
       <ChatBox ref={chatBoxRef}>
         <MessageList>
           {messages.map((msg, index) => (

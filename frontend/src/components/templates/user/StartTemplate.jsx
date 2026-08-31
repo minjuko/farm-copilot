@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../../AuthContext';
+import { color } from '../../../styles/theme';
 
 const Container = styled.div`
   display: flex;
@@ -21,7 +22,7 @@ const Container = styled.div`
 const Title = styled.h1`
   font-size: 2rem;
   margin-bottom: 2rem;
-  color: #333;
+  color: ${color("text")};
   text-align: center;
 
   @media (max-width: 768px) {
@@ -36,13 +37,13 @@ const Button = styled.button`
   font-weight: bold;
   height: 2.75rem;
   width: 15.625rem;
-  color: white;
-  background-color: ${({ disabled }) => (disabled ? '#9e9e9e' : '#4aaa87')};
+  color: ${color("surface")};
+  background-color: ${({ disabled, theme }) => (disabled ? theme?.colors?.disabled || '#9e9e9e' : theme?.colors?.primary || '#4aaa87')};
   border: none;
   border-radius: 0.25rem;
   cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
   &:hover {
-    background-color: ${({ disabled }) => (disabled ? '#9e9e9e' : '#6dc4b0')};
+    background-color: ${({ disabled, theme }) => (disabled ? theme?.colors?.disabled || '#9e9e9e' : theme?.colors?.primaryFocus || '#6dc4b0')};
   }
   &:not(:last-child) {
     margin-bottom: 1rem;
@@ -72,7 +73,7 @@ const Footer = styled.footer`
   width: 100%;
   text-align: center;
   font-size: 0.875rem;
-  color: #666;
+  color: ${color("textMuted")};
 
   @media (max-width: 768px) {
     font-size: 0.75rem;
@@ -80,13 +81,13 @@ const Footer = styled.footer`
 `;
 
 const PrivacyPolicyLink = styled.a`
-  color: #4aaa87;
+  color: ${color("primary")};
   cursor: pointer;
   text-decoration: underline;
   margin-left: 0.5rem;
 
   &:hover {
-    color: #6dc4b0;
+    color: ${color("primaryFocus")};
   }
 `;
 
