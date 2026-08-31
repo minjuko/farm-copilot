@@ -2,7 +2,7 @@ import React, { useCallback, useState, useRef } from 'react';
 import styled from 'styled-components';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
-import ReactPaginate from 'react-paginate';
+import Pagination from '../../molecules/Pagination';
 import { fetchChatSessions, deleteChatSession, updateSessionName } from '../../../apis/chat';
 import { FaTrash, FaEdit, FaTimes } from 'react-icons/fa';
 import ConfirmModal from '../../atoms/ConfirmModal';
@@ -374,23 +374,7 @@ const ChatListTemplate = () => {
               </ChatList>
             </>
           )}
-          {pageCount > 0 && <PaginationContainer>
-            <ReactPaginate
-              previousLabel={"이전"}
-              nextLabel={"다음"}
-              breakLabel={"..."}
-              pageCount={pageCount}
-              marginPagesDisplayed={2}
-              pageRangeDisplayed={5}
-              onPageChange={handlePageClick}
-              containerClassName={"pagination"}
-              activeClassName={"active"}
-              previousClassName={"previous"}
-              nextClassName={"next"}
-              disabledClassName={"disabled"}
-              forcePage={currentPage}
-            />
-          </PaginationContainer>}
+          <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageClick} />
           <ModalContainer
             isOpen={isModalOpen}
             onRequestClose={closeModal}

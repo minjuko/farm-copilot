@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import ReactPaginate from "react-paginate";
+import Pagination from "../../molecules/Pagination";
 import { fetchMyPosts, deletePost } from "../../../apis/post";
 import ConfirmModal from "../../atoms/ConfirmModal";
 import { useLoading } from "../../../LoadingContext";
@@ -123,6 +123,7 @@ const MyPostTemplate = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [actionError, setActionError] = useState("");
 
   const postsPerPage = 5;
   const pageCount = Math.ceil(posts.length / postsPerPage);
@@ -141,12 +142,13 @@ const MyPostTemplate = () => {
   const handleDelete = async () => {
     setIsLoading(true);
     try {
+      setActionError("");
       await deletePost(selectedPostId);
       setPosts((current) => current.filter((post) => post.id !== selectedPostId));
       setIsDeleteModalOpen(false);
       setSelectedPostId(null);
     } catch (error) {
-      alert("게시글 삭제에 실패했습니다. 다시 시도해주세요.");
+      setActionError("게시글 삭제에 실패했습니다. 다시 시도해주세요.");
     }
     setIsLoading(false);
   };
@@ -163,7 +165,7 @@ const MyPostTemplate = () => {
   return (
     <Container>
       <GlobalLoader isLoading={isLoading} />
-      {loadError && <p role="alert">{loadError}</p>}
+      {(loadError || actionError) && <p role="alert">{loadError || actionError}</p>}
       <PostList>
         <Table>
           <TableHeader>
@@ -188,22 +190,7 @@ const MyPostTemplate = () => {
           </tbody>
         </Table>
       </PostList>
-      <PaginationContainer>
-        <ReactPaginate
-          previousLabel={"이전"}
-          nextLabel={"다음"}
-          breakLabel={"..."}
-          pageCount={pageCount}
-          marginPagesDisplayed={2}
-          pageRangeDisplayed={5}
-          onPageChange={handlePageClick}
-          containerClassName={"pagination"}
-          activeClassName={"active"}
-          previousClassName={"previous"}
-          nextClassName={"next"}
-          disabledClassName={"disabled"}
-        />
-      </PaginationContainer>
+      <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageClick} />
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         onRequestClose={closeModal}

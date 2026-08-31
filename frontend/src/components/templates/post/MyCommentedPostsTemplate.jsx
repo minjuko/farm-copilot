@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import ReactPaginate from "react-paginate";
+import Pagination from "../../molecules/Pagination";
 import { fetchMyCommentedPosts } from "../../../apis/post";
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
@@ -167,22 +167,7 @@ const MyCommentedPostsTemplate = () => {
           </tbody>
         </Table>
       </PostList>
-      <PaginationContainer>
-        <ReactPaginate
-          previousLabel={"이전"}
-          nextLabel={"다음"}
-          breakLabel={"..."}
-          pageCount={pageCount}
-          marginPagesDisplayed={2}
-          pageRangeDisplayed={5}
-          onPageChange={handlePageClick}
-          containerClassName={"pagination"}
-          activeClassName={"active"}
-          previousClassName={"previous"}
-          nextClassName={"next"}
-          disabledClassName={"disabled"}
-        />
-      </PaginationContainer>
+      <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageClick} />
     </Container>
   );
 };

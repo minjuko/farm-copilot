@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { fetchDetectionSessions, deleteDetectionSession } from "../../../apis/predict";
 import { FaTrash, FaPlus } from 'react-icons/fa';
 import ConfirmModal from '../../atoms/ConfirmModal';
-import ReactPaginate from 'react-paginate';
+import Pagination from '../../molecules/Pagination';
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
@@ -232,6 +232,7 @@ const DiagnosisListTemplate = () => {
   const [sessionIdToDelete, setSessionIdToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [actionError, setActionError] = useState("");
   const navigate = useNavigate();
 
   const loadSessions = useCallback(async () => {
@@ -259,13 +260,14 @@ const DiagnosisListTemplate = () => {
 
   const handleDeleteSession = async () => {
     try {
+      setActionError("");
       setIsLoading(true);
       setIsDeleting(true);
       await deleteDetectionSession(sessionIdToDelete);
       setSessions((current) => current.filter(session => session.session_id !== sessionIdToDelete));
       setIsModalOpen(false);
     } catch (error) {
-      alert('세션 삭제에 실패했습니다. 다시 시도해주세요.');
+      setActionError("세션 삭제에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
       setIsDeleting(false);
@@ -298,8 +300,8 @@ const DiagnosisListTemplate = () => {
       </AddButtonContainer>
 
       <Content>
-        {loadError ? (
-          <EmptyMessage>{loadError}</EmptyMessage>
+        {(loadError || actionError) ? (
+          <EmptyMessage role="alert">{loadError || actionError}</EmptyMessage>
         ) : sessions.length === 0 ? (
           <EmptyMessage>진단 목록이 존재하지 않습니다. 첫 진단을 시작해보세요!</EmptyMessage>
         ) : (
@@ -328,22 +330,7 @@ const DiagnosisListTemplate = () => {
                 </SessionItem>
               ))}
             </SessionList>
-            <PaginationContainer>
-              <ReactPaginate
-                previousLabel={"이전"}
-                nextLabel={"다음"}
-                breakLabel={"..."}
-                pageCount={pageCount}
-                marginPagesDisplayed={2}
-                pageRangeDisplayed={5}
-                onPageChange={handlePageClick}
-                containerClassName={"pagination"}
-                activeClassName={"active"}
-                previousClassName={"previous"}
-                nextClassName={"next"}
-                disabledClassName={"disabled"}
-              />
-            </PaginationContainer>
+            <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageClick} />
           </>
         )}
       </Content>

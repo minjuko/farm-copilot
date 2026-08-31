@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaTrash, FaEdit, FaPlus } from 'react-icons/fa';
 import { getCropList, deleteCrop, updateSessionName } from '../../../apis/crop';
 import ConfirmModal from '../../atoms/ConfirmModal';
-import ReactPaginate from 'react-paginate';
+import Pagination from '../../molecules/Pagination';
 import { useLoading } from '../../../LoadingContext';
 import GlobalLoader from "../../atoms/GlobalLoader";
 import { getApiErrorMessage } from '../../../apis/error';
@@ -23,7 +23,6 @@ import {
   SaveButton,
   DeleteButton,
   EditButton,
-  PaginationContainer,
   EmptyMessage
 } from '../../../styles/CropSelectionStyle';
 
@@ -199,22 +198,7 @@ const CropSelectionPage = () => {
                     </SessionItem>
                   ))}
                 </SessionList>
-                <PaginationContainer>
-                  <ReactPaginate
-                    previousLabel={"이전"}
-                    nextLabel={"다음"}
-                    breakLabel={"..."}
-                    pageCount={pageCount}
-                    marginPagesDisplayed={2}
-                    pageRangeDisplayed={5}
-                    onPageChange={handlePageChange}
-                    containerClassName={"pagination"}
-                    activeClassName={"active"}
-                    previousClassName={"previous"}
-                    nextClassName={"next"}
-                    disabledClassName={"disabled"}
-                  />
-                </PaginationContainer>
+                <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageChange} />
               </>
             )}
           </SessionListContainer>

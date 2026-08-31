@@ -5,7 +5,7 @@ import { FaTrash } from 'react-icons/fa';
 import ConfirmModal from "../../atoms/ConfirmModal";
 import { getSoilCropData, deleteSoilData } from "../../../apis/predict";
 import { useLoading } from "../../../LoadingContext";
-import ReactPaginate from "react-paginate";
+import Pagination from "../../molecules/Pagination";
 import useAsyncResource from "../../../hooks/useAsyncResource";
 
 const PageContainer = styled.div`
@@ -168,6 +168,7 @@ const SoilListTemplate = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [actionError, setActionError] = useState("");
   const navigate = useNavigate();
   const sessionsPerPage = 4;
   const loadSoilHistory = useCallback(async () => {
@@ -192,12 +193,13 @@ const SoilListTemplate = () => {
 
   const handleDeleteSoilData = async () => {
     try {
+      setActionError("");
       setIsLoading(true);
       await deleteSoilData(selectedSessionId);
       setSoilData((current) => current.filter(soil => soil.session_id !== selectedSessionId));
       closeModal();
     } catch {
-      alert("토양 데이터 삭제에 실패했습니다. 다시 시도해주세요.");
+      setActionError("토양 데이터 삭제에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -242,8 +244,8 @@ const SoilListTemplate = () => {
   return (
     <PageContainer>
       <AddButton onClick={handleAddClick}>새 토양 데이터 추가</AddButton>
-      {loadError ? (
-        <NoDataText role="alert">{loadError}</NoDataText>
+      {(loadError || actionError) ? (
+        <NoDataText role="alert">{loadError || actionError}</NoDataText>
       ) : currentSessions.length === 0 ? (
         <NoDataText>목록이 존재하지 않습니다. 첫 토양 분석을 진행해보세요</NoDataText>
       ) : (
@@ -266,22 +268,7 @@ const SoilListTemplate = () => {
           ))}
         </SessionList>
       )}
-      <PaginationContainer>
-        <ReactPaginate
-          previousLabel={"이전"}
-          nextLabel={"다음"}
-          breakLabel={"..."}
-          pageCount={pageCount}
-          marginPagesDisplayed={2}
-          pageRangeDisplayed={5}
-          onPageChange={handlePageChange}
-          containerClassName={"pagination"}
-          activeClassName={"active"}
-          previousClassName={"previous"}
-          nextClassName={"next"}
-          disabledClassName={"disabled"}
-        />
-      </PaginationContainer>
+      <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageChange} />
       <ConfirmModal
         isOpen={isModalOpen}
         onRequestClose={closeModal}
