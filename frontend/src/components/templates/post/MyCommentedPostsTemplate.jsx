@@ -6,6 +6,7 @@ import { fetchMyCommentedPosts } from "../../../apis/post";
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
+import { EmptyState, ListPage } from "../../../styles/primitives";
 
 const Container = styled.div`
   display: flex;
@@ -121,10 +122,6 @@ const PaginationContainer = styled.div`
 const MyCommentedPostsTemplate = () => {
   const { isLoading } = useLoading();
   const [currentPage, setCurrentPage] = useState(0);
-  const postsPerPage = 5;
-  const pageCount = Math.ceil(posts.length / postsPerPage);
-  const offset = currentPage * postsPerPage;
-
   const loadPosts = useCallback(async () => {
     const response = await fetchMyCommentedPosts();
     if (!Array.isArray(response?.data)) throw new Error("MALFORMED_MY_COMMENTED_POSTS");
@@ -134,17 +131,20 @@ const MyCommentedPostsTemplate = () => {
     getError: getMyCommentedPostsError,
     initialData: [],
   });
+  const postsPerPage = 5;
+  const pageCount = Math.ceil(posts.length / postsPerPage);
+  const offset = currentPage * postsPerPage;
 
   const handlePageClick = ({ selected }) => {
     setCurrentPage(selected);
   };
 
   return (
-    <Container>
+    <ListPage>
       <GlobalLoader isLoading={isLoading} />
       {loadError && <p role="alert">{loadError}</p>}
       <PostList>
-        <Table>
+        {posts.length === 0 && !loadError ? <EmptyState>댓글을 작성한 게시글이 없습니다.</EmptyState> : <Table>
           <TableHeader>
             <TableRow>
               <TableCell $header>제목</TableCell>
@@ -165,10 +165,10 @@ const MyCommentedPostsTemplate = () => {
               </TableRow>
             ))}
           </tbody>
-        </Table>
+        </Table>}
       </PostList>
       <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageClick} />
-    </Container>
+    </ListPage>
   );
 };
 

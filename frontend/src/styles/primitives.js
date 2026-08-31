@@ -41,3 +41,15 @@ export const StatusMessage = styled.p`
     ? theme?.colors?.danger || "#e53e3e"
     : theme?.colors?.textMuted || "#666666"};
 `;
+
+export const ListPage = styled(PageContainer)`
+  background: ${color("background")};
+  min-height: 100%;
+`;
+
+export const EmptyState = styled(StatusMessage)`
+  min-height: 8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;

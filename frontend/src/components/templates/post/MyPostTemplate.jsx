@@ -7,6 +7,7 @@ import ConfirmModal from "../../atoms/ConfirmModal";
 import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
+import { EmptyState, ListPage } from "../../../styles/primitives";
 
 const Container = styled.div`
   display: flex;
@@ -125,10 +126,6 @@ const MyPostTemplate = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [actionError, setActionError] = useState("");
 
-  const postsPerPage = 5;
-  const pageCount = Math.ceil(posts.length / postsPerPage);
-  const offset = currentPage * postsPerPage;
-
   const loadPosts = useCallback(async () => {
     const response = await fetchMyPosts();
     if (!Array.isArray(response?.data)) throw new Error("MALFORMED_MY_POSTS");
@@ -138,6 +135,9 @@ const MyPostTemplate = () => {
     getError: getMyPostsError,
     initialData: [],
   });
+  const postsPerPage = 5;
+  const pageCount = Math.ceil(posts.length / postsPerPage);
+  const offset = currentPage * postsPerPage;
 
   const handleDelete = async () => {
     setIsLoading(true);
@@ -163,11 +163,11 @@ const MyPostTemplate = () => {
   };
 
   return (
-    <Container>
+    <ListPage>
       <GlobalLoader isLoading={isLoading} />
       {(loadError || actionError) && <p role="alert">{loadError || actionError}</p>}
       <PostList>
-        <Table>
+        {posts.length === 0 && !loadError ? <EmptyState>등록한 게시글이 없습니다.</EmptyState> : <Table>
           <TableHeader>
             <TableRow>
               <TableCell $header>제목</TableCell>
@@ -188,7 +188,7 @@ const MyPostTemplate = () => {
               </TableRow>
             ))}
           </tbody>
-        </Table>
+        </Table>}
       </PostList>
       <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageClick} />
       <ConfirmModal
@@ -205,7 +205,7 @@ const MyPostTemplate = () => {
         cancelColor="#4aaa87"
         cancelHoverColor="#3b8b6d"
       />
-    </Container>
+    </ListPage>
   );
 };
 
