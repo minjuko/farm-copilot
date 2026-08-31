@@ -198,3 +198,54 @@ class ChatbotCsrfBoundaryTests(TestCase):
             HTTP_X_CSRFTOKEN=self.csrf_token(),
         )
         self.assertEqual(with_token.status_code, 503)
+
+
+class ChatbotPersistenceContractTests(TestCase):
+    def setUp(self):
+        from login.models import User
+
+        self.client = Client()
+        self.user = User.objects.create_user(
+            email='chatbot-persistence@example.com',
+            username='chatbot-persistence',
+            password='test-password',
+        )
+        self.client.force_login(self.user)
+
+    @patch.object(views, 'get_rag_chain')
+    def test_successful_chatbot_request_persists_and_returns_history(self, get_chain):
+        chain = Mock()
+        chain.invoke.return_value = {
+            'answer': '검증된 농업 답변입니다.',
+            'context': [],
+        }
+        get_chain.return_value = chain
+
+        response = self.client.post(
+            '/selfchatbot/chatbot/',
+            data=json.dumps({
+                'question': '고구마 비료 관리 요령',
+                'session_id': 'persistence-session',
+                'session_name': 'Persistence Test',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['answer'], '검증된 농업 답변입니다.')
+        self.assertEqual(
+            views.Chatbot.objects.filter(
+                user=self.user,
+                session_id='persistence-session',
+            ).count(),
+            1,
+        )
+
+        history = self.client.get(
+            '/selfchatbot/chat_history/persistence-session/'
+        )
+        self.assertEqual(history.status_code, 200)
+        self.assertEqual(len(history.json()), 1)
+        self.assertEqual(history.json()[0]['question'], '고구마 비료 관리 요령')
+        self.assertEqual(history.json()[0]['answer'], '검증된 농업 답변입니다.')
+        chain.invoke.assert_called_once()

@@ -13,7 +13,7 @@ import { useAuth } from '../../../AuthContext';
 import { normalizeSessionName } from './chatFlow';
 import useAsyncResource from '../../../hooks/useAsyncResource';
 import useChatSessionActions from './useChatSessionActions';
-import { color, radius, shadow, space } from '../../../styles/theme';
+import { color, shadow } from '../../../styles/theme';
 
 const Container = styled.div`
   display: flex;
@@ -163,52 +163,6 @@ const ErrorMessage = styled.div`
   margin-top: 8px;
   font-size: 14px;
   text-align: center; 
-`;
-
-const PaginationContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: 24px;
-  .pagination {
-    display: flex;
-    list-style: none;
-    padding: 0;
-  }
-
-  .pagination li {
-    margin: 0 5px;
-  }
-
-  .pagination li a {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    color: #4aaa87;
-    text-decoration: none;
-    transition: background-color 0.3s, color 0.3s;
-  }
-
-  .pagination li a:hover {
-    background-color: #f5f5f5;
-    color: #3e8e75;
-  }
-
-  .pagination li.active a {
-    background-color: #4aaa87;
-    color: white;
-    border: none;
-  }
-
-  .pagination li.previous a,
-  .pagination li.next a {
-    color: #888;
-  }
-
-  .pagination li.disabled a {
-    color: #ccc;
-    cursor: not-allowed;
-  }
 `;
 
 const getChatSessionsError = () => '채팅 세션을 불러오는 중 오류가 발생했습니다.';

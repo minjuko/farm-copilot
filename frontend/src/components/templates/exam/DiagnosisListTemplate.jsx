@@ -12,7 +12,6 @@ import { EmptyState, ListPage } from "../../../styles/primitives";
 import { color, shadow } from "../../../styles/theme";
 import {
   formatDetectionConfidence,
-  normalizeDetectionResult,
   normalizeMediaUrl,
 } from "./detectFlow";
 
@@ -146,71 +145,6 @@ const AddButtonText = styled.span`
 const getDiagnosisHistoryError = () => (
   "진단 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
 );
-
-const PaginationContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: 1.5rem; 
-  .pagination {
-    display: flex;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-    @media (max-width: 48rem) { 
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 30rem) { 
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-  }
-
-  .pagination li {
-    margin: 0 0.3125rem; 
-
-    @media (max-width: 30rem) { 
-      margin: 0.3125rem; 
-    }
-  }
-
-  .pagination li a {
-    padding: 0.5rem 0.75rem; 
-    border: 1px solid #ddd;
-    border-radius: 0.25rem; 
-    cursor: pointer;
-    color: #4aaa87;
-    text-decoration: none;
-    transition: background-color 0.3s, color 0.3s;
-
-    @media (max-width: 30rem) { 
-      padding: 0.375rem 0.625rem; 
-      font-size: 0.9rem;
-    }
-  }
-
-  .pagination li a:hover {
-    background-color: #f5f5f5;
-    color: #3e8e75;
-  }
-
-  .pagination li.active a {
-    background-color: #4aaa87;
-    color: white;
-    border: none;
-  }
-
-  .pagination li.previous a,
-  .pagination li.next a {
-    color: #888;
-  }
-
-  .pagination li.disabled a {
-    color: #ccc;
-    cursor: not-allowed;
-  }
-`;
 
 const DiagnosisListTemplate = () => {
   const { setIsLoading } = useLoading();

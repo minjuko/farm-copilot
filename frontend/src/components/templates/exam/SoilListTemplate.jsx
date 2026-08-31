@@ -89,52 +89,6 @@ const AddButton = styled.button`
   }
 `;
 
-const PaginationContainer = styled.div`
-  display: flex;
-  justify-content: center;
-
-  .pagination {
-    display: flex;
-    list-style: none;
-    padding: 0;
-  }
-
-  .pagination li {
-    margin: 0 0.3125rem;
-  }
-
-  .pagination li a {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 0.25rem;
-    cursor: pointer;
-    color: #4aaa87;
-    text-decoration: none;
-    transition: background-color 0.3s, color 0.3s;
-  }
-
-  .pagination li a:hover {
-    background-color: #f5f5f5;
-    color: #3e8e75;
-  }
-
-  .pagination li.active a {
-    background-color: #4aaa87;
-    color: white;
-    border: none;
-  }
-
-  .pagination li.previous a,
-  .pagination li.next a {
-    color: #888;
-  }
-
-  .pagination li.disabled a {
-    color: #ccc;
-    cursor: not-allowed;
-  }
-`;
-
 const formatDateTime = (dateString) => {
   const options = {
     year: 'numeric',

@@ -8,18 +8,7 @@ import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
 import { EmptyState, ListPage } from "../../../styles/primitives";
-import { color, radius, shadow, space } from "../../../styles/theme";
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px;
-  background-color: ${color("background")};
-  max-width: 75rem;
-  width: 100%;
-  margin: 0 auto;
-`;
+import { color, radius, shadow } from "../../../styles/theme";
 
 const PostList = styled.div`
   display: grid;
@@ -70,52 +59,6 @@ const PostTitle = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`;
-
-const PaginationContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: 24px;
-  .pagination {
-    display: flex;
-    list-style: none;
-    padding: 0;
-  }
-
-  .pagination li {
-    margin: 0 5px;
-  }
-
-  .pagination li a {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    color: #4aaa87;
-    text-decoration: none;
-    transition: background-color 0.3s, color 0.3s;
-  }
-
-  .pagination li a:hover {
-    background-color: #f5f5f5;
-    color: #3e8e75;
-  }
-
-  .pagination li.active a {
-    background-color: #4aaa87;
-    color: white;
-    border: none;
-  }
-
-  .pagination li.previous a,
-  .pagination li.next a {
-    color: #888;
-  }
-
-  .pagination li.disabled a {
-    color: #ccc;
-    cursor: not-allowed;
-  }
 `;
 
 const getMyPostsError = () => "내 게시글을 불러오지 못했습니다.";
