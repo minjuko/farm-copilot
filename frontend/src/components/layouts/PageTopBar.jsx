@@ -100,7 +100,7 @@ const PageTopBar = () => {
     "/soillist": "토양 데이터 목록",
     "/soil_details": "토양 데이터 상세",
     "/soil_details/:sessionId": "토양 데이터 상세",
-    "/sessiondetails": "수익 예측 결과",
+    "/sessiondetails/:sessionId": "수익 예측 결과",
     "/signup": "회원가입",
     "/password_reset": "비밀번호 찾기",
   };

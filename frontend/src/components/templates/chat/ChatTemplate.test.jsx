@@ -5,7 +5,7 @@ import ChatTemplate from "./ChatTemplate";
 import { CHATBOT_LIMITED_MESSAGE } from "./chatFlow";
 
 jest.mock("react-router-dom", () => ({
-  useParams: () => ({ sessionid: "session-1" }),
+  useParams: () => ({ sessionId: "session-1" }),
   useLocation: () => ({ search: "?session_name=농업GPT" }),
   useNavigate: () => jest.fn(),
 }));

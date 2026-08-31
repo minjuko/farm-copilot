@@ -204,13 +204,12 @@ const LimitedNotice = styled.div`
 `;
 
 const ChatTemplate = () => {
-  const { sessionid } = useParams();
+  const { sessionId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const sessionId = sessionid;
   const [errorMessage, setErrorMessage] = useState('');
   const [chatbotStatus, setChatbotStatus] = useState('checking');
   const { status } = useAuth();
