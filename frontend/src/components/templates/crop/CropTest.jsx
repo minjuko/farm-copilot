@@ -87,7 +87,6 @@ const CropTest = () => {
         const response = await getRegionNames();
         setRegions(response.data.region_names);
       } catch {
-        console.error('Error fetching region names');
         setModalContent('지역 이름을 불러오는 중 오류가 발생했습니다.');
         setModalTitle('오류');
         setIsError(true);
@@ -192,7 +191,6 @@ const CropTest = () => {
         navigate(`/sessiondetails/${savedSessionId}`, { state: { session_id: savedSessionId } });
       }
     } catch (error) {
-      console.error('Error fetching prediction');
       setModalContent(getApiErrorMessage(
         error,
         '수익 예측 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.'
