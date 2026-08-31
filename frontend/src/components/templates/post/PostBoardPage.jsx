@@ -6,44 +6,41 @@ import { useAuth } from "../../../AuthContext";
 import { fetchPosts } from "../../../apis/post";
 import { getApiErrorMessage } from "../../../apis/error";
 import useAsyncResource from "../../../hooks/useAsyncResource";
+import { Inline, PageContainer, StatusMessage } from "../../../styles/primitives";
+import { color, radius, shadow, space } from "../../../styles/theme";
 import Pagination from "../../molecules/Pagination";
 
 const POSTS_PER_PAGE = 5;
 
-const Container = styled.div`
-  display: flex; flex-direction: column; align-items: center;
-  padding: 16px; max-width: 75rem; width: 100%; margin: 0 auto;
-`;
-const Heading = styled.h1`font-size: 1.25rem; color: #333; align-self: flex-start; margin: 1rem;`;
-const Toolbar = styled.div`
-  display: flex; align-items: center; width: 100%; margin: 20px 0; padding: 16px;
+const Heading = styled.h1`font-size: 1.25rem; color: ${color("text")}; align-self: flex-start; margin: ${space("md")};`;
+const Toolbar = styled(Inline)`
+  width: 100%; margin: 20px 0; padding: ${space("md")};
 `;
 const SearchInput = styled.input`
-  font-size: 14px; border: 2px solid #4aaa87; padding: 8px;
-  border-radius: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,.1);
-  &:focus { outline: none; border-color: #6dc4b0; }
+  font-size: 14px; border: 2px solid ${color("primary")}; padding: ${space("sm")};
+  border-radius: ${radius("lg")}; flex: 1; box-shadow: ${shadow("sm")};
+  &:focus { outline: none; border-color: ${color("primaryFocus")}; }
 `;
 const CreateButton = styled(Link)`
-  display: flex; align-items: center; justify-content: center; padding: 8px 16px;
-  font-size: 14px; color: white; background: #4aaa87; border-radius: 8px;
-  text-decoration: none; margin-left: 8px;
-  &:hover { background: #6dc4b0; }
+  display: flex; align-items: center; justify-content: center; padding: ${space("sm")} ${space("md")};
+  font-size: 14px; color: ${color("surface")}; background: ${color("primary")}; border-radius: ${radius("md")};
+  text-decoration: none;
+  &:hover { background: ${color("primaryFocus")}; }
 `;
 const Table = styled.table`
-  width: 100%; border-collapse: collapse; background: #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,.05); border-radius: 8px; overflow: hidden;
+  width: 100%; border-collapse: collapse; background: ${color("surface")};
+  box-shadow: ${shadow("sm")}; border-radius: ${radius("md")}; overflow: hidden;
 `;
-const Header = styled.thead`background: #4aaa87; color: white;`;
-const Row = styled.tr`&:nth-child(even) { background: #f9f9f9; }`;
-const HeaderCell = styled.th`padding: 8px; border-bottom: 1px solid #ccc; font-size: 14px; text-align: left;`;
-const Cell = styled.td`padding: 8px; border-bottom: 1px solid #ccc; font-size: 14px; text-align: left;`;
+const Header = styled.thead`background: ${color("primary")}; color: ${color("surface")};`;
+const Row = styled.tr`&:nth-child(even) { background: ${color("background")}; }`;
+const HeaderCell = styled.th`padding: ${space("sm")}; border-bottom: 1px solid ${color("borderStrong")}; font-size: 14px; text-align: left;`;
+const Cell = styled.td`padding: ${space("sm")}; border-bottom: 1px solid ${color("borderStrong")}; font-size: 14px; text-align: left;`;
 const PostLink = styled(Link)`text-decoration: none; color: inherit;`;
 const PostTitle = styled.span`
-  font-size: 14px; font-weight: bold; color: #4aaa87; display: inline-block;
+  font-size: 14px; font-weight: bold; color: ${color("primary")}; display: inline-block;
   max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 `;
-const CommentCount = styled.span`font-size: 14px; color: gray; margin-left: 8px;`;
-const Status = styled.p`width: 100%; padding: 2rem 1rem; text-align: center; color: #666;`;
+const CommentCount = styled.span`font-size: 14px; color: ${color("textMuted")}; margin-left: ${space("sm")};`;
 const getPostLoadError = (error) => getApiErrorMessage(
   error,
   "게시글을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
@@ -79,7 +76,7 @@ const PostBoardPage = ({ boardLabel, postType }) => {
   };
 
   return (
-    <Container>
+    <PageContainer>
       <Heading>{boardLabel}</Heading>
       <Toolbar>
         <SearchInput
@@ -95,8 +92,8 @@ const PostBoardPage = ({ boardLabel, postType }) => {
           </CreateButton>
         )}
       </Toolbar>
-      {error ? <Status role="alert">{error}</Status> : visiblePosts.length === 0 ? (
-        <Status>{searchTerm ? "검색 결과가 없습니다." : "등록된 게시글이 없습니다."}</Status>
+      {error ? <StatusMessage $error role="alert">{error}</StatusMessage> : visiblePosts.length === 0 ? (
+        <StatusMessage>{searchTerm ? "검색 결과가 없습니다." : "등록된 게시글이 없습니다."}</StatusMessage>
       ) : (
         <Table>
           <Header><Row><HeaderCell>제목</HeaderCell><HeaderCell>작성자</HeaderCell><HeaderCell>작성일</HeaderCell></Row></Header>
@@ -117,7 +114,7 @@ const PostBoardPage = ({ boardLabel, postType }) => {
         onPageChange={({ selected }) => setCurrentPage(selected)}
         pageCount={pageCount}
       />
-    </Container>
+    </PageContainer>
   );
 };
 

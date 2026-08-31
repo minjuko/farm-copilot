@@ -4,6 +4,7 @@ import { GNB } from "./GNB";
 import MainTopBar from "./MainTopBar";
 import PageTopBar from "./PageTopBar";
 import styled from "styled-components";
+import { color, zIndex } from "../../styles/theme";
 
 const Container = styled.div`
   display: flex;
@@ -14,15 +15,15 @@ const Container = styled.div`
 const Header = styled.div`
   position: sticky;
   top: 0;
-  z-index: 1000;
-  background-color: white;
+  z-index: ${zIndex("header")};
+  background-color: ${color("surface")};
 `;
 
 const Footer = styled.div`
   position: sticky;
   padding-top: 60px;
-  z-index: 1000;
-  background-color: white;
+  z-index: ${zIndex("header")};
+  background-color: ${color("surface")};
   display: flex;
   flex-direction: column;
   align-items: center;

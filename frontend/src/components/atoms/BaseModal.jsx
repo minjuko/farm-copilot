@@ -1,17 +1,18 @@
 import React, { useId } from "react";
 import Modal from "react-modal";
 import styled from "styled-components";
+import { color, radius, shadow, space, zIndex } from "../../styles/theme";
 
 const Dialog = styled(Modal)`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: ${space("lg")};
+  background: ${color("surface")};
+  border: 1px solid ${color("border")};
+  border-radius: ${radius("md")};
+  box-shadow: ${shadow("md")};
   position: absolute;
   top: ${({ $top }) => $top || "50%"};
   left: 50%;
@@ -19,11 +20,12 @@ const Dialog = styled(Modal)`
   max-width: 400px;
   width: 80%;
   max-height: ${({ $maxHeight }) => $maxHeight || "400px"};
+  z-index: ${zIndex("modal")};
 `;
 
-const Title = styled.h2`font-size: 24px; margin-bottom: 16px; color: #333;`;
-const Content = styled.div`font-size: 16px; color: #666; margin-bottom: 24px; text-align: center;`;
-const Actions = styled.div`display: flex; gap: 10px;`;
+const Title = styled.h2`font-size: 24px; margin-bottom: ${space("md")}; color: ${color("text")};`;
+const Content = styled.div`font-size: 16px; color: ${color("textMuted")}; margin-bottom: ${space("lg")}; text-align: center;`;
+const Actions = styled.div`display: flex; gap: ${space("sm")};`;
 const Button = styled.button`
   padding: 12px 16px;
   font-size: 16px;
@@ -31,7 +33,7 @@ const Button = styled.button`
   color: white;
   background: ${({ $color }) => $color};
   border: 0;
-  border-radius: 4px;
+  border-radius: ${radius("sm")};
   cursor: pointer;
   &:hover { background: ${({ $hoverColor }) => $hoverColor}; }
 `;
