@@ -21,6 +21,9 @@ import {
   ErrorMessage,
 } from "../../../styles/Post";
 
+const SUPPORTED_POST_TYPES = new Set(["buy", "sell", "exchange"]);
+export const getInitialPostType = (value) => SUPPORTED_POST_TYPES.has(value) ? value : "buy";
+
 const WritePostTemplate = () => {
   const { setIsLoading } = useLoading();
   const navigate = useNavigate();
@@ -31,7 +34,7 @@ const WritePostTemplate = () => {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [postType, setPostType] = useState(postTypeQueryParam || "buy");
+  const [postType, setPostType] = useState(() => getInitialPostType(postTypeQueryParam));
   const [image, setImage] = useState(null);
   const [fileName, setFileName] = useState(""); // 파일 이름 상태 추가
   const [imagePreview, setImagePreview] = useState(""); // 이미지 미리보기 상태 추가
@@ -46,9 +49,7 @@ const WritePostTemplate = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (postTypeQueryParam) {
-      setPostType(postTypeQueryParam);
-    }
+    setPostType(getInitialPostType(postTypeQueryParam));
   }, [postTypeQueryParam]);
 
   const handleTitleChange = (event) => {

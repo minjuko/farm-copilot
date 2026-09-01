@@ -4,6 +4,7 @@ import {
   PASSWORD_ERROR,
   getEmailError,
   getLoginValidation,
+  getLoginPasswordError,
   getPasswordConfirmationError,
   getPasswordError,
   getSignupValidation,
@@ -51,4 +52,23 @@ test("validates login and signup forms without component state", () => {
     password1: "weak",
     password2: "different",
   }))).toBe(true);
+});
+
+test("login requires a password but accepts existing credentials outside the new-password policy", () => {
+  expect(getLoginPasswordError("")).not.toBe("");
+  expect(getLoginPasswordError("existing-password")).toBe("");
+  expect(getLoginValidation({ email: "farmer@example.com", password: "existing-password" }))
+    .toEqual({ email: "", password: "" });
+});
+
+test("login keeps the existing email policy and signup keeps the new-password policy", () => {
+  expect(getLoginValidation({ email: "farmer", password: "existing-password" }).email)
+    .toBe(EMAIL_ERROR);
+  expect(getSignupValidation({
+    username: "farmer",
+    email: "farmer@example.com",
+    verification_code: "123456",
+    password1: "existing-password",
+    password2: "existing-password",
+  }).password1).toBe(PASSWORD_ERROR);
 });

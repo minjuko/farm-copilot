@@ -23,9 +23,13 @@ export const getPasswordConfirmationError = (password, confirmation) => {
   return password === confirmation ? "" : PASSWORD_CONFIRMATION_ERROR;
 };
 
+export const getLoginPasswordError = (value) => (
+  String(value || "").length ? "" : getPasswordError(value)
+);
+
 export const getLoginValidation = ({ email, password }) => ({
   email: getEmailError(email),
-  password: getPasswordError(password),
+  password: getLoginPasswordError(password),
 });
 
 export const getSignupValidation = ({ username, email, verification_code, password1, password2 }) => ({

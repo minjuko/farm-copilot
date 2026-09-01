@@ -9,7 +9,7 @@ import { color, radius, shadow, space } from '../../../styles/theme';
 import {
   getEmailError,
   getLoginValidation,
-  getPasswordError,
+  getLoginPasswordError,
   hasValidationErrors,
 } from './formValidation';
 
@@ -129,7 +129,7 @@ const LoginTemplate = () => {
     setFormData({ ...formData, [name]: value });
 
     if (name === "email") setEmailError(getEmailError(value));
-    if (name === "password") setPasswordError(getPasswordError(value));
+    if (name === "password") setPasswordError(getLoginPasswordError(value));
   };
 
   const handleSubmit = (e) => {
