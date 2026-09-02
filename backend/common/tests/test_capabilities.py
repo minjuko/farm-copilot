@@ -48,8 +48,8 @@ class CapabilityApiTests(SimpleTestCase):
         'EMAIL_HOST_PASSWORD': 'configured',
         'DEFAULT_FROM_EMAIL': 'configured@example.com',
     }, clear=True)
-    @patch('selfchatbot.views.vector_index_available', return_value=True)
-    @patch('selfchatbot.views.CHATBOT_DEPENDENCIES_AVAILABLE', True)
+    @patch('chatbot.views.vector_index_available', return_value=True)
+    @patch('chatbot.views.CHATBOT_DEPENDENCIES_AVAILABLE', True)
     @patch('pathlib.Path.is_file', return_value=True)
     def test_configured_services_are_reported_available(
         self, _model_available, _index_available

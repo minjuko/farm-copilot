@@ -277,7 +277,7 @@ def delete_session(request, session_id):
     return JsonResponse({'status': 'success', 'message': 'Chat session deleted successfully'})
 
 def error_page(request):
-    return render(request, 'selfchatbot/error_page.html')
+    return render(request, 'chatbot/error_page.html')
 
 @login_required
 @require_http_methods(["PATCH"])

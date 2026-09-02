@@ -9,7 +9,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from common.exceptions import NotFoundError, ServiceUnavailableError
-from login.models import User
+from accounts.models import User
 
 from ..services import fetch_market_prices, fetch_weather_data
 from ..models import PredictionResult, PredictionSession

@@ -161,7 +161,7 @@ class ChatbotSourceContractTests(SimpleTestCase):
 
 class ChatbotCsrfBoundaryTests(TestCase):
     def setUp(self):
-        from login.models import User
+        from accounts.models import User
 
         self.client = Client(enforce_csrf_checks=True)
         self.user = User.objects.create_user(
@@ -202,7 +202,7 @@ class ChatbotCsrfBoundaryTests(TestCase):
 
 class ChatbotPersistenceContractTests(TestCase):
     def setUp(self):
-        from login.models import User
+        from accounts.models import User
 
         self.client = Client()
         self.user = User.objects.create_user(

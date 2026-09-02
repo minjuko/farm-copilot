@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
-class SelfchatbotConfig(AppConfig):
+class ChatbotConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "selfchatbot"
+    name = "chatbot"
+    label = "selfchatbot"

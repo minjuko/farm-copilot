@@ -46,7 +46,7 @@ def _storage_capability():
 @require_GET
 def capabilities(request):
     """Expose support state without leaking credentials or provider details."""
-    from selfchatbot.views import (
+    from chatbot.views import (
         CHATBOT_DEPENDENCIES_AVAILABLE,
         vector_index_available,
     )

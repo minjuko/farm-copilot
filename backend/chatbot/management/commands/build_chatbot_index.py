@@ -8,7 +8,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from selfchatbot.views import INDEX_MANIFEST_NAME
+from chatbot.views import INDEX_MANIFEST_NAME
 
 
 class Command(BaseCommand):

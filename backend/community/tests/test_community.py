@@ -4,7 +4,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from login.models import User
+from accounts.models import User
 from ..models import Comment, Post
 
 

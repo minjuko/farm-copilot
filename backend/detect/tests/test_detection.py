@@ -263,7 +263,7 @@ class DetectionFixtureContractTests(TestCase):
 
 class DetectCsrfBoundaryTests(TestCase):
     def setUp(self):
-        from login.models import User
+        from accounts.models import User
 
         self.user = User.objects.create_user(
             email="detect-csrf@example.com",

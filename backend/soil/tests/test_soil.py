@@ -7,7 +7,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from common.exceptions import NotFoundError, ServiceUnavailableError, ValidationError
-from login.models import User
+from accounts.models import User
 
 from ..models import CropData
 from ..services import build_pnu_code, fetch_fertilizer, fetch_soil_exam, find_address_codes, find_legal_district_code, get_crop_code, get_crop_names, normalize_address, search_addresses

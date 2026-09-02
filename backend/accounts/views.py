@@ -54,7 +54,7 @@ def _allow_request(key, limit, timeout=RATE_LIMIT_WINDOW):
 @ensure_csrf_cookie
 def signup(request):
     if request.method == 'GET':
-        return render(request, 'login/signup.html')
+        return render(request, 'accounts/signup.html')
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -130,7 +130,7 @@ def check_username(request):
 @ensure_csrf_cookie
 def login(request):
     if request.method == 'GET':
-        return render(request, 'login/login.html')
+        return render(request, 'accounts/login.html')
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)

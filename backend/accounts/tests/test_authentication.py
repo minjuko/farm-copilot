@@ -127,7 +127,7 @@ class RecoverySecurityTests(TestCase):
             password='runtime-password-123',
         )
 
-    @patch('login.views.send_mail')
+    @patch('accounts.views.send_mail')
     def test_password_reset_does_not_enumerate_accounts(self, send_mail):
         known = self.client.post(
             reverse('login:password_reset_request'),
@@ -146,7 +146,7 @@ class RecoverySecurityTests(TestCase):
         self.user.refresh_from_db()
         self.assertTrue(self.user.password.startswith('pbkdf2_'))
 
-    @patch('login.views.send_mail')
+    @patch('accounts.views.send_mail')
     def test_password_reset_token_is_one_time_and_does_not_change_password_on_request(self, send_mail):
         old_hash = self.user.password
         response = self.client.post(
@@ -230,7 +230,7 @@ class RecoverySecurityTests(TestCase):
         )
         self.assertEqual(after_success_failure.status_code, 403)
 
-    @patch('login.views.send_mail')
+    @patch('accounts.views.send_mail')
     def test_verification_email_does_not_enumerate_and_has_cooldown(self, send_mail):
         first = self.client.post(
             reverse('login:send_verification_email'),
@@ -247,7 +247,7 @@ class RecoverySecurityTests(TestCase):
         self.assertEqual(first.json(), second.json())
         send_mail.assert_called_once()
 
-    @patch('login.views.send_mail')
+    @patch('accounts.views.send_mail')
     def test_verification_code_is_bound_to_normalized_email(self, send_mail):
         sent = self.client.post(
             reverse('login:send_verification_email'),
@@ -354,7 +354,7 @@ class RecoverySecurityTests(TestCase):
         self.assertEqual(responses[4].status_code, 429)
         self.assertNotIn('verification_code', self.client.session)
 
-    @patch('login.views.send_mail', side_effect=RuntimeError('smtp unavailable'))
+    @patch('accounts.views.send_mail', side_effect=RuntimeError('smtp unavailable'))
     def test_smtp_failure_is_generic_and_does_not_change_password(self, send_mail):
         response = self.client.post(
             reverse('login:password_reset_request'),
