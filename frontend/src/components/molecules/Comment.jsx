@@ -13,7 +13,7 @@ import {
   SettingsIcon2,
   SettingsMenu2,
   SettingsMenuItem2,
-} from "../../styles/Post";
+} from "../../styles/postStyles";
 import { FaPaperPlane } from "react-icons/fa";
 import { MdOutlineChatBubbleOutline } from "react-icons/md";
 import ConfirmModal from "../atoms/ConfirmModal";

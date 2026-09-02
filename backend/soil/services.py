@@ -7,7 +7,7 @@ import pandas as pd
 import requests
 from django.conf import settings
 
-from aivle_big.exceptions import NotFoundError, ServiceUnavailableError, ValidationError
+from common.exceptions import NotFoundError, ServiceUnavailableError, ValidationError
 
 
 APP_DIR = Path(__file__).resolve().parent

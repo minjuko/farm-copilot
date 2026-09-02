@@ -6,10 +6,10 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from aivle_big.decorators import login_required
-from aivle_big.exceptions import BadRequestError, MissingPartError, NotFoundError, ValidationError
+from common.decorators import login_required
+from common.exceptions import BadRequestError, MissingPartError, NotFoundError, ValidationError
 
-from .models import crop_data
+from .models import CropData
 from .services import (
     fetch_fertilizer,
     fetch_soil_exam,
@@ -84,7 +84,7 @@ def get_soil_fertilizer_info(request):
 
     with transaction.atomic():
         for item in fertilizer_data:
-            crop_data.objects.create(
+            CropData.objects.create(
                 user_id=request.user.id,
                 session_id=analysis_id,
                 crop_name=crop_name,
@@ -100,7 +100,7 @@ def get_soil_fertilizer_info(request):
 @login_required
 @require_GET
 def get_crop_data_by_user(request):
-    rows = crop_data.objects.filter(user_id=request.user.id).order_by("-created_at")
+    rows = CropData.objects.filter(user_id=request.user.id).order_by("-created_at")
     result = [{
         "user_id": row.user_id,
         "session_id": row.session_id,
@@ -117,7 +117,7 @@ def get_crop_data_by_user(request):
 @login_required
 @require_GET
 def get_soil_data_by_session(request, session_id):
-    row = crop_data.objects.filter(
+    row = CropData.objects.filter(
         user_id=request.user.id,
         session_id=session_id,
     ).order_by("id").first()
@@ -138,7 +138,7 @@ def get_soil_data_by_session(request, session_id):
 @login_required
 @require_http_methods(["DELETE"])
 def delete_soil_data_by_session(request, session_id):
-    deleted_count, _ = crop_data.objects.filter(
+    deleted_count, _ = CropData.objects.filter(
         user_id=request.user.id,
         session_id=session_id,
     ).delete()

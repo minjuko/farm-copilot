@@ -1,7 +1,7 @@
-import { instance } from './instance';
+import { instance } from './client';
 import { fetchCapabilities, normalizeCapability } from './capabilities';
 
-jest.mock('./instance', () => ({ instance: { get: jest.fn() } }));
+jest.mock('./client', () => ({ instance: { get: jest.fn() } }));
 
 beforeEach(() => jest.clearAllMocks());
 

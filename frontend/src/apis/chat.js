@@ -1,4 +1,4 @@
-import { instance } from './instance';
+import { instance } from './client';
 
 export const fetchChatbotStatus = () => {
   return instance.get('/selfchatbot/status/');

@@ -16,8 +16,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import User
-from aivle_big.decorators import login_required
-from aivle_big.exceptions import ValidationError, InternalServerError, UnauthorizedError, InvalidRequestError, DuplicateResourceError
+from common.decorators import login_required
+from common.exceptions import ValidationError, InternalServerError, UnauthorizedError, InvalidRequestError, DuplicateResourceError
 from django.db import DatabaseError, IntegrityError
 from django.utils import timezone
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -54,7 +54,7 @@ def _allow_request(key, limit, timeout=RATE_LIMIT_WINDOW):
 @ensure_csrf_cookie
 def signup(request):
     if request.method == 'GET':
-        return render(request, 'signup.html')
+        return render(request, 'login/signup.html')
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -130,7 +130,7 @@ def check_username(request):
 @ensure_csrf_cookie
 def login(request):
     if request.method == 'GET':
-        return render(request, 'login.html')
+        return render(request, 'login/login.html')
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)

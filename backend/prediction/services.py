@@ -7,7 +7,7 @@ import pandas as pd
 import requests
 from django.conf import settings
 
-from aivle_big.exceptions import NotFoundError, ServiceUnavailableError
+from common.exceptions import NotFoundError, ServiceUnavailableError
 
 
 REQUEST_TIMEOUT_SECONDS = 10

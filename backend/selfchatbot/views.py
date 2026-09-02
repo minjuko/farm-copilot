@@ -1,10 +1,10 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
-from aivle_big.decorators import login_required
+from common.decorators import login_required
 from django.utils import timezone
 from .models import Chatbot
-from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, ServiceUnavailableError
+from common.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, ServiceUnavailableError
 import logging
 import json
 import os
@@ -59,12 +59,12 @@ def vector_index_available(path=None):
         and len(manifest['source_sha256']) == 64
     )
 
-contextualize_q_system_prompt = (
+CONTEXTUALIZE_QUESTION_SYSTEM_PROMPT = (
     "대화 기록과 최신 사용자 질문을 기반으로, "
     "대화 기록 없이도 이해할 수 있는 독립형 질문을 작성하세요. "
     "질문에 답하지 말고, 필요할 때만 질문을 재구성하고 그렇지 않으면 그대로 반환하세요."
 )
-qa_system_prompt = (
+QUESTION_ANSWER_SYSTEM_PROMPT = (
     "당신은 질문에 답변하는 작업을 돕는 어시스턴트입니다. "
     "다음의 검색된 문맥을 사용하여 질문에 답변하세요. "
     "답을 모른다면 모른다고 말하세요. "
@@ -112,7 +112,7 @@ def get_rag_chain():
             max_retries=2,
         )
         contextualize_q_prompt = ChatPromptTemplate.from_messages([
-            ('system', contextualize_q_system_prompt),
+            ('system', CONTEXTUALIZE_QUESTION_SYSTEM_PROMPT),
             MessagesPlaceholder('chat_history'),
             ('human', '{input}'),
         ])
@@ -120,7 +120,7 @@ def get_rag_chain():
             llm, retriever, contextualize_q_prompt
         )
         qa_prompt = ChatPromptTemplate.from_messages([
-            ('system', qa_system_prompt),
+            ('system', QUESTION_ANSWER_SYSTEM_PROMPT),
             MessagesPlaceholder('chat_history'),
             ('human', '{input}'),
         ])
@@ -277,7 +277,7 @@ def delete_session(request, session_id):
     return JsonResponse({'status': 'success', 'message': 'Chat session deleted successfully'})
 
 def error_page(request):
-    return render(request, 'error_page.html')
+    return render(request, 'selfchatbot/error_page.html')
 
 @login_required
 @require_http_methods(["PATCH"])

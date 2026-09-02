@@ -1,10 +1,10 @@
-from aivle_big.decorators import login_required
+from common.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.db import DatabaseError, IntegrityError
 from django.db.models import Count
 from .models import Post, Comment
 from .forms import PostForm, CommentForm
-from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, DuplicateResourceError
+from common.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, DuplicateResourceError
 import logging
 import json
 

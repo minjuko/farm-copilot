@@ -1,7 +1,7 @@
-import { instance } from './instance';
+import { instance } from './client';
 import { deleteCrop, updateSessionName } from './crop';
 
-jest.mock('./instance', () => ({
+jest.mock('./client', () => ({
   instance: {
     delete: jest.fn(),
     patch: jest.fn(),

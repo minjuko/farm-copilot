@@ -1,7 +1,7 @@
-import { instance } from "./instance";
+import { instance } from "./client";
 import { getSoilDataDetails, searchSoilAddresses, uploadImage } from "./predict";
 
-jest.mock("./instance", () => ({
+jest.mock("./client", () => ({
   instance: { get: jest.fn(), post: jest.fn() },
 }));
 

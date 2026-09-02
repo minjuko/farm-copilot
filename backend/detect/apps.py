@@ -1,10 +1,6 @@
-# from django.apps import AppConfig
-# from tensorflow.keras.models import load_model
+from django.apps import AppConfig
 
-# class DetectConfig(AppConfig):
-#     name = 'detect'
-#     model = None
 
-#     def ready(self):
-#         # Load your Keras model here
-#         DetectConfig.model = load_model(r'mobilenet_v2.h5')
+class DetectConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "detect"

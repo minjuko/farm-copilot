@@ -12,8 +12,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from PIL import Image, UnidentifiedImageError
 
-from aivle_big.decorators import login_required
-from aivle_big.exceptions import (
+from common.decorators import login_required
+from common.exceptions import (
     InternalServerError,
     InvalidRequestError,
     NotFoundError,

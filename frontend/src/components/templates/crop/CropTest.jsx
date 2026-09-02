@@ -26,7 +26,7 @@ import {
   CropRatio,
   ErrorMessage,
   RemoveIcon,
-} from '../../../styles/CropTest';
+} from '../../../styles/cropPredictionStyles';
 import { buildPredictionPayload, removeCropAt } from './predictionFlow';
 import useServiceCapability from '../../../hooks/useServiceCapability';
 import { appTheme } from '../../../styles/theme';
@@ -153,8 +153,8 @@ const CropTest = () => {
       return;
     }
 
-    const session_id = `session_${Date.now()}`;
-    const { payload, error: payloadError } = buildPredictionPayload({ landArea, region, crops, sessionId: session_id });
+    const sessionId = `session_${Date.now()}`;
+    const { payload, error: payloadError } = buildPredictionPayload({ landArea, region, crops, sessionId });
     if (payloadError) {
       setModalContent(payloadError);
       setModalTitle('오류');
@@ -177,7 +177,7 @@ const CropTest = () => {
         setIsError(true);
         setIsModalOpen(true);
       } else {
-        const savedSessionId = response.data.session_id || session_id;
+        const savedSessionId = response.data.session_id || sessionId;
         navigate(`/sessiondetails/${savedSessionId}`, { state: { session_id: savedSessionId } });
       }
     } catch (error) {

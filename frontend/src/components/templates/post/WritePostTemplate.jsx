@@ -19,7 +19,7 @@ import {
   FileName,
   ImagePreview,
   ErrorMessage,
-} from "../../../styles/Post";
+} from "../../../styles/postStyles";
 
 const SUPPORTED_POST_TYPES = new Set(["buy", "sell", "exchange"]);
 export const getInitialPostType = (value) => SUPPORTED_POST_TYPES.has(value) ? value : "buy";

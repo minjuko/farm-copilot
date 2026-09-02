@@ -1,7 +1,6 @@
-# community/models.py
 from django.db import models
 from django.conf import settings
-from aivle_big.storage_backends import PostBoardStorage
+from common.storage_backends import PostBoardStorage
 
 class Post(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

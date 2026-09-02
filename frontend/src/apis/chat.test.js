@@ -1,7 +1,7 @@
-import { instance } from "./instance";
+import { instance } from "./client";
 import { deleteChatSession, fetchChatbotStatus, sendChatMessage, updateSessionName } from "./chat";
 
-jest.mock("./instance", () => ({
+jest.mock("./client", () => ({
   instance: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn() },
 }));
 

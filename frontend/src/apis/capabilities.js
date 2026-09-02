@@ -1,4 +1,4 @@
-import { instance } from './instance';
+import { instance } from './client';
 
 export const fetchCapabilities = () => instance.get('/api/capabilities/');
 

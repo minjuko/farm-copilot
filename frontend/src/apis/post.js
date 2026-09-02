@@ -1,5 +1,5 @@
 // post.js
-import { instance } from "./instance";
+import { instance } from "./client";
 
 // 게시글 가져오기
 export const fetchPosts = (postType) => {

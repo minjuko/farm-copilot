@@ -10,8 +10,8 @@ from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from django.views.decorators.http import require_POST
-from aivle_big.decorators import login_required
-from aivle_big.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, UnauthorizedError, ServiceUnavailableError
+from common.decorators import login_required
+from common.exceptions import ValidationError, NotFoundError, InternalServerError, InvalidRequestError, UnauthorizedError, ServiceUnavailableError
 from .models import PredictionSession, PredictionResult
 from .services import fetch_market_prices as request_market_prices
 from .services import fetch_weather_data as request_weather_data
@@ -24,15 +24,15 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 logger = logging.getLogger(__name__)
 
-CSV_FILE_PATH = 'prediction/all_crop_data.csv'  # 수익률 예측
-CSV_FILE_PATH_1 = 'prediction/predict_code.csv'  # 품목 코드
-re = {'서울': ['1101', '108'], '부산': ['2100', '159'], '대구': ['2200', '143'], '광주': ['2401', '156'], '대전': ['2501', '133']}
+CROP_PROFITABILITY_DATA_PATH = 'prediction/crop_profitability_data.csv'
+CROP_MARKET_CODES_PATH = 'prediction/crop_market_codes.csv'
+REGION_CODES = {'서울': ['1101', '108'], '부산': ['2100', '159'], '대구': ['2200', '143'], '광주': ['2401', '156'], '대전': ['2501', '133']}
 
 def get_crop_names(request):
     if request.method != 'GET':
         return JsonResponse({'error': 'Invalid request method. Only GET is allowed.'}, status=405)
     try:
-        crop_df= pd.read_csv(CSV_FILE_PATH_1)
+        crop_df= pd.read_csv(CROP_MARKET_CODES_PATH)
         crop_names = crop_df['품목명'].dropna().tolist()
         return JsonResponse({'crop_names': crop_names})
     except Exception as e:
@@ -42,13 +42,13 @@ def get_region_names(request):
     if request.method != 'GET':
         return JsonResponse({'error': 'Invalid request method. Only GET is allowed'}, status=400)
     try:
-        region_names = list(re.keys())
+        region_names = list(REGION_CODES.keys())
         return JsonResponse({'region_names': region_names})
     except Exception as e:
         return JsonResponse({'error': f"An unexpected error occured: {str(e)}"}, status = 500)
 
 def read_csv_data():
-    df = pd.read_csv(CSV_FILE_PATH, encoding='utf-8')
+    df = pd.read_csv(CROP_PROFITABILITY_DATA_PATH, encoding='utf-8')
     df['소득률 (%)'] = df['소득률 (%)'].astype(str)
     df['부가가치율 (%)'] = df['부가가치율 (%)'].astype(str)
     df['농가수취가격 (원/kg)'] = df['농가수취가격 (원/kg)'].astype(str)
@@ -76,11 +76,13 @@ def fetch_crop_data(crop_name, df, land_area, crop_ratio):
         return None, None, None
 
 def fetch_market_prices(crop_name, region, start_date, end_date):
-    price_code = pd.read_csv(CSV_FILE_PATH_1, encoding='utf-8')
-    return request_market_prices(crop_name, region, start_date, end_date, price_code, re)
+    price_code = pd.read_csv(CROP_MARKET_CODES_PATH, encoding='utf-8')
+    return request_market_prices(
+        crop_name, region, start_date, end_date, price_code, REGION_CODES
+    )
 
 def fetch_weather_data(region):
-    return request_weather_data(region, re)
+    return request_weather_data(region, REGION_CODES)
 
 def _build_price_dataset(merged_df):
     if 'price' not in merged_df:
@@ -393,7 +395,7 @@ def delete_prediction_session(request, session_id):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
     
 def submit_prediction_view(request):
-    return render(request, 'prediction.html')
+    return render(request, 'prediction/prediction.html')
 
 @login_required
 @require_http_methods(["PATCH"])

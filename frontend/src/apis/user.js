@@ -1,6 +1,6 @@
 // user.js
 
-import { instance } from "./instance";
+import { instance } from "./client";
 
 const ensureCsrfToken = () => instance.get("/login/auth_check/");
 

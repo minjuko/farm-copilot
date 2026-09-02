@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from aivle_big.storage_backends import PestDetectionStorage
+from common.storage_backends import PestDetectionStorage
 
 class Pest(models.Model):
     """

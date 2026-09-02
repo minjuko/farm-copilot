@@ -1,4 +1,4 @@
-import { instance } from "./instance";
+import { instance } from "./client";
 
 // 진단 세션 목록 가져오기
 export const fetchDetectionSessions = () => {

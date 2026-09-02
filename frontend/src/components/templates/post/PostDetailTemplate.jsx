@@ -13,7 +13,7 @@ import Comments from "../../molecules/Comment";
 import { useLoading } from "../../../LoadingContext";
 import {
   Container,
-} from "../../../styles/Post";
+} from "../../../styles/postStyles";
 import { useAuth } from "../../../AuthContext";
 import { isCommunityOwner } from "./communityOwnership";
 import { getApiErrorMessage } from "../../../apis/error";

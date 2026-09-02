@@ -1,7 +1,6 @@
 from django.db import models
 
-# Create your models here.
-class crop_data(models.Model):
+class CropData(models.Model):
     user_id = models.IntegerField()
     session_id = models.CharField(max_length=255, default=None, null=True, blank=True)
     crop_name = models.CharField(max_length=255, default=None, null=True, blank=True)
@@ -10,3 +9,6 @@ class crop_data(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     soil_data = models.JSONField(default=dict)
     fertilizer_data = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "soil_crop_data"

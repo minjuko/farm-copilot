@@ -16,7 +16,7 @@ import {
   FileInput,
   FileName,
   ImagePreview,
-} from "../../../styles/Post";
+} from "../../../styles/postStyles";
 import { useLoading } from "../../../LoadingContext";
 import { useAuth } from "../../../AuthContext";
 import { isCommunityOwner } from "./communityOwnership";
