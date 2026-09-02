@@ -75,10 +75,10 @@ const ListItem = styled(Link)`
 `;
 
 const services = [
-  { key: "detection", to: "/diagnosislist", title: "병해충 진단", description: "작물 이미지로 병해충 진단" },
-  { key: "prediction", to: "/cropselection", title: "수익 예측", description: "작물 수익 미리 계산해보기" },
-  { key: "chatbot", to: "/chatlist", title: "농업 GPT", description: "출처 기반 농업 전문 챗봇" },
-  { key: "soil", to: "/soillist", title: "토양 분석", description: "토양 분석과 비료 추천" },
+  { key: "detection", to: "/diagnosis-list", title: "병해충 진단", description: "작물 이미지로 병해충 진단" },
+  { key: "prediction", to: "/crop-selection", title: "수익 예측", description: "작물 수익 미리 계산해보기" },
+  { key: "chatbot", to: "/chat-list", title: "농업 GPT", description: "출처 기반 농업 전문 챗봇" },
+  { key: "soil", to: "/soil-list", title: "토양 분석", description: "토양 분석과 비료 추천" },
 ];
 
 const MainTemplate = () => {
@@ -93,7 +93,7 @@ const MainTemplate = () => {
         ))}
       </GridContainer>
       <ListContainer>
-        <ListItem to="/mypage"><h2>마이페이지</h2></ListItem>
+        <ListItem to="/my-page"><h2>마이페이지</h2></ListItem>
         <ListItem to="/board"><h2>게시판</h2></ListItem>
       </ListContainer>
     </Container>

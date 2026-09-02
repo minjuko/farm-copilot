@@ -17,14 +17,14 @@ const detail = {
 
 beforeEach(() => jest.clearAllMocks());
 
-const renderDetail = (path = "/soil_details/soil-42", state) => render(
+const renderDetail = (path = "/soil-details/soil-42", state) => render(
   <MemoryRouter
     initialEntries={[{ pathname: path, state }]}
     future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
   >
     <Routes>
-      <Route path="/soil_details" element={<SoilDataDetails />} />
-      <Route path="/soil_details/:sessionId" element={<SoilDataDetails />} />
+      <Route path="/soil-details" element={<SoilDataDetails />} />
+      <Route path="/soil-details/:sessionId" element={<SoilDataDetails />} />
     </Routes>
   </MemoryRouter>
 );
@@ -48,7 +48,7 @@ test("shows a controlled not-found state", async () => {
 });
 
 test("keeps the state-only detail route compatible", () => {
-  renderDetail("/soil_details", {
+  renderDetail("/soil-details", {
     soilData: detail.soil_data,
     fertilizerData: detail.fertilizer_data,
     crop: detail.crop_name,

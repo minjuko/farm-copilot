@@ -12,27 +12,27 @@ import SoilListTemplate from "../components/templates/exam/SoilListTemplate";
 import SoilTemplate from "../components/templates/exam/SoilTemplate";
 
 export const predictionRoutes = [
-  { path: "/cropselection", element: <CropSelectionPage /> },
-  { path: "/croptest", element: <CropTest /> },
-  { path: "/sessiondetails/:sessionId", element: <SessionDetails /> },
+  { path: "/crop-selection", element: <CropSelectionPage /> },
+  { path: "/crop-test", element: <CropTest /> },
+  { path: "/session-details/:sessionId", element: <SessionDetails /> },
 ];
 
 export const diagnosisRoutes = [
   { path: "/diagnosis", element: <DiagnosisTemplate /> },
-  { path: "/diagnosislist", element: <DiagnosisListTemplate /> },
+  { path: "/diagnosis-list", element: <DiagnosisListTemplate /> },
   { path: "/info", element: <InfoTemplate /> },
   { path: "/info/:sessionId", element: <InfoTemplate /> },
 ];
 
 export const soilRoutes = [
   { path: "/soil", element: <SoilTemplate /> },
-  { path: "/soillist", element: <SoilListTemplate /> },
-  { path: "/soil_details", element: <SoilDataDetails /> },
-  { path: "/soil_details/:sessionId", element: <SoilDataDetails /> },
+  { path: "/soil-list", element: <SoilListTemplate /> },
+  { path: "/soil-details", element: <SoilDataDetails /> },
+  { path: "/soil-details/:sessionId", element: <SoilDataDetails /> },
 ];
 
 export const chatRoutes = [
-  { path: "/chatlist", element: <ChatListTemplate /> },
+  { path: "/chat-list", element: <ChatListTemplate /> },
   { path: "/chat/:sessionId", element: <ChatTemplate /> },
 ];
 

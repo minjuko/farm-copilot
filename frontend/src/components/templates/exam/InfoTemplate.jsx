@@ -186,7 +186,7 @@ const InfoTemplate = () => {
     return (
       <PageContainer>
         <p>{loadError || "표시할 수 있는 진단 결과가 없습니다."}</p>
-        <BackButton onClick={() => navigate('/diagnosislist')}>목록으로 돌아가기</BackButton>
+        <BackButton onClick={() => navigate('/diagnosis-list')}>목록으로 돌아가기</BackButton>
       </PageContainer>
     );
   }
@@ -286,7 +286,7 @@ const InfoTemplate = () => {
               )}
             </InfoContainer>
       </LayoutContainer>
-      <BackButton onClick={() => navigate('/diagnosislist')}>목록으로 돌아가기</BackButton>
+      <BackButton onClick={() => navigate('/diagnosis-list')}>목록으로 돌아가기</BackButton>
     </PageContainer>
   );
 };

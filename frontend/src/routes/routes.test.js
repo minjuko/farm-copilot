@@ -35,9 +35,9 @@ test("keeps public, guest-only, and protected ownership explicit", () => {
 });
 
 test("groups analysis routes by backend feature and removes the obsolete detail alias", () => {
-  expect(predictionRoutes.map(({ path }) => path)).toContain("/sessiondetails/:sessionId");
-  expect(predictionRoutes.map(({ path }) => path)).not.toContain("/sessiondetails");
+  expect(predictionRoutes.map(({ path }) => path)).toContain("/session-details/:sessionId");
+  expect(predictionRoutes.map(({ path }) => path)).not.toContain("/session-details");
   expect(diagnosisRoutes.map(({ path }) => path)).toContain("/info/:sessionId");
-  expect(soilRoutes.map(({ path }) => path)).toContain("/soil_details/:sessionId");
+  expect(soilRoutes.map(({ path }) => path)).toContain("/soil-details/:sessionId");
   expect(chatRoutes.map(({ path }) => path)).toContain("/chat/:sessionId");
 });

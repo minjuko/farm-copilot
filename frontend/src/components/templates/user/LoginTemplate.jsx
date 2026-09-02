@@ -226,7 +226,7 @@ const LoginTemplate = () => {
         </Button>
         <LinksContainer>
           <StyledLink to="/signup">회원가입</StyledLink>
-          <StyledLink to="/password_reset">비밀번호 찾기</StyledLink>
+          <StyledLink to="/password-reset">비밀번호 찾기</StyledLink>
         </LinksContainer>
       </Form>
       <CustomModal

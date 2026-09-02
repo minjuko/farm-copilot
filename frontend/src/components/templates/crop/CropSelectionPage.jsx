@@ -89,7 +89,7 @@ const CropSelectionPage = () => {
   };
 
   const handleSessionClick = (session) => {
-    navigate(`/sessiondetails/${session.session_id}`, { state: { session_id: session.session_id } });
+    navigate(`/session-details/${session.session_id}`, { state: { session_id: session.session_id } });
   };
 
   const handleEditClick = (session, e) => {
@@ -151,7 +151,7 @@ const CropSelectionPage = () => {
     <>
       <GlobalLoader />
       <PageContainer>
-        <Button onClick={() => navigate('/croptest')}>
+        <Button onClick={() => navigate('/crop-test')}>
           <FaPlus /> 작물 조합 추가
         </Button>
         {(loadError || error) && <p role="alert">{loadError || error}</p>}

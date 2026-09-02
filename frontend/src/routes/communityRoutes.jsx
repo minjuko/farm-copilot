@@ -11,15 +11,15 @@ import WritePostTemplate from "../components/templates/post/WritePostTemplate";
 
 export const publicCommunityRoutes = [
   { path: "/board", element: <BoardTemplate /> },
-  { path: "/buyboard", element: <BuyBoardTemplate /> },
-  { path: "/sellboard", element: <SellBoardTemplate /> },
-  { path: "/exchangeboard", element: <ExchangeBoardTemplate /> },
+  { path: "/buy-board", element: <BuyBoardTemplate /> },
+  { path: "/sell-board", element: <SellBoardTemplate /> },
+  { path: "/exchange-board", element: <ExchangeBoardTemplate /> },
   { path: "/post/:id", element: <PostDetailTemplate /> },
 ];
 
 export const protectedCommunityRoutes = [
-  { path: "/my_posts", element: <MyPostTemplate /> },
-  { path: "/my_commented_posts", element: <MyCommentedPostsTemplate /> },
+  { path: "/my-posts", element: <MyPostTemplate /> },
+  { path: "/my-commented-posts", element: <MyCommentedPostsTemplate /> },
   { path: "/post/create", element: <WritePostTemplate /> },
   { path: "/post/edit/:id", element: <EditPostTemplate /> },
 ];

@@ -43,15 +43,15 @@ const BoardTemplate = () => {
   return (
     <Container>
       <Title></Title>
-      <BoardLink to="/sellboard">
+      <BoardLink to="/sell-board">
         <FaStore size={24} />
         판매 게시판
       </BoardLink>
-      <BoardLink to="/buyboard">
+      <BoardLink to="/buy-board">
         <FaShoppingCart size={24} />
         구매 게시판
       </BoardLink>
-      <BoardLink to="/exchangeboard">
+      <BoardLink to="/exchange-board">
         <FaHandsHelping size={24} />
         품앗이 게시판
       </BoardLink>

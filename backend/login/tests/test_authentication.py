@@ -18,7 +18,7 @@ class AuthenticationSmokeTests(TestCase):
         response = self.client.get(reverse('login:password_reset'))
         self.assertRedirects(
             response,
-            'http://localhost:3000/password_reset',
+            'http://localhost:3000/password-reset',
             fetch_redirect_response=False,
         )
 

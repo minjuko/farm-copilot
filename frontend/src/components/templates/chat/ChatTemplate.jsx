@@ -259,7 +259,7 @@ const ChatTemplate = () => {
     <Container>
       <Header>
         <Title>{sessionName || '농업 GPT'}</Title>
-        <ChatListButton onClick={() => navigate('/chatlist')}><IoMenu />  목록 보기</ChatListButton>
+        <ChatListButton onClick={() => navigate('/chat-list')}><IoMenu />  목록 보기</ChatListButton>
       </Header>
       <ChatBox ref={chatBoxRef}>
         <MessageList>

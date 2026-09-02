@@ -21,11 +21,11 @@ export const publicUserRoutes = [
 export const guestOnlyRoutes = [
   { path: "/signup", element: <PolicyAgreement /> },
   { path: "/login", element: <LoginTemplate /> },
-  { path: "/password_reset", element: <PasswordResetTemplate /> },
+  { path: "/password-reset", element: <PasswordResetTemplate /> },
 ];
 
 export const protectedUserRoutes = [
-  { path: "/mypage", element: <MyPageTemplate /> },
+  { path: "/my-page", element: <MyPageTemplate /> },
 ];
 
 export const notFoundRoute = { path: "*", element: <NotFound /> };

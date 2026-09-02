@@ -121,11 +121,11 @@ const MyPageTemplate = () => {
   };
 
   const handleViewMyPosts = () => {
-    navigate("/my_posts");
+    navigate("/my-posts");
   };
 
   const handleViewMyCommentedPosts = () => {
-    navigate("/my_commented_posts");
+    navigate("/my-commented-posts");
   };
 
   return (

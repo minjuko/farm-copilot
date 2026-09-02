@@ -176,13 +176,13 @@ const PostDetail = ({
   const handleBoardClick = (postType) => {
     switch (postType) {
       case 'buy':
-        navigate("/buyboard");
+        navigate("/buy-board");
         break;
       case 'sell':
-        navigate("/sellboard");
+        navigate("/sell-board");
         break;
       case 'exchange':
-        navigate("/exchangeboard");
+        navigate("/exchange-board");
         break;
       default:
         navigate("/board");

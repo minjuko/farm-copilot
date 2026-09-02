@@ -136,13 +136,13 @@ const PostDetailTemplate = () => {
     try {
       await deletePost(id);
       if (post.post_type === "sell") {
-        navigate("/sellboard");
+        navigate("/sell-board");
       }
       if (post.post_type === "buy") {
-        navigate("/buyboard");
+        navigate("/buy-board");
       }
       if (post.post_type === "exchange") {
-        navigate("/exchangeboard");
+        navigate("/exchange-board");
       }
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, "게시글 삭제에 실패했습니다."));

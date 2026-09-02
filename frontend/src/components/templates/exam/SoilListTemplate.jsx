@@ -127,7 +127,7 @@ const SoilListTemplate = () => {
   });
 
   const handleSoilDataClick = (data) => {
-    navigate(`/soil_details/${data.session_id}`, {
+    navigate(`/soil-details/${data.session_id}`, {
       state: { soilData: data.soil_data, fertilizerData: data.fertilizer_data, crop: data.crop_name, crop_add: data.detailed_address },
     });
   };

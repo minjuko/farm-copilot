@@ -73,7 +73,7 @@ export const GNB = () => {
   }, [location]);
 
   const handleChatIconClick = () => {
-    navigate("/chatlist");
+    navigate("/chat-list");
   };
 
   return (
@@ -85,11 +85,11 @@ export const GNB = () => {
           </IconWrapper>
           <MenuText $isActive={currentPage === "/main"}>홈</MenuText>
         </MenuLink>
-        <MenuLink to="/diagnosislist" className={currentPage === "/diagnosislist" ? "active" : ""}>
-          <IconWrapper $isActive={currentPage === "/diagnosislist"}>
+        <MenuLink to="/diagnosis-list" className={currentPage === "/diagnosis-list" ? "active" : ""}>
+          <IconWrapper $isActive={currentPage === "/diagnosis-list"}>
             <FaBug size={24} />
           </IconWrapper>
-          <MenuText $isActive={currentPage === "/diagnosislist"}>병해충 진단</MenuText>
+          <MenuText $isActive={currentPage === "/diagnosis-list"}>병해충 진단</MenuText>
         </MenuLink>
         <ChatIconWrapper
           onClick={handleChatIconClick}
@@ -98,22 +98,22 @@ export const GNB = () => {
           <ChatIcon />
         </ChatIconWrapper>
         <MenuLink
-          to="/cropselection"
-          className={currentPage === "/cropselection" ? "active" : ""}
+          to="/crop-selection"
+          className={currentPage === "/crop-selection" ? "active" : ""}
         >
-          <IconWrapper $isActive={currentPage === "/cropselection"}>
+          <IconWrapper $isActive={currentPage === "/crop-selection"}>
             <FaChartLine size={24} />
           </IconWrapper>
-          <MenuText $isActive={currentPage === "/cropselection"}>수익 예측</MenuText>
+          <MenuText $isActive={currentPage === "/crop-selection"}>수익 예측</MenuText>
         </MenuLink>
         <MenuLink
-          to="/mypage"
-          className={currentPage === "/mypage" ? "active" : ""}
+          to="/my-page"
+          className={currentPage === "/my-page" ? "active" : ""}
         >
-          <IconWrapper $isActive={currentPage === "/mypage"}>
+          <IconWrapper $isActive={currentPage === "/my-page"}>
             <FaUser size={24} />
           </IconWrapper>
-          <MenuText $isActive={currentPage === "/mypage"}>MY</MenuText>
+          <MenuText $isActive={currentPage === "/my-page"}>MY</MenuText>
         </MenuLink>
       </Wrapper>
     </Nav>

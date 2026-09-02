@@ -285,7 +285,7 @@ def password_reset(request):
 @require_GET
 def password_reset_page(request):
     frontend_base = getattr(settings, 'FRONTEND_BASE_URL', 'http://localhost:3000').rstrip('/')
-    return redirect(f'{frontend_base}/password_reset')
+    return redirect(f'{frontend_base}/password-reset')
 
 def logout_view(request):
     try:

@@ -400,7 +400,7 @@ const SessionDetails = () => {
   };
 
   const handleBackToList = () => {
-    navigate('/cropselection');
+    navigate('/crop-selection');
   };
 
 

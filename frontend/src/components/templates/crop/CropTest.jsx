@@ -178,7 +178,7 @@ const CropTest = () => {
         setIsModalOpen(true);
       } else {
         const savedSessionId = response.data.session_id || sessionId;
-        navigate(`/sessiondetails/${savedSessionId}`, { state: { session_id: savedSessionId } });
+        navigate(`/session-details/${savedSessionId}`, { state: { session_id: savedSessionId } });
       }
     } catch (error) {
       setModalContent(getApiErrorMessage(

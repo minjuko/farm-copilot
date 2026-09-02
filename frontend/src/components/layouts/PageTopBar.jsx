@@ -79,30 +79,29 @@ const PageTopBar = () => {
 
   const pageTitles = {
     "/board": "게시판",
-    "/buyboard": "구매 게시판",
-    "/sellboard": "판매 게시판",
-    "/exchangeboard": "품앗이 게시판",
+    "/buy-board": "구매 게시판",
+    "/sell-board": "판매 게시판",
+    "/exchange-board": "품앗이 게시판",
     "/post/create": "게시글 작성",
     "/post/:id": "게시글 상세보기",
-    "/chatlist": "대화 목록",
-    "/mypage": "마이페이지",
+    "/chat-list": "대화 목록",
+    "/my-page": "마이페이지",
     "/post/edit/:id": "게시글 수정",
-    "/my_commented_posts": "내가 댓글 단 글",
-    "/my_posts": "내가 작성한 글",
-    "/expectedreturn": "수익 예측",
+    "/my-commented-posts": "내가 댓글 단 글",
+    "/my-posts": "내가 작성한 글",
     "/soil": "토양 분석",
     "/diagnosis": "병해충 진단",
     "/info": "병해충 진단 결과",
     "/info/:sessionId": "병해충 진단 결과",
-    "/croptest": "작물조합 등록",
-    "/diagnosislist": "병해충 진단 목록",
-    "/cropselection": "작물 조합 목록",
-    "/soillist": "토양 데이터 목록",
-    "/soil_details": "토양 데이터 상세",
-    "/soil_details/:sessionId": "토양 데이터 상세",
-    "/sessiondetails/:sessionId": "수익 예측 결과",
+    "/crop-test": "작물조합 등록",
+    "/diagnosis-list": "병해충 진단 목록",
+    "/crop-selection": "작물 조합 목록",
+    "/soil-list": "토양 데이터 목록",
+    "/soil-details": "토양 데이터 상세",
+    "/soil-details/:sessionId": "토양 데이터 상세",
+    "/session-details/:sessionId": "수익 예측 결과",
     "/signup": "회원가입",
-    "/password_reset": "비밀번호 찾기",
+    "/password-reset": "비밀번호 찾기",
   };
 
   const noBackButtonPages = [
@@ -185,7 +184,7 @@ const PageTopBar = () => {
               <TopBarLoader color="#4aaa87" />
             ) : (
               <>
-                <IconButton onClick={() => navigate("/mypage")}>
+                <IconButton onClick={() => navigate("/my-page")}>
                   <FaUser title={`${user?.username || ""}님`} />
                 </IconButton>
                 <IconButton onClick={handleLogout}>

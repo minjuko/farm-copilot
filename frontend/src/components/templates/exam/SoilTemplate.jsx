@@ -92,7 +92,7 @@ const SoilTemplate = () => {
           fertilizerData={analysis.fertilizerData}
           fertilizerUnavailable={analysis.fertilizerUnavailable}
           isFertilizerLoading={analysis.isFertilizerLoading}
-          handleBackToList={() => navigate("/soillist")}
+          handleBackToList={() => navigate("/soil-list")}
         />
       )}
     </Container>

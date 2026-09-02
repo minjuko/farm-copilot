@@ -176,7 +176,7 @@ const SoilDataDetails = () => {
   const { soilData, fertilizerData = {}, crop, crop_add } = details || {};
 
   const handleBackToList = () => {
-    navigate('/soillist');
+    navigate('/soil-list');
   };
 
   if (isLoading && !details) {
