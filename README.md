@@ -205,9 +205,7 @@ Kakao 주소 검색을 통해 농지 정보를 확인한 뒤 농촌진흥청 토
 
 ### 농업 AI 챗봇
 
-농업 관련 지식을 Chroma에서 검색하고, 검색된 Context를 활용해 OpenAI LLM이 답변을 생성하는 RAG 구조를 사용합니다.
-
-LangChain을 통해 검색과 Context 구성, LLM 호출을 연결하며 대화는 Session 단위로 관리합니다.
+농업 관련 지식을 Chroma에서 검색하고, 검색된 Context를 활용해 OpenAI LLM이 답변을 생성하는 RAG 구조를 사용합니다. 대화는 Session 단위로 관리합니다.
 
 ---
 
@@ -241,8 +239,8 @@ LangChain을 통해 검색과 Context 구성, LLM 호출을 연결하며 대화�
 
 ### 외부 서비스 · 실행환경 복구
 
-- Kakao 주소 검색 및 농업 공공데이터 API 연동 재검증
-- aT 중도매인 가격정보 · 기상청 ASOS 연동 검증
+- Kakao 주소 검색 및 농업 공공데이터 API 연동 구조 점검
+- aT 중도매인 가격정보 · 기상청 ASOS 연동 점검
 - 농촌진흥청 토양검정 V2 · 비료사용처방 V2 연동 정리
 - YOLO Model Artifact와 Class Mapping 검증
 - RAG · Chroma 실행 구조와 데이터 계약 점검
@@ -260,7 +258,7 @@ LangChain을 통해 검색과 Context 구성, LLM 호출을 연결하며 대화�
 | **Django System Check** | PASS |
 | **Python Dependency Check** | PASS |
 
-코드 수정 이후 자동화 테스트와 Build뿐 아니라 주요 AI·외부 데이터 기능의 실행 조건과 요청 흐름을 다시 확인했습니다.
+코드 수정 이후 자동화 테스트와 Build를 다시 수행하고, AI·외부 데이터 기능은 실행 조건과 연동 구조를 점검했습니다. 실제 외부 서비스 호출 결과와 검증 시점은 별도 문서에 기록했습니다.
 
 ---
 
@@ -300,16 +298,20 @@ kunkunnongsakun/
 
 ### Backend
 
-```text
+```bash
 cd backend
-→ Virtual Environment 생성
-→ requirements.txt 설치
-→ .env 설정
-→ manage.py migrate
-→ manage.py runserver
+```
+
+가상환경을 생성한 뒤 `requirements.txt`를 설치하고 `.env.example`을 기준으로 `.env`를 설정합니다.
+
+```bash
+python manage.py migrate
+python manage.py runserver
 ```
 
 기본 Backend 주소는 `http://127.0.0.1:8000`입니다.
+
+> Backend 명령은 가상환경이 활성화된 상태를 기준으로 표기했습니다. Windows · POSIX별 정확한 환경 구성은 [Local Setup Guide](./docs/SETUP.md)를 참고해 주세요.
 
 ### Frontend
 
@@ -327,7 +329,7 @@ Frontend의 Backend API 주소는 다음 환경변수로 설정하며, 미설정
 REACT_APP_API_BASE_URL=http://localhost:8000
 ```
 
-> Windows · POSIX별 Backend 설정, 환경변수, Database, AI Artifact, 외부 API, PostgreSQL 및 AWS S3 설정은 **[Local Setup Guide](./docs/SETUP.md)**를 참고해 주세요.
+> 환경변수, Database, AI Artifact, 외부 API, PostgreSQL 및 AWS S3 설정은 **[Local Setup Guide](./docs/SETUP.md)**를 참고해 주세요.
 
 ### AI 기능 실행
 
@@ -367,9 +369,7 @@ npm run build
 
 | 문서 | 내용 |
 | --- | --- |
-| **[Local Setup Guide](./docs/SETUP.md)** | Local 실행 · 환경변수 · Database · AI Artifact · 외부 API · Storage · 테스트 |
-| **[API / External Service Status](./docs/reference/API_STATUS.md)** | 외부 API와 서비스의 실제 호출 검증 결과 및 검증 시점 |
-| **Technical Case Study** | 요구사항 · Frontend 설계 · 시스템 아키텍처 · 핵심 구현 · 트러블슈팅 · 기술적 의사결정 · 테스트 · 개인 기여 |
+| **[Local Setup Guide](./docs/SETUP.md)** | Local 실행 · 환경변수 · Database · AI Artifact · 외부 API · Storage · 테스트 
 
 ---
 
@@ -377,26 +377,14 @@ npm run build
 
 ### Frontend와 Backend 사이의 Interface 설계
 
-AI와 공공데이터 기능을 화면에 연결하면서 Frontend가 단순히 API 결과를 표시하는 계층에 그치지 않는다는 점을 경험했습니다.
+AI와 공공데이터 기능을 화면에 연결하며 Request · Response Contract, Session 인증, 이미지 Upload와 비동기 상태 등 **서로 다른 Backend 처리 방식을 사용자가 예측 가능한 화면 흐름으로 변환하는 과정**을 경험했습니다.
 
-Request · Response Contract, Session 인증, 이미지 Upload와 비동기 상태 등 **서로 다른 Backend 처리 방식을 사용자가 예측 가능한 화면 흐름으로 변환하는 과정**이 중요했습니다.
-
-이를 통해 화면 구현과 함께 **Frontend와 Backend 사이의 데이터 흐름과 Interface까지 고려하는 개발 경험**을 쌓았습니다.
+이를 통해 화면 구현뿐 아니라 **Frontend와 Backend 사이의 데이터 흐름과 Interface까지 고려하는 개발 경험**을 쌓았습니다.
 
 ### 완료된 프로젝트를 다시 검증하는 경험
 
-프로젝트 종료 후 시간이 지난 Repository를 다시 실행하면서 Dependency, 외부 API, Credential, AI Artifact와 실행환경이 모두 프로젝트의 재현 가능성에 영향을 준다는 점을 확인했습니다.
+프로젝트 종료 후 시간이 지난 Repository를 다시 실행하면서 Dependency, 외부 API, Credential, AI Artifact와 실행환경이 프로젝트의 재현 가능성에 영향을 준다는 점을 확인했습니다.
 
-기존 코드를 무조건 최신 방식으로 변경하기보다 **기존 동작과 구현 의도를 이해하고 필요한 범위만 수정한 뒤 테스트와 실제 실행으로 검증하는 유지보수 과정**을 경험했습니다.
+기존 코드를 무조건 최신 방식으로 변경하기보다 **기존 동작과 구현 의도를 이해하고 필요한 범위를 판단해 수정한 뒤 테스트와 실제 실행으로 검증하는 유지보수 과정**을 경험했습니다.
 
 ---
-
-## 상세 기술 문서
-
-> **농업코파일럿 Technical Case Study**
->
-> 문제 정의와 사용자 흐름부터 Frontend 구조, 시스템 아키텍처, AI·공공데이터 연동, 트러블슈팅, 기술적 의사결정, 테스트와 개인 기여까지 상세하게 정리했습니다.
-
-**상세 기술 문서 링크**
-
-> 최종 공개 URL 연결 예정
