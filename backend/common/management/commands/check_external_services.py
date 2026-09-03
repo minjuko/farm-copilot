@@ -4,7 +4,6 @@ from datetime import date, timedelta
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-
 SERVICE_ENV = {
     'kakao': ('KAKAO_REST_API_KEY',),
     'soil': ('DATA_GO_KR_SOIL_SERVICE_KEY',),
@@ -40,21 +39,15 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f'{service}: ok ({summary})'))
             except Exception as exc:
                 failures.append(service)
-                self.stderr.write(self.style.ERROR(
-                    f'{service}: failed ({exc.__class__.__name__})'
-                ))
+                self.stderr.write(self.style.ERROR(f'{service}: failed ({exc.__class__.__name__})'))
         if failures:
-            raise CommandError(
-                f'External service checks failed: {", ".join(failures)}'
-            )
+            raise CommandError(f'External service checks failed: {", ".join(failures)}')
 
     def _print_configuration(self):
         for service, names in SERVICE_ENV.items():
             configured = all(bool(os.getenv(name, '').strip()) for name in names)
             self.stdout.write(f'{service}: {"configured" if configured else "missing"}')
-        self.stdout.write(
-            f'chatbot: {"enabled" if settings.CHATBOT_ENABLED else "disabled"}'
-        )
+        self.stdout.write(f'chatbot: {"enabled" if settings.CHATBOT_ENABLED else "disabled"}')
         self.stdout.write(f'storage: {"s3" if settings.USE_S3 else "local"}')
 
     @staticmethod
@@ -87,9 +80,7 @@ class Command(BaseCommand):
                 continue
             for crop_name in ('고구마', '고추(노지)', '벼'):
                 try:
-                    rows, _ = fetch_fertilizer(
-                        crop_name, soil_row, parcel_codes['pnu_code']
-                    )
+                    rows, _ = fetch_fertilizer(crop_name, soil_row, parcel_codes['pnu_code'])
                     return f'{len(rows)} rows'
                 except NotFoundError:
                     continue
@@ -108,7 +99,5 @@ class Command(BaseCommand):
 
         end_date = date.today() - timedelta(days=1)
         start_date = end_date - timedelta(days=365)
-        rows = fetch_market_prices(
-            '고구마', '서울', start_date.isoformat(), end_date.isoformat()
-        )
+        rows = fetch_market_prices('고구마', '서울', start_date.isoformat(), end_date.isoformat())
         return f'{len(rows)} rows'

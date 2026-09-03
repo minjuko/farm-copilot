@@ -144,8 +144,8 @@ const InfoTemplate = () => {
   );
   const [isLoading, setIsLoading] = useState(Boolean(sessionId));
   const [loadError, setLoadError] = useState("");
-  const [userImageFailed, setUserImageFailed] = useState(false);
-  const [dbImageFailed, setDbImageFailed] = useState(false);
+  const [hasUserImageFailed, setHasUserImageFailed] = useState(false);
+  const [hasDbImageFailed, setHasDbImageFailed] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -160,9 +160,9 @@ const InfoTemplate = () => {
       setLoadError("");
       try {
         const response = await fetchSessionDetails(sessionId);
-        const result = normalizeDetectionResult(response?.data);
-        if (!result) throw new Error("MALFORMED_DETECTION_RESULT");
-        if (isActive) setDiagnosisResult(result);
+        const diagnosisResult = normalizeDetectionResult(response?.data);
+        if (!diagnosisResult) throw new Error("MALFORMED_DETECTION_RESULT");
+        if (isActive) setDiagnosisResult(diagnosisResult);
       } catch (error) {
         if (!isActive) return;
         setDiagnosisResult(null);
@@ -205,7 +205,7 @@ const InfoTemplate = () => {
     detection_date
   } = diagnosisResult;
 
-  const pesticides = pesticide_name.split("\n").map((item) => item.trim()).filter(Boolean);
+  const pesticides = pesticide_name.split("\n").map((pesticide) => pesticide.trim()).filter(Boolean);
 
   return (
     <PageContainer>
@@ -214,16 +214,16 @@ const InfoTemplate = () => {
           <div>
             <ImageLabel>사용자 이미지</ImageLabel>
             <ImageContainer>
-              {user_image_url && !userImageFailed
-                ? <Image src={user_image_url} alt="사용자 진단 이미지" onError={() => setUserImageFailed(true)} />
+              {user_image_url && !hasUserImageFailed
+                ? <Image src={user_image_url} alt="사용자 진단 이미지" onError={() => setHasUserImageFailed(true)} />
                 : <p>이미지를 표시할 수 없습니다.</p>}
             </ImageContainer>
           </div>
           <div>
             <ImageLabel>질병 이미지</ImageLabel>
             <ImageContainer>
-              {db_image_url && !dbImageFailed
-                ? <Image src={db_image_url} alt="병해충 참고 이미지" onError={() => setDbImageFailed(true)} />
+              {db_image_url && !hasDbImageFailed
+                ? <Image src={db_image_url} alt="병해충 참고 이미지" onError={() => setHasDbImageFailed(true)} />
                 : <p>이미지를 표시할 수 없습니다.</p>}
             </ImageContainer>
           </div>

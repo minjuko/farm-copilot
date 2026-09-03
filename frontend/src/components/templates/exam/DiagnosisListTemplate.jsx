@@ -125,7 +125,7 @@ const AddButtonContainer = styled.button`
 
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 0.1875rem rgba(58, 151, 212, 0.5); /* 3px */
+    box-shadow: 0 0 0 0.1875rem rgba(58, 151, 212, 0.5);
   }
 
   &:active {
@@ -198,12 +198,12 @@ const DiagnosisListTemplate = () => {
     navigate('/diagnosis');
   };
 
-  const openDeleteModal = (sessionId) => {
+  const handleOpenDeleteModal = (sessionId) => {
     setSessionIdToDelete(sessionId);
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
   };
 
@@ -243,7 +243,7 @@ const DiagnosisListTemplate = () => {
                   </SessionInfo>
                   <DeleteButton onClick={(e) => {
                     e.stopPropagation();
-                    openDeleteModal(session.session_id);
+                    handleOpenDeleteModal(session.session_id);
                   }} aria-label="세션 삭제">
                     <FaTrash />
                   </DeleteButton>
@@ -256,11 +256,11 @@ const DiagnosisListTemplate = () => {
       </Content>
       <ConfirmModal
         isOpen={isModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title="삭제 확인"
         content="이 항목을 삭제하시겠습니까?"
         onConfirm={handleDeleteSession}
-        closeModal={closeModal}
+        closeModal={handleCloseModal}
         confirmText="삭제"
         cancelText="취소"
         confirmColor="#e53e3e"

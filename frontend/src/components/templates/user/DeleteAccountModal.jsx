@@ -83,7 +83,7 @@ const Button = styled.button`
 const ErrorMessage = styled.div`
   color: red;
   font-size: 0.75rem; 
-  margin-top: 0.25rem; /* 4px in rem */
+  margin-top: 0.25rem;
 `;
 
 const WarningMessage = styled.div`
@@ -101,12 +101,12 @@ const DeleteAccountModal = ({ isOpen, onRequestClose }) => {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setPassword(e.target.value);
+  const handleChange = (event) => {
+    setPassword(event.target.value);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (isLoading) return;
 
     setIsLoading(true);

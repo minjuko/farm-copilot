@@ -2,7 +2,7 @@ import React from "react";
 import ChatListTemplate from "../components/templates/chat/ChatListTemplate";
 import ChatTemplate from "../components/templates/chat/ChatTemplate";
 import CropSelectionPage from "../components/templates/crop/CropSelectionPage";
-import CropTest from "../components/templates/crop/CropTest";
+import CropPredictionPage from "../components/templates/crop/CropPredictionPage";
 import SessionDetails from "../components/templates/crop/SessionDetails";
 import DiagnosisListTemplate from "../components/templates/exam/DiagnosisListTemplate";
 import DiagnosisTemplate from "../components/templates/exam/DiagnosisTemplate";
@@ -13,7 +13,7 @@ import SoilTemplate from "../components/templates/exam/SoilTemplate";
 
 export const predictionRoutes = [
   { path: "/crop-selection", element: <CropSelectionPage /> },
-  { path: "/crop-test", element: <CropTest /> },
+  { path: "/crop-test", element: <CropPredictionPage /> },
   { path: "/session-details/:sessionId", element: <SessionDetails /> },
 ];
 

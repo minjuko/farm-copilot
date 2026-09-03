@@ -40,9 +40,9 @@ class Command(BaseCommand):
             documents = self._load_documents(source, self._ValidationDocument)
             if not documents:
                 raise CommandError('The chatbot source CSV contains no usable rows.')
-            self.stdout.write(self.style.SUCCESS(
-                f'Validated {len(documents)} chatbot source rows in {source}'
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(f'Validated {len(documents)} chatbot source rows in {source}')
+            )
             return
 
         if not os.getenv('OPENAI_API_KEY'):
@@ -50,9 +50,7 @@ class Command(BaseCommand):
 
         output = self._resolve_path(options['output'])
         if output.exists() and any(output.iterdir()):
-            raise CommandError(
-                f'Output directory must be empty to avoid mixing indexes: {output}'
-            )
+            raise CommandError(f'Output directory must be empty to avoid mixing indexes: {output}')
 
         try:
             from langchain_community.vectorstores import Chroma
@@ -95,9 +93,9 @@ class Command(BaseCommand):
             json.dumps(manifest, ensure_ascii=False, indent=2),
             encoding='utf-8',
         )
-        self.stdout.write(self.style.SUCCESS(
-            f'Built chatbot index with {len(documents)} documents at {output}'
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f'Built chatbot index with {len(documents)} documents at {output}')
+        )
 
     @staticmethod
     def _resolve_path(value):
@@ -116,9 +114,7 @@ class Command(BaseCommand):
             reader = csv.DictReader(csv_file)
             required_columns = {'질문', '답변', '출처', '출처URL'}
             if not reader.fieldnames or not required_columns.issubset(reader.fieldnames):
-                raise CommandError(
-                    'CSV must contain 질문, 답변, 출처, and 출처URL columns.'
-                )
+                raise CommandError('CSV must contain 질문, 답변, 출처, and 출처URL columns.')
             for row_number, row in enumerate(reader, start=2):
                 question = (row.get('질문') or '').strip()
                 answer = (row.get('답변') or '').strip()
@@ -130,21 +126,21 @@ class Command(BaseCommand):
                 if not question or not answer or not source_name:
                     raise CommandError(f'CSV row {row_number} has missing required content.')
                 if not source_url.startswith('https://'):
-                    raise CommandError(
-                        f'CSV row {row_number} must have an HTTPS source URL.'
+                    raise CommandError(f'CSV row {row_number} must have an HTTPS source URL.')
+                documents.append(
+                    document_class(
+                        page_content=(
+                            f'질문: {question}\n답변: {answer}\n'
+                            f'출처: {source_name}\n'
+                            f'출처유형: {source_type}\n출처URL: {source_url}'
+                        ),
+                        metadata={
+                            'source_file': source.name,
+                            'source_name': source_name,
+                            'source_type': source_type,
+                            'source_url': source_url,
+                            'row': row_number,
+                        },
                     )
-                documents.append(document_class(
-                    page_content=(
-                        f'질문: {question}\n답변: {answer}\n'
-                        f'출처: {source_name}\n'
-                        f'출처유형: {source_type}\n출처URL: {source_url}'
-                    ),
-                    metadata={
-                        'source_file': source.name,
-                        'source_name': source_name,
-                        'source_type': source_type,
-                        'source_url': source_url,
-                        'row': row_number,
-                    },
-                ))
+                )
         return documents

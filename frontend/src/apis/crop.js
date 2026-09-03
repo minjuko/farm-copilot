@@ -16,8 +16,8 @@ export const getRegionNames = () => {
   return instance.get("/prediction/get_region_names/");
 };
 
-export const predictCrops = (data) => {
-  return instance.post("/prediction/predict/", data);
+export const predictCrops = (predictionPayload) => {
+  return instance.post("/prediction/predict/", predictionPayload);
 };
 
 export const getSessionDetails = (sessionId) => {

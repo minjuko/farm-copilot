@@ -1,10 +1,21 @@
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
+
 from common.exceptions import (
-    ValidationError, BadRequestError, MissingPartError, DuplicateResourceError,
-    UnauthorizedError, AccessDeniedError, ForbiddenError, ResourceAccessForbiddenError,
-    NotFoundError, InternalServerError, InvalidRequestError, ServiceUnavailableError
+    AccessDeniedError,
+    BadRequestError,
+    DuplicateResourceError,
+    ForbiddenError,
+    InternalServerError,
+    InvalidRequestError,
+    MissingPartError,
+    NotFoundError,
+    ResourceAccessForbiddenError,
+    ServiceUnavailableError,
+    UnauthorizedError,
+    ValidationError,
 )
+
 
 class CustomExceptionMiddleware:
     """Middleware to process exceptions thrown in Django applications."""
@@ -23,7 +34,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, BadRequestError):
@@ -31,7 +42,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, MissingPartError):
@@ -39,7 +50,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, DuplicateResourceError):
@@ -47,15 +58,17 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, UnauthorizedError) or isinstance(exception, PermissionDenied):
             response_data = {
                 'status': 'error',
-                'message': "Authentication failed" if isinstance(exception, PermissionDenied) else exception.message,
+                'message': 'Authentication failed'
+                if isinstance(exception, PermissionDenied)
+                else exception.message,
                 'code': 1201 if isinstance(exception, PermissionDenied) else exception.error_code,
-                'status_code': 401
+                'status_code': 401,
             }
             return JsonResponse(response_data, status=401)
         elif isinstance(exception, AccessDeniedError):
@@ -63,7 +76,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, ForbiddenError):
@@ -71,7 +84,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, ResourceAccessForbiddenError):
@@ -79,7 +92,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, NotFoundError):
@@ -87,7 +100,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, InvalidRequestError):
@@ -95,7 +108,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, InternalServerError):
@@ -103,7 +116,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         elif isinstance(exception, ServiceUnavailableError):
@@ -111,7 +124,7 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': exception.message,
                 'code': exception.error_code,
-                'status_code': exception.status_code
+                'status_code': exception.status_code,
             }
             return JsonResponse(response_data, status=exception.status_code)
         else:
@@ -119,6 +132,6 @@ class CustomExceptionMiddleware:
                 'status': 'error',
                 'message': 'Unexpected error occurred',
                 'code': 2000,
-                'status_code': 500
+                'status_code': 500,
             }
             return JsonResponse(response_data, status=500)

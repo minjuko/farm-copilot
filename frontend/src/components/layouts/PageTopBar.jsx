@@ -153,7 +153,7 @@ const PageTopBar = () => {
     }
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
     navigate("/");
   };
@@ -202,7 +202,7 @@ const PageTopBar = () => {
             )
           )}
         </RightSection>
-        <CustomModal isOpen={isModalOpen} onRequestClose={closeModal} title="알림" content={modalContent} />
+        <CustomModal isOpen={isModalOpen} onRequestClose={handleCloseModal} title="알림" content={modalContent} />
       </TopBars>
     </>
   );

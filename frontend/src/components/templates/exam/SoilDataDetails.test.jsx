@@ -52,7 +52,7 @@ test("keeps the state-only detail route compatible", () => {
     soilData: detail.soil_data,
     fertilizerData: detail.fertilizer_data,
     crop: detail.crop_name,
-    crop_add: detail.detailed_address,
+    detailedAddress: detail.detailed_address,
   });
 
   expect(screen.getByText("pepper")).toBeInTheDocument();

@@ -59,37 +59,39 @@ def capabilities(request):
     model_path = Path(os.getenv('YOLO_MODEL_PATH', settings.BASE_DIR / 'best.pt'))
     if not model_path.is_absolute():
         model_path = settings.BASE_DIR / model_path
-    return JsonResponse({
-        'soil': _capability(
-            settings.SOIL_SERVICE_ENABLED,
-            _configured(
-                'KAKAO_REST_API_KEY',
-                'DATA_GO_KR_SOIL_SERVICE_KEY',
-                'DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY',
+    return JsonResponse(
+        {
+            'soil': _capability(
+                settings.SOIL_SERVICE_ENABLED,
+                _configured(
+                    'KAKAO_REST_API_KEY',
+                    'DATA_GO_KR_SOIL_SERVICE_KEY',
+                    'DATA_GO_KR_FERTILIZER_V2_SERVICE_KEY',
+                ),
             ),
-        ),
-        'prediction': _capability(
-            settings.PREDICTION_SERVICE_ENABLED,
-            _configured(
-                'DATA_GO_KR_WEATHER_SERVICE_KEY',
-                'DATA_GO_KR_MARKET_SERVICE_KEY',
+            'prediction': _capability(
+                settings.PREDICTION_SERVICE_ENABLED,
+                _configured(
+                    'DATA_GO_KR_WEATHER_SERVICE_KEY',
+                    'DATA_GO_KR_MARKET_SERVICE_KEY',
+                ),
             ),
-        ),
-        'chatbot': _capability(
-            settings.CHATBOT_ENABLED,
-            chatbot_configured,
-        ),
-        'detection': _capability(
-            True,
-            model_path.is_file(),
-        ),
-        'email': _capability(
-            True,
-            _configured(
-                'EMAIL_HOST_USER',
-                'EMAIL_HOST_PASSWORD',
-                'DEFAULT_FROM_EMAIL',
+            'chatbot': _capability(
+                settings.CHATBOT_ENABLED,
+                chatbot_configured,
             ),
-        ),
-        'storage': _storage_capability(),
-    })
+            'detection': _capability(
+                True,
+                model_path.is_file(),
+            ),
+            'email': _capability(
+                True,
+                _configured(
+                    'EMAIL_HOST_USER',
+                    'EMAIL_HOST_PASSWORD',
+                    'DEFAULT_FROM_EMAIL',
+                ),
+            ),
+            'storage': _storage_capability(),
+        }
+    )

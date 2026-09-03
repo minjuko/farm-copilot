@@ -2,13 +2,13 @@ import json
 from datetime import timedelta
 from unittest.mock import patch
 
+from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
-from django.core.cache import cache
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from ..models import User
 
@@ -31,13 +31,15 @@ class AuthenticationSmokeTests(TestCase):
 
         signup_response = self.client.post(
             reverse('login:signup'),
-            data=json.dumps({
-                'username': 'runtime-user',
-                'email': 'runtime@example.com',
-                'password1': 'runtime-password-123',
-                'password2': 'runtime-password-123',
-                'verification_code': '1234',
-            }),
+            data=json.dumps(
+                {
+                    'username': 'runtime-user',
+                    'email': 'runtime@example.com',
+                    'password1': 'runtime-password-123',
+                    'password2': 'runtime-password-123',
+                    'verification_code': '1234',
+                }
+            ),
             content_type='application/json',
         )
         self.assertEqual(signup_response.status_code, 200)
@@ -52,9 +54,7 @@ class AuthenticationSmokeTests(TestCase):
 
         logout_response = self.client.post(reverse('login:logout'))
         self.assertEqual(logout_response.status_code, 200)
-        self.assertFalse(
-            self.client.get(reverse('login:auth_check')).json()['is_authenticated']
-        )
+        self.assertFalse(self.client.get(reverse('login:auth_check')).json()['is_authenticated'])
 
     def test_account_deletion_ends_authenticated_session(self):
         user = User.objects.create_user(
@@ -147,7 +147,9 @@ class RecoverySecurityTests(TestCase):
         self.assertTrue(self.user.password.startswith('pbkdf2_'))
 
     @patch('accounts.views.send_mail')
-    def test_password_reset_token_is_one_time_and_does_not_change_password_on_request(self, send_mail):
+    def test_password_reset_token_is_one_time_and_does_not_change_password_on_request(
+        self, send_mail
+    ):
         old_hash = self.user.password
         response = self.client.post(
             reverse('login:password_reset_request'),
@@ -163,13 +165,17 @@ class RecoverySecurityTests(TestCase):
         token = default_token_generator.make_token(self.user)
         confirmed = self.client.post(
             reverse('login:password_reset_confirm_api'),
-            data=json.dumps({'uid': uid, 'token': token, 'new_password': 'new-runtime-password-123'}),
+            data=json.dumps(
+                {'uid': uid, 'token': token, 'new_password': 'new-runtime-password-123'}
+            ),
             content_type='application/json',
         )
         self.assertEqual(confirmed.status_code, 200)
         reused = self.client.post(
             reverse('login:password_reset_confirm_api'),
-            data=json.dumps({'uid': uid, 'token': token, 'new_password': 'another-runtime-password-123'}),
+            data=json.dumps(
+                {'uid': uid, 'token': token, 'new_password': 'another-runtime-password-123'}
+            ),
             content_type='application/json',
         )
         self.assertEqual(reused.status_code, 400)
@@ -179,14 +185,23 @@ class RecoverySecurityTests(TestCase):
 
     def test_password_reset_rate_limit(self):
         payload = json.dumps({'email': 'missing@example.com'})
-        responses = [self.client.post(reverse('login:password_reset_request'), data=payload, content_type='application/json') for _ in range(6)]
+        responses = [
+            self.client.post(
+                reverse('login:password_reset_request'),
+                data=payload,
+                content_type='application/json',
+            )
+            for _ in range(6)
+        ]
         self.assertEqual([response.status_code for response in responses[:5]], [200] * 5)
         self.assertEqual(responses[5].status_code, 429)
 
     def test_invalid_reset_token_and_uid_are_controlled(self):
         response = self.client.post(
             reverse('login:password_reset_confirm_api'),
-            data=json.dumps({'uid': 'not-valid', 'token': 'invalid', 'new_password': 'new-runtime-password-123'}),
+            data=json.dumps(
+                {'uid': 'not-valid', 'token': 'invalid', 'new_password': 'new-runtime-password-123'}
+            ),
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 400)
@@ -198,7 +213,9 @@ class RecoverySecurityTests(TestCase):
         token = default_token_generator.make_token(self.user)
         response = self.client.post(
             reverse('login:password_reset_confirm_api'),
-            data=json.dumps({'uid': uid, 'token': token, 'new_password': 'session-reset-password-123'}),
+            data=json.dumps(
+                {'uid': uid, 'token': token, 'new_password': 'session-reset-password-123'}
+            ),
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 200)
@@ -206,7 +223,10 @@ class RecoverySecurityTests(TestCase):
 
     def test_login_failures_are_rate_limited_without_account_disclosure(self):
         payload = json.dumps({'email': self.user.email, 'password': 'wrong-password'})
-        responses = [self.client.post(reverse('login:login'), data=payload, content_type='application/json') for _ in range(11)]
+        responses = [
+            self.client.post(reverse('login:login'), data=payload, content_type='application/json')
+            for _ in range(11)
+        ]
         self.assertEqual([response.status_code for response in responses[:10]], [403] * 10)
         self.assertEqual(responses[10].status_code, 429)
         self.assertNotIn(self.user.email, responses[10].content.decode())
@@ -260,13 +280,15 @@ class RecoverySecurityTests(TestCase):
 
         wrong_email = self.client.post(
             reverse('login:signup'),
-            data=json.dumps({
-                'username': 'wrong-bound-user',
-                'email': 'other@example.com',
-                'password1': 'runtime-password-123',
-                'password2': 'runtime-password-123',
-                'verification_code': code,
-            }),
+            data=json.dumps(
+                {
+                    'username': 'wrong-bound-user',
+                    'email': 'other@example.com',
+                    'password1': 'runtime-password-123',
+                    'password2': 'runtime-password-123',
+                    'verification_code': code,
+                }
+            ),
             content_type='application/json',
         )
         self.assertEqual(wrong_email.status_code, 400)
@@ -274,13 +296,15 @@ class RecoverySecurityTests(TestCase):
 
         correct_email = self.client.post(
             reverse('login:signup'),
-            data=json.dumps({
-                'username': 'bound-user',
-                'email': ' BOUND@example.com ',
-                'password1': 'runtime-password-123',
-                'password2': 'runtime-password-123',
-                'verification_code': code,
-            }),
+            data=json.dumps(
+                {
+                    'username': 'bound-user',
+                    'email': ' BOUND@example.com ',
+                    'password1': 'runtime-password-123',
+                    'password2': 'runtime-password-123',
+                    'verification_code': code,
+                }
+            ),
             content_type='application/json',
         )
         self.assertEqual(correct_email.status_code, 200)
@@ -322,13 +346,15 @@ class RecoverySecurityTests(TestCase):
         session.save()
         response = self.client.post(
             reverse('login:signup'),
-            data=json.dumps({
-                'username': 'expired-user',
-                'email': 'expired@example.com',
-                'password1': 'runtime-password-123',
-                'password2': 'runtime-password-123',
-                'verification_code': '1234',
-            }),
+            data=json.dumps(
+                {
+                    'username': 'expired-user',
+                    'email': 'expired@example.com',
+                    'password1': 'runtime-password-123',
+                    'password2': 'runtime-password-123',
+                    'verification_code': '1234',
+                }
+            ),
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 400)
@@ -347,7 +373,9 @@ class RecoverySecurityTests(TestCase):
             'verification_code': '0000',
         }
         responses = [
-            self.client.post(reverse('login:signup'), data=json.dumps(payload), content_type='application/json')
+            self.client.post(
+                reverse('login:signup'), data=json.dumps(payload), content_type='application/json'
+            )
             for _ in range(5)
         ]
         self.assertEqual([response.status_code for response in responses[:4]], [400] * 4)
@@ -356,11 +384,12 @@ class RecoverySecurityTests(TestCase):
 
     @patch('accounts.views.send_mail', side_effect=RuntimeError('smtp unavailable'))
     def test_smtp_failure_is_generic_and_does_not_change_password(self, send_mail):
-        response = self.client.post(
-            reverse('login:password_reset_request'),
-            data=json.dumps({'email': self.user.email}),
-            content_type='application/json',
-        )
+        with self.assertLogs('accounts.views', level='ERROR'):
+            response = self.client.post(
+                reverse('login:password_reset_request'),
+                data=json.dumps({'email': self.user.email}),
+                content_type='application/json',
+            )
         self.assertEqual(response.status_code, 503)
         self.assertNotIn('smtp unavailable', response.content.decode())
         self.user.refresh_from_db()

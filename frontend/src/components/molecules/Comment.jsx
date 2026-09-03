@@ -79,7 +79,7 @@ const Comment = ({
     setIsDeleteModalOpen(true);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsDeleteModalOpen(false);
     setSelectedCommentId(null);
   };
@@ -93,7 +93,7 @@ const Comment = ({
 
   const handleConfirmDelete = () => {
     handleDeleteComment(selectedCommentId);
-    closeModal();
+    handleCloseModal();
   };
 
   const renderComments = (comments, parentId = null) => {
@@ -111,14 +111,14 @@ const Comment = ({
                   e.preventDefault();
                   handleEditComment(comment.id);
                 }}
-                style={{ display: 'flex', alignItems: 'center' }} // Flexbox for alignment
+                style={{ display: 'flex', alignItems: 'center' }}
               >
                 <CommentTextarea
                   rows="2"
                   value={editCommentContent}
                   onChange={handleEditCommentChange}
                   onKeyDown={(e) => handleKeyDown(e, () => handleEditComment(comment.id))}
-                  style={{ flex: 1 }} // Allow textarea to grow
+                  style={{ flex: 1 }}
                 />
                 <EditCommentButton type="submit" disabled={!editCommentContent.trim()}>
                   확인
@@ -193,11 +193,11 @@ const Comment = ({
       </CommentForm>}
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title="삭제 확인"
         content="이 댓글을 삭제하시겠습니까?"
         onConfirm={handleConfirmDelete}
-        closeModal={closeModal}
+        closeModal={handleCloseModal}
         confirmText="삭제"
         cancelText="취소"
         confirmColor="#e53e3e"

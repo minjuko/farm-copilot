@@ -132,9 +132,9 @@ const Button = styled.button`
 
 const InfoButton = styled.img`
   cursor: pointer;
-  width: 20px; /* 버튼 크기 조절 */
-  height: 20px; /* 버튼 크기 조절 */
-  margin-left: auto; /* 텍스트와의 간격 조절 */
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
 `;
 
 const ToggleContent = styled.div`
@@ -216,8 +216,8 @@ const PolicyAgreement = () => {
       : { ...prev, allChecked });
   }, [ageCheck, usingListCheck]);
 
-  const handleCheckboxChange = (e) => {
-    const { name, checked } = e.target;
+  const handleCheckboxChange = (event) => {
+    const { name, checked } = event.target;
     setIsAgreed(prev => ({
       ...prev,
       [name]: checked,
@@ -228,7 +228,7 @@ const PolicyAgreement = () => {
     }));
   };
 
-  const toggleDetail = (name) => {
+  const handleToggleDetail = (name) => {
     setShowDetails(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
@@ -285,7 +285,7 @@ const PolicyAgreement = () => {
                     <span></span>
                   </CustomCheckbox>
                   <Label htmlFor={key}>{label}</Label>
-                  <ToggleIcon onClick={() => toggleDetail(key)}>
+                  <ToggleIcon onClick={() => handleToggleDetail(key)}>
                     {showDetails[key] ? <FaChevronUp /> : <FaChevronDown />}
                   </ToggleIcon>
                 </CheckboxWrapper>

@@ -39,11 +39,11 @@ const LogoText = styled.div`
 const RightSection = styled.div`
   display: flex;
   align-items: center;
-  position: relative; /* 추가 */
+  position: relative;
 `;
 
 const TopBarButton = styled.button`
-  position: relative; /* 추가 */
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,7 +93,7 @@ const MainTopBar = () => {
     setIsLoading(false);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
     navigate("/");
   };
@@ -129,7 +129,7 @@ const MainTopBar = () => {
           </TopBarButton>
         )}
       </RightSection>
-      <CustomModal isOpen={isModalOpen} onRequestClose={closeModal} title="알림" content={modalContent} />
+      <CustomModal isOpen={isModalOpen} onRequestClose={handleCloseModal} title="알림" content={modalContent} />
     </TopBars>
   );
 };

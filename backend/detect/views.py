@@ -15,7 +15,6 @@ from PIL import Image, UnidentifiedImageError
 from common.decorators import login_required
 from common.exceptions import (
     InternalServerError,
-    InvalidRequestError,
     NotFoundError,
     ServiceUnavailableError,
     ValidationError,
@@ -88,6 +87,7 @@ def get_yolo_model():
 
     return _yolo_model
 
+
 def validate_image_file(image_file):
     if not image_file:
         raise ValidationError('No image uploaded.')
@@ -146,9 +146,7 @@ def map_model_class_to_pest_id(model_class_id):
         raise ServiceUnavailableError(MAPPING_UNAVAILABLE_MESSAGE) from exc
 
     try:
-        mapping = PestModelClass.objects.select_related('pest').get(
-            class_id=class_id
-        )
+        mapping = PestModelClass.objects.select_related('pest').get(class_id=class_id)
     except PestModelClass.DoesNotExist as exc:
         raise ServiceUnavailableError(MAPPING_UNAVAILABLE_MESSAGE) from exc
     return mapping.pest_id
@@ -182,7 +180,8 @@ def process_image(image_path):
             best_result = results[0]
             if best_result.boxes and len(best_result.boxes) > 0:
                 eligible_boxes = [
-                    box for box in best_result.boxes
+                    box
+                    for box in best_result.boxes
                     if float(box.conf.item()) >= CONFIDENCE_THRESHOLD
                 ]
                 if eligible_boxes:
@@ -212,16 +211,16 @@ def process_image(image_path):
         raise
     except Exception as exc:
         logger.warning('Image detection inference failed: %s', exc)
-        raise ServiceUnavailableError(
-            'Image detection runtime failed during inference.'
-        ) from exc
+        raise ServiceUnavailableError('Image detection runtime failed during inference.') from exc
 
 
 @login_required
 def upload_image_for_detection(request):
     if request.method != 'POST':
-        return JsonResponse({'error': 'Invalid request method. Only POST requests are allowed'}, status=405)
-    
+        return JsonResponse(
+            {'error': 'Invalid request method. Only POST requests are allowed'}, status=405
+        )
+
     image_file = request.FILES.get('image')
     validate_image_file(image_file)
     temp_image_path = None
@@ -236,17 +235,16 @@ def upload_image_for_detection(request):
         except Pest.DoesNotExist as exc:
             raise ValidationError('Detected pest is not registered.') from exc
 
-
         detection = PestDetection(
             user=request.user,
             pest=pest_info,
             image=result_image_content,
             detection_date=timezone.now(),
-            confidence=confidence
+            confidence=confidence,
         )
         detection.save()
 
-        data = {
+        detection_payload = {
             'session_id': detection.id,
             'pest_name': pest_info.pest_name,
             'occurrence_environment': pest_info.occurrence_environment,
@@ -257,41 +255,48 @@ def upload_image_for_detection(request):
             'information_source_url': pest_info.information_source_url,
             'confidence': confidence,
             'user_image_url': image_url_or_none(detection.image),
-            'db_image_url': detection.pest.image_url,  
-            'detection_date': timezone.localtime(detection.detection_date).strftime('%Y-%m-%d %H:%M')
+            'db_image_url': detection.pest.image_url,
+            'detection_date': timezone.localtime(detection.detection_date).strftime(
+                '%Y-%m-%d %H:%M'
+            ),
         }
 
-        return JsonResponse(data, status=200)
+        return JsonResponse(detection_payload, status=200)
 
     except (ServiceUnavailableError, ValidationError):
         raise
-    except Exception as e:
-        logger.error(f"Unhandled exception during image processing: {str(e)}")
+    except Exception as exc:
+        logger.exception('Unhandled exception during image processing: %s', exc)
         raise InternalServerError('An unexpected error occurred.')
     finally:
         if temp_image_path and os.path.exists(temp_image_path):
             os.remove(temp_image_path)
 
 
-
-
-
 @login_required
 def list_detection_sessions(request):
     try:
         sessions = PestDetection.objects.filter(user=request.user).order_by('-detection_date')
-        session_list = [{
-            'session_id': session.id,
-            'pest_name': session.pest.pest_name,
-            'detection_date': timezone.localtime(session.detection_date).strftime('%Y-%m-%d %H:%M'),
-            'confidence': session.confidence,
-            'user_image_url': image_url_or_none(session.image)
-        } for session in sessions]
+        session_list = [
+            {
+                'session_id': session.id,
+                'pest_name': session.pest.pest_name,
+                'detection_date': timezone.localtime(session.detection_date).strftime(
+                    '%Y-%m-%d %H:%M'
+                ),
+                'confidence': session.confidence,
+                'user_image_url': image_url_or_none(session.image),
+            }
+            for session in sessions
+        ]
         return JsonResponse(session_list, safe=False)
-    except Exception as e:
-        logger.error(f"Error retrieving sessions: {str(e)}")
-        raise InternalServerError('An unexpected error occurred while retrieving detection sessions.')
-    
+    except Exception as exc:
+        logger.exception('Error retrieving sessions: %s', exc)
+        raise InternalServerError(
+            'An unexpected error occurred while retrieving detection sessions.'
+        )
+
+
 @login_required
 def detection_session_details(request, session_id):
     try:
@@ -308,17 +313,18 @@ def detection_session_details(request, session_id):
             'detection_date': timezone.localtime(session.detection_date).strftime('%Y-%m-%d %H:%M'),
             'confidence': session.confidence,
             'user_image_url': image_url_or_none(session.image),
-            'db_image_url': session.pest.image_url
+            'db_image_url': session.pest.image_url,
         }
         return JsonResponse(details)
     except PestDetection.DoesNotExist:
         raise NotFoundError('Detection session not found')
-    except Exception as e:
-        logger.error(f"Unhandled exception in session details: {str(e)}")
+    except Exception as exc:
+        logger.exception('Unhandled exception in session details: %s', exc)
         raise InternalServerError('An unexpected error occurred while fetching session details.')
-    
+
+
 @login_required
-@require_http_methods(["DELETE"])
+@require_http_methods(['DELETE'])
 def delete_detection_session(request, session_id):
     try:
         session = PestDetection.objects.get(id=session_id, user=request.user)
@@ -326,6 +332,8 @@ def delete_detection_session(request, session_id):
         return JsonResponse({'success': 'Detection session deleted successfully'}, status=200)
     except PestDetection.DoesNotExist:
         raise NotFoundError('Detection session not found')
-    except Exception as e:
-        logger.error(f"Error deleting detection session: {str(e)}")
-        raise InternalServerError('An unexpected error occurred while deleting the detection session.')
+    except Exception as exc:
+        logger.exception('Error deleting detection session: %s', exc)
+        raise InternalServerError(
+            'An unexpected error occurred while deleting the detection session.'
+        )

@@ -81,9 +81,11 @@ class Command(BaseCommand):
             raise CommandError(f'Deployment configuration has {len(errors)} error(s).')
 
         storage = 'S3' if settings.USE_S3 else 'persistent local volumes'
-        self.stdout.write(self.style.SUCCESS(
-            f'Deployment configuration is ready (PostgreSQL, HTTPS, SMTP, {storage}).'
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'Deployment configuration is ready (PostgreSQL, HTTPS, SMTP, {storage}).'
+            )
+        )
 
     @staticmethod
     def _require_https(name, values, errors):

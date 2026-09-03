@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  fetchPostDetail,
+  fetchPost,
   createComment,
-  createReply,
   editComment,
   deleteComment,
   deletePost,
@@ -36,11 +35,11 @@ const PostDetailTemplate = () => {
 
   const settingsMenuRefs = useRef([]);
 
-  const fetchPost = useCallback(async () => {
+  const loadPost = useCallback(async () => {
     try {
       setErrorMessage("");
       setIsLoading(true);
-      const response = await fetchPostDetail(id);
+      const response = await fetchPost(id);
       setPost(response.data);
       setComments(response.data.comments || []);
     } catch (error) {
@@ -51,8 +50,8 @@ const PostDetailTemplate = () => {
   }, [id, setIsLoading]);
 
   useEffect(() => {
-    fetchPost();
-  }, [fetchPost]);
+    loadPost();
+  }, [loadPost]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -88,7 +87,7 @@ const PostDetailTemplate = () => {
     event.preventDefault();
     try {
       await createComment(id, { content: newComment });
-      await fetchPost();
+      await loadPost();
       setNewComment("");
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, "댓글 작성에 실패했습니다."));
@@ -98,8 +97,8 @@ const PostDetailTemplate = () => {
   const handleSubmitReply = async (event) => {
     event.preventDefault();
     try {
-      await createReply(id, { content: newReply, parent_id: replyCommentId });
-      await fetchPost();
+      await createComment(id, { content: newReply, parent_id: replyCommentId });
+      await loadPost();
       setNewReply("");
       setReplyCommentId(null);
     } catch (error) {
@@ -149,11 +148,11 @@ const PostDetailTemplate = () => {
     }
   };
 
-  const openModal = () => {
+  const handleOpenModal = () => {
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
   };
 
@@ -176,10 +175,10 @@ const PostDetailTemplate = () => {
         canManagePost={isCommunityOwner(authStatus, user, post)}
         showSettingsMenu={showSettingsMenu}
         settingsMenuRefs={settingsMenuRefs}
-        openModal={openModal}
+        openModal={handleOpenModal}
         handleSettingsClick={handleSettingsClick}
         isModalOpen={isModalOpen}
-        closeModal={closeModal}
+        closeModal={handleCloseModal}
         handleDeletePost={handleDeletePost}
       />
       <Comments

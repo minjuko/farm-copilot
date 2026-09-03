@@ -33,7 +33,7 @@ const LoaderWrapper = styled.div`
 
 const LoaderOffsetWrapper = styled.div`
   position: relative;
-  left: 5px; /* 로더를 오른쪽으로 5px 이동 */
+  left: 5px;
 `;
 
 const LoaderText = styled.p`

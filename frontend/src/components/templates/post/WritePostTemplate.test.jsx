@@ -32,7 +32,7 @@ test("keeps manual selection and the submit payload contract", async () => {
   const textboxes = screen.getAllByRole("textbox");
   fireEvent.change(textboxes[0], { target: { value: "title" } });
   fireEvent.change(textboxes[1], { target: { value: "content" } });
-  fireEvent.click(document.querySelector('button[type="submit"]'));
+  fireEvent.click(screen.getByRole("button", { name: "작성하기" }));
 
   await waitFor(() => expect(createPost).toHaveBeenCalledTimes(1));
   expect(createPost.mock.calls[0][0].get("post_type")).toBe("exchange");

@@ -48,16 +48,16 @@ export const finiteNumberOrZero = (value) => {
 
 export const removeCropAt = (crops, index) => crops.filter((_, cropIndex) => cropIndex !== index);
 
-export const normalizePredictionResult = (data) => ({
-  ...data,
-  land_area: finiteNumberOrZero(data?.land_area),
-  total_income: finiteNumberOrZero(data?.total_income),
-  results: Array.isArray(data?.results) ? data.results.map((result) => ({
-    ...result,
-    adjusted_data: result?.adjusted_data && typeof result.adjusted_data === "object" ? result.adjusted_data : {},
-    crop_chart_data: Array.isArray(result?.crop_chart_data) ? result.crop_chart_data : [],
-    price: finiteNumberOrZero(result?.price),
-    r2_score: finiteNumberOrZero(result?.r2_score),
-    rmse: finiteNumberOrZero(result?.rmse),
+export const normalizePredictionResult = (predictionPayload) => ({
+  ...predictionPayload,
+  land_area: finiteNumberOrZero(predictionPayload?.land_area),
+  total_income: finiteNumberOrZero(predictionPayload?.total_income),
+  results: Array.isArray(predictionPayload?.results) ? predictionPayload.results.map((cropResult) => ({
+    ...cropResult,
+    adjusted_data: cropResult?.adjusted_data && typeof cropResult.adjusted_data === "object" ? cropResult.adjusted_data : {},
+    crop_chart_data: Array.isArray(cropResult?.crop_chart_data) ? cropResult.crop_chart_data : [],
+    price: finiteNumberOrZero(cropResult?.price),
+    r2_score: finiteNumberOrZero(cropResult?.r2_score),
+    rmse: finiteNumberOrZero(cropResult?.rmse),
   })) : [],
 });

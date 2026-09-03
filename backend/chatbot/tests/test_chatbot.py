@@ -1,14 +1,15 @@
-from unittest.mock import Mock, patch
 import json
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import Mock, patch
 
-from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
-from django.core.management.base import CommandError
 from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 
 from common.exceptions import ServiceUnavailableError
+
 from .. import views
 from ..management.commands.build_chatbot_index import Command
 
@@ -44,12 +45,17 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
             self.assertFalse(views.vector_index_available(index_path))
             (index_path / 'chroma.sqlite3').touch()
             self.assertFalse(views.vector_index_available(index_path))
-            (index_path / views.INDEX_MANIFEST_NAME).write_text(json.dumps({
-                'embedding_model': 'text-embedding-3-small',
-                'collection_name': 'agriculture-knowledge',
-                'document_count': 1,
-                'source_sha256': 'a' * 64,
-            }), encoding='utf-8')
+            (index_path / views.INDEX_MANIFEST_NAME).write_text(
+                json.dumps(
+                    {
+                        'embedding_model': 'text-embedding-3-small',
+                        'collection_name': 'agriculture-knowledge',
+                        'document_count': 1,
+                        'source_sha256': 'a' * 64,
+                    }
+                ),
+                encoding='utf-8',
+            )
             self.assertTrue(views.vector_index_available(index_path))
 
     @override_settings(CHATBOT_EMBEDDING_MODEL='expected-model')
@@ -57,12 +63,17 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
         with TemporaryDirectory() as directory:
             index_path = Path(directory)
             (index_path / 'chroma.sqlite3').touch()
-            (index_path / views.INDEX_MANIFEST_NAME).write_text(json.dumps({
-                'embedding_model': 'another-model',
-                'collection_name': 'agriculture-knowledge',
-                'document_count': 1,
-                'source_sha256': 'a' * 64,
-            }), encoding='utf-8')
+            (index_path / views.INDEX_MANIFEST_NAME).write_text(
+                json.dumps(
+                    {
+                        'embedding_model': 'another-model',
+                        'collection_name': 'agriculture-knowledge',
+                        'document_count': 1,
+                        'source_sha256': 'a' * 64,
+                    }
+                ),
+                encoding='utf-8',
+            )
             self.assertFalse(views.vector_index_available(index_path))
 
     @patch.object(views, 'CHATBOT_DEPENDENCIES_AVAILABLE', False)
@@ -81,13 +92,12 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
     @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-only-key'}, clear=True)
     @patch.object(views, 'vector_index_available', return_value=True)
     @patch.object(views, 'OpenAIEmbeddings', create=True)
-    def test_initialization_failure_is_controlled(
-        self, embeddings, _index_available
-    ):
+    def test_initialization_failure_is_controlled(self, embeddings, _index_available):
         embeddings.side_effect = RuntimeError('provider unavailable')
 
-        with self.assertRaises(ServiceUnavailableError) as context:
-            views.get_rag_chain()
+        with self.assertLogs('chatbot.views', level='WARNING'):
+            with self.assertRaises(ServiceUnavailableError) as context:
+                views.get_rag_chain()
 
         self.assertEqual(context.exception.status_code, 503)
         self.assertNotIn('provider unavailable', context.exception.message)
@@ -99,10 +109,13 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
     @override_settings(CHATBOT_ENABLED=False)
     def test_status_reports_archived_without_provider_details(self):
         response = views.chatbot_status(RequestFactory().get('/selfchatbot/status/'))
-        self.assertJSONEqual(response.content, {
-            'status': 'archived',
-            'available': False,
-        })
+        self.assertJSONEqual(
+            response.content,
+            {
+                'status': 'archived',
+                'available': False,
+            },
+        )
 
 
 class ChatbotSourceContractTests(SimpleTestCase):
@@ -132,27 +145,30 @@ class ChatbotSourceContractTests(SimpleTestCase):
             self.assertEqual(len(documents), 1)
             self.assertIn('출처: 농촌진흥청', documents[0].page_content)
             self.assertIn('https://www.rda.go.kr/', documents[0].page_content)
-            self.assertEqual(documents[0].metadata, {
-                'source_file': 'chatbot.csv',
-                'source_name': '농촌진흥청',
-                'source_type': '',
-                'source_url': 'https://www.rda.go.kr/',
-                'row': 2,
-            })
+            self.assertEqual(
+                documents[0].metadata,
+                {
+                    'source_file': 'chatbot.csv',
+                    'source_name': '농촌진흥청',
+                    'source_type': '',
+                    'source_url': 'https://www.rda.go.kr/',
+                    'row': 2,
+                },
+            )
 
     @patch.dict('os.environ', {}, clear=True)
     def test_validate_only_does_not_require_openai_or_chroma(self):
         with TemporaryDirectory() as directory:
             source = Path(directory) / 'chatbot.csv'
             source.write_text(
-                '질문,답변,출처,출처URL\n'
-                '재배 질문,검증된 답변,농촌진흥청,https://www.rda.go.kr/\n',
+                '질문,답변,출처,출처URL\n재배 질문,검증된 답변,농촌진흥청,https://www.rda.go.kr/\n',
                 encoding='utf-8',
             )
             stdout = StringIO()
             call_command(
                 'build_chatbot_index',
-                '--source', str(source),
+                '--source',
+                str(source),
                 '--validate-only',
                 stdout=stdout,
             )
@@ -171,30 +187,30 @@ class ChatbotCsrfBoundaryTests(TestCase):
         )
 
     def csrf_token(self):
-        return self.client.get("/login/auth_check/").cookies["csrftoken"].value
+        return self.client.get('/login/auth_check/').cookies['csrftoken'].value
 
     @patch.dict('os.environ', {}, clear=True)
     def test_chatbot_write_requires_csrf_and_preserves_archive_boundary(self):
         anonymous = self.client.post(
-            "/selfchatbot/chatbot/",
+            '/selfchatbot/chatbot/',
             data=b'{"question":"test","session_id":"session-1"}',
-            content_type="application/json",
+            content_type='application/json',
             HTTP_X_CSRFTOKEN=self.csrf_token(),
         )
         self.assertEqual(anonymous.status_code, 401)
 
         self.client.force_login(self.user)
         without_token = self.client.post(
-            "/selfchatbot/chatbot/",
+            '/selfchatbot/chatbot/',
             data=b'{"question":"test","session_id":"session-1"}',
-            content_type="application/json",
+            content_type='application/json',
         )
         self.assertEqual(without_token.status_code, 403)
 
         with_token = self.client.post(
-            "/selfchatbot/chatbot/",
+            '/selfchatbot/chatbot/',
             data=b'{"question":"test","session_id":"session-1"}',
-            content_type="application/json",
+            content_type='application/json',
             HTTP_X_CSRFTOKEN=self.csrf_token(),
         )
         self.assertEqual(with_token.status_code, 503)
@@ -223,11 +239,13 @@ class ChatbotPersistenceContractTests(TestCase):
 
         response = self.client.post(
             '/selfchatbot/chatbot/',
-            data=json.dumps({
-                'question': '고구마 비료 관리 요령',
-                'session_id': 'persistence-session',
-                'session_name': 'Persistence Test',
-            }),
+            data=json.dumps(
+                {
+                    'question': '고구마 비료 관리 요령',
+                    'session_id': 'persistence-session',
+                    'session_name': 'Persistence Test',
+                }
+            ),
             content_type='application/json',
         )
 
@@ -241,9 +259,7 @@ class ChatbotPersistenceContractTests(TestCase):
             1,
         )
 
-        history = self.client.get(
-            '/selfchatbot/chat_history/persistence-session/'
-        )
+        history = self.client.get('/selfchatbot/chat_history/persistence-session/')
         self.assertEqual(history.status_code, 200)
         self.assertEqual(len(history.json()), 1)
         self.assertEqual(history.json()[0]['question'], '고구마 비료 관리 요령')

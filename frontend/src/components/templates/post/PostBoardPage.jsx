@@ -70,7 +70,7 @@ const PostBoardPage = ({ boardLabel, postType }) => {
   const pageCount = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
   const visiblePosts = filteredPosts.slice(currentPage * POSTS_PER_PAGE, (currentPage + 1) * POSTS_PER_PAGE);
 
-  const changeSearch = (event) => {
+  const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
     setCurrentPage(0);
   };
@@ -84,7 +84,7 @@ const PostBoardPage = ({ boardLabel, postType }) => {
           type="search"
           placeholder="제목을 검색하세요"
           value={searchTerm}
-          onChange={changeSearch}
+          onChange={handleSearchChange}
         />
         {authStatus === "authenticated" && (
           <CreateButton to={`/post/create?post_type=${postType}`}>

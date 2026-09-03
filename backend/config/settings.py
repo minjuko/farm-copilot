@@ -1,5 +1,6 @@
-from pathlib import Path
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -7,11 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def env_bool(name, default=False):
-    return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+    return os.getenv(name, str(default)).strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
-def env_list(name, default=""):
-    return [value.strip() for value in os.getenv(name, default).split(",") if value.strip()]
+def env_list(name, default=''):
+    return [value.strip() for value in os.getenv(name, default).split(',') if value.strip()]
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
@@ -25,83 +27,72 @@ ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS')
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "django.contrib.humanize",
-    "common.apps.CommonConfig",
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.humanize',
+    'common.apps.CommonConfig',
     'storages',
-    "accounts.apps.AccountsConfig",
-    "community",
-    "chatbot.apps.ChatbotConfig",
+    'accounts.apps.AccountsConfig',
+    'community',
+    'chatbot.apps.ChatbotConfig',
     'corsheaders',
     'rest_framework',
     'prediction',
     'detect',
     'soil',
-    
 ]
 
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    'common.middleware.CustomExceptionMiddleware'
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'common.middleware.CustomExceptionMiddleware',
 ]
 
-ROOT_URLCONF = "config.urls"
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [f'{BASE_DIR}/templates'],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [f'{BASE_DIR}/templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
+WSGI_APPLICATION = 'config.wsgi.application'
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')
 CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000')
-# 세션 설정
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # 기본 DB 기반 세션 저장
-SESSION_COOKIE_AGE = 1209600  # 2주
-#SESSION_SAVE_EVERY_REQUEST = True  # 매 요청마다 세션 갱신
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600
 
 # 쿠키 보안 설정
 SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', not DEBUG)
 CSRF_COOKIE_SECURE = env_bool('CSRF_COOKIE_SECURE', not DEBUG)
-SESSION_COOKIE_SAMESITE = os.getenv(
-    'SESSION_COOKIE_SAMESITE', 'Lax' if DEBUG else 'None'
-)
-CSRF_COOKIE_SAMESITE = os.getenv(
-    'CSRF_COOKIE_SAMESITE', 'Lax' if DEBUG else 'None'
-)
+SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax' if DEBUG else 'None')
+CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'Lax' if DEBUG else 'None')
 SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', not DEBUG)
-SECURE_HSTS_SECONDS = int(os.getenv(
-    'DJANGO_SECURE_HSTS_SECONDS', '0' if DEBUG else '31536000'
-))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
-    'DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG
-)
+SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '0' if DEBUG else '31536000'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG)
 SECURE_HSTS_PRELOAD = env_bool('DJANGO_SECURE_HSTS_PRELOAD', not DEBUG)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
@@ -138,22 +129,21 @@ DATABASE_ROUTERS = ['config.db_routers.SchemaRouter']
 AUTH_USER_MODEL = 'login.User'
 
 
-
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
 
@@ -163,7 +153,8 @@ AUTHENTICATION_BACKENDS = [
 
 EMAIL_BACKEND = os.getenv(
     'EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend' if DEBUG
+    'django.core.mail.backends.console.EmailBackend'
+    if DEBUG
     else 'django.core.mail.backends.smtp.EmailBackend',
 )
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
@@ -179,12 +170,8 @@ FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
 # is explicitly enabled and all provider/runtime artifacts are configured.
 CHATBOT_ENABLED = env_bool('CHATBOT_ENABLED', False)
 CHATBOT_LLM_MODEL = os.getenv('CHATBOT_LLM_MODEL', 'gpt-4o-mini')
-CHATBOT_EMBEDDING_MODEL = os.getenv(
-    'CHATBOT_EMBEDDING_MODEL', 'text-embedding-3-small'
-)
-CHATBOT_COLLECTION_NAME = os.getenv(
-    'CHATBOT_COLLECTION_NAME', 'agriculture-knowledge'
-)
+CHATBOT_EMBEDDING_MODEL = os.getenv('CHATBOT_EMBEDDING_MODEL', 'text-embedding-3-small')
+CHATBOT_COLLECTION_NAME = os.getenv('CHATBOT_COLLECTION_NAME', 'agriculture-knowledge')
 YOLO_AUGMENTED_INFERENCE = env_bool('YOLO_AUGMENTED_INFERENCE', True)
 SOIL_SERVICE_ENABLED = env_bool('SOIL_SERVICE_ENABLED', True)
 PREDICTION_SERVICE_ENABLED = env_bool('PREDICTION_SERVICE_ENABLED', True)
@@ -193,13 +180,10 @@ PREDICTION_SERVICE_ENABLED = env_bool('PREDICTION_SERVICE_ENABLED', True)
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-# LANGUAGE_CODE = 'en-us'
 LANGUAGE_CODE = 'ko-kr'
 
-# TIME_ZONE = 'UTC'
 TIME_ZONE = 'Asia/Seoul'
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 
@@ -209,13 +193,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# 이미지 관련 설정 
+# 이미지 관련 설정
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Add these lines if they are not already present
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    BASE_DIR / 'static',
 ]
 
 USE_S3 = env_bool('DJANGO_USE_S3', False)
@@ -239,33 +222,10 @@ if USE_S3:
 else:
     STORAGES = {
         'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
-        'staticfiles': {
-            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'
-        },
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
     }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'console': {
-#             'level': 'DEBUG',
-#             'class': 'logging.StreamHandler',
-#         },
-#         'file': {
-#             'level': 'DEBUG',
-#             'class': 'logging.FileHandler',
-#             'filename': BASE_DIR / 'debug.log',
-#         },
-#     },
-#     'root': {
-#         'handlers': ['console', 'file'],
-#         'level': 'DEBUG',
-#     },
-# }
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

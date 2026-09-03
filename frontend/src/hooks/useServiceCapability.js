@@ -4,11 +4,11 @@ import { fetchCapabilities, normalizeCapability } from "../apis/capabilities";
 export default function useServiceCapability(service) {
   const [capability, setCapability] = useState({ status: "checking", available: false });
   useEffect(() => {
-    let active = true;
+    let isActive = true;
     fetchCapabilities()
-      .then(({ data }) => active && setCapability(normalizeCapability(data, service)))
-      .catch(() => active && setCapability({ status: "limited", available: false }));
-    return () => { active = false; };
+      .then(({ data }) => isActive && setCapability(normalizeCapability(data, service)))
+      .catch(() => isActive && setCapability({ status: "limited", available: false }));
+    return () => { isActive = false; };
   }, [service]);
   return capability;
 }

@@ -15,18 +15,18 @@ export const buildChatPayload = ({ question, sessionId, sessionName }) => {
   };
 };
 
-export const normalizeChatResponse = (data) => {
-  if (typeof data?.answer !== "string" || !data.answer.trim()) return null;
+export const normalizeChatResponse = (chatResponse) => {
+  if (typeof chatResponse?.answer !== "string" || !chatResponse.answer.trim()) return null;
   return {
     isUser: false,
-    text: data.answer,
-    timestamp: data.timestamp || new Date().toISOString(),
+    text: chatResponse.answer,
+    timestamp: chatResponse.timestamp || new Date().toISOString(),
   };
 };
 
-export const normalizeChatHistory = (data) => {
-  if (!Array.isArray(data)) return null;
-  return data.flatMap((chat) => {
+export const normalizeChatHistory = (chatHistory) => {
+  if (!Array.isArray(chatHistory)) return null;
+  return chatHistory.flatMap((chat) => {
     if (typeof chat?.question !== "string" || typeof chat?.answer !== "string") return [];
     const timestamp = chat.timestamp || new Date().toISOString();
     return [

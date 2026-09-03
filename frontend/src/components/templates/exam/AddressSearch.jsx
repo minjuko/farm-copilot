@@ -56,11 +56,11 @@ const AddressSearch = ({
     </Row>
     {results.length > 0 && (
       <Results aria-label="주소 검색 결과">
-        {results.map((result, index) => (
-          <Result type="button" key={`${result.address_name}-${index}`} onClick={() => onSelect(result)}>
-            {result.display_name}
-            {result.road_address_name && result.address_name !== result.road_address_name && (
-              <Meta>지번: {result.address_name}</Meta>
+        {results.map((addressResult, index) => (
+          <Result type="button" key={`${addressResult.address_name}-${index}`} onClick={() => onSelect(addressResult)}>
+            {addressResult.display_name}
+            {addressResult.road_address_name && addressResult.address_name !== addressResult.road_address_name && (
+              <Meta>지번: {addressResult.address_name}</Meta>
             )}
           </Result>
         ))}

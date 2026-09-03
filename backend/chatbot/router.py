@@ -12,8 +12,7 @@ class SelfChatbotRouter:
         return None
 
     def allow_relation(self, obj1, obj2, **hints):
-        if obj1._meta.app_label == self.app_label or \
-           obj2._meta.app_label == self.app_label:
+        if obj1._meta.app_label == self.app_label or obj2._meta.app_label == self.app_label:
             return True
         return None
 
@@ -21,4 +20,3 @@ class SelfChatbotRouter:
         if app_label == self.app_label:
             return db == 'selfchatbot_db'
         return None
-

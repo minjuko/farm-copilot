@@ -293,13 +293,13 @@ const DiagnosisTemplate = () => {
     }
   };
 
-  const openCamera = () => {
+  const handleOpenCamera = () => {
     if (cameraInputRef.current) {
       cameraInputRef.current.click();
     }
   };
 
-  const openFileDialog = () => {
+  const handleOpenFileDialog = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -329,11 +329,11 @@ const DiagnosisTemplate = () => {
           토마토: 잿빛곰팡이병, 흰가루병
         </ExplanationText>
         <ButtonWrapper>
-          <UploadButton onClick={openFileDialog}>
+          <UploadButton onClick={handleOpenFileDialog}>
             <FaFile />
             파일 업로드
           </UploadButton>
-          <CameraButton onClick={openCamera}>
+          <CameraButton onClick={handleOpenCamera}>
             <FaCamera />
             촬영
           </CameraButton>

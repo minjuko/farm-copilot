@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
-from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase
 from PIL import Image
@@ -57,8 +56,9 @@ class DetectionRuntimeTests(SimpleTestCase):
         model_path.exists.return_value = True
         import_module.return_value.YOLO.side_effect = ValueError('corrupt model')
 
-        with self.assertRaises(ServiceUnavailableError) as context:
-            views.get_yolo_model()
+        with self.assertLogs('detect.views', level='WARNING'):
+            with self.assertRaises(ServiceUnavailableError) as context:
+                views.get_yolo_model()
 
         self.assertEqual(context.exception.status_code, 503)
         self.assertNotIn('corrupt model', context.exception.message)
@@ -84,9 +84,7 @@ class DetectionRuntimeTests(SimpleTestCase):
             )
 
     def test_image_validation_rejects_invalid_and_empty_files(self):
-        invalid = SimpleUploadedFile(
-            'crop.jpg', b'not-an-image', content_type='image/jpeg'
-        )
+        invalid = SimpleUploadedFile('crop.jpg', b'not-an-image', content_type='image/jpeg')
         empty = SimpleUploadedFile('crop.jpg', b'', content_type='image/jpeg')
 
         with self.assertRaises(ValidationError):
@@ -109,12 +107,8 @@ class DetectionRuntimeTests(SimpleTestCase):
 
     @patch.object(views, 'Pest')
     @patch.object(views, 'process_image')
-    def test_unresolved_mapping_does_not_lookup_or_save_pest(
-        self, process_image, pest_model
-    ):
-        process_image.side_effect = ServiceUnavailableError(
-            views.MAPPING_UNAVAILABLE_MESSAGE
-        )
+    def test_unresolved_mapping_does_not_lookup_or_save_pest(self, process_image, pest_model):
+        process_image.side_effect = ServiceUnavailableError(views.MAPPING_UNAVAILABLE_MESSAGE)
 
         with self.assertRaises(ServiceUnavailableError) as context:
             views.upload_image_for_detection(self.make_request(self.make_image('JPEG')))
@@ -226,7 +220,10 @@ class DetectionModelClassMappingTests(TestCase):
         result = Mock(boxes=[lower_box, higher_box])
         result.plot.return_value = object()
         get_model.return_value = Mock(return_value=[result])
-        import_module.return_value.imencode.return_value = (True, np.array([1, 2, 3], dtype=np.uint8))
+        import_module.return_value.imencode.return_value = (
+            True,
+            np.array([1, 2, 3], dtype=np.uint8),
+        )
 
         with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
             image_file.write(b'image')
@@ -266,26 +263,26 @@ class DetectCsrfBoundaryTests(TestCase):
         from accounts.models import User
 
         self.user = User.objects.create_user(
-            email="detect-csrf@example.com",
-            username="detect-csrf",
-            password="test-password",
+            email='detect-csrf@example.com',
+            username='detect-csrf',
+            password='test-password',
         )
         self.client = Client(enforce_csrf_checks=True)
         self.client.force_login(self.user)
 
     def csrf_token(self):
-        return self.client.get("/login/auth_check/").cookies["csrftoken"].value
+        return self.client.get('/login/auth_check/').cookies['csrftoken'].value
 
     def test_detect_upload_requires_csrf(self):
         without_token = self.client.post(
-            "/detect/upload/",
-            data={"image": "not-an-upload"},
+            '/detect/upload/',
+            data={'image': 'not-an-upload'},
         )
         self.assertEqual(without_token.status_code, 403)
 
         with_token = self.client.post(
-            "/detect/upload/",
-            data={"image": "not-an-upload"},
+            '/detect/upload/',
+            data={'image': 'not-an-upload'},
             HTTP_X_CSRFTOKEN=self.csrf_token(),
         )
         self.assertEqual(with_token.status_code, 400)

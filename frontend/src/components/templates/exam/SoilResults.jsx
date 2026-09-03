@@ -112,7 +112,7 @@ const Button = styled.button`
   }
 `;
 
-const SoilResults = ({ cropName, selectedSoilSample, fertilizerData, fertilizerUnavailable, isFertilizerLoading, handleBackToList }) => (
+const SoilResults = ({ cropName, selectedSoilSample, fertilizerData, isFertilizerUnavailable, isFertilizerLoading, handleBackToList }) => (
   <RecommendationContainer>
     <CropInfoContainer>
       <CropInfo>작물: <CropInfoText>{cropName}</CropInfoText></CropInfo>
@@ -165,8 +165,8 @@ const SoilResults = ({ cropName, selectedSoilSample, fertilizerData, fertilizerU
     </TableContainer>
     <SectionTitle>비료 처방량</SectionTitle>
     {isFertilizerLoading && <p>비료 추천 결과를 불러오는 중입니다.</p>}
-    {!isFertilizerLoading && fertilizerUnavailable && <p>등록된 비료 처방 데이터가 없습니다.</p>}
-    {!isFertilizerLoading && !fertilizerUnavailable && !fertilizerData && <p>상세 주소를 선택하면 비료 처방량을 확인할 수 있습니다.</p>}
+    {!isFertilizerLoading && isFertilizerUnavailable && <p>등록된 비료 처방 데이터가 없습니다.</p>}
+    {!isFertilizerLoading && !isFertilizerUnavailable && !fertilizerData && <p>상세 주소를 선택하면 비료 처방량을 확인할 수 있습니다.</p>}
     {fertilizerData && <TableContainer>
       <Table>
         <thead>
@@ -178,62 +178,62 @@ const SoilResults = ({ cropName, selectedSoilSample, fertilizerData, fertilizerU
         <tbody>
           <tr>
             <TableData>밑거름_질소 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.pre_Fert_N)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.pre_Fert_N)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>밑거름_인산 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.pre_Fert_P)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.pre_Fert_P)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>밑거름_칼리 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.pre_Fert_K)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.pre_Fert_K)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>웃거름_질소 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.post_Fert_N)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.post_Fert_N)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>웃거름_인산 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.post_Fert_P)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.post_Fert_P)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>웃거름_칼리 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.post_Fert_K)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.post_Fert_K)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>우분퇴비 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.pre_Compost_Cattl)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.pre_Compost_Cattl)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>돈분퇴비 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.pre_Compost_Pig)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.pre_Compost_Pig)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>계분퇴비 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.pre_Compost_Chick)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.pre_Compost_Chick)} (kg/10a)</TableData>
             ))}
           </tr>
           <tr>
             <TableData>혼합퇴비 처방량</TableData>
-            {fertilizerData.map((item, index) => (
-              <TableData key={index}>{formatSoilValue(item.pre_Compost_Mix)} (kg/10a)</TableData>
+            {fertilizerData.map((fertilizerRecord, index) => (
+              <TableData key={index}>{formatSoilValue(fertilizerRecord.pre_Compost_Mix)} (kg/10a)</TableData>
             ))}
           </tr>
         </tbody>

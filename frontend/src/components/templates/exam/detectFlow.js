@@ -38,26 +38,26 @@ export const normalizeMediaUrl = (value, baseUrl = DETECT_API_BASE_URL) => {
   }
 };
 
-export const normalizeDetectionResult = (data) => {
-  const confidence = Number(data?.confidence);
-  if (!data || typeof data.pest_name !== "string" || !data.pest_name.trim()
-      || data.pest_name === "0" || !Number.isFinite(confidence)) {
+export const normalizeDetectionResult = (detectionPayload) => {
+  const confidence = Number(detectionPayload?.confidence);
+  if (!detectionPayload || typeof detectionPayload.pest_name !== "string" || !detectionPayload.pest_name.trim()
+      || detectionPayload.pest_name === "0" || !Number.isFinite(confidence)) {
     return null;
   }
 
   return {
-    ...data,
-    pest_name: data.pest_name.trim(),
+    ...detectionPayload,
+    pest_name: detectionPayload.pest_name.trim(),
     confidence,
-    occurrence_environment: data.occurrence_environment || "정보 없음",
-    symptom_description: data.symptom_description || "정보 없음",
-    prevention_methods: data.prevention_methods || "정보 없음",
-    pesticide_name: typeof data.pesticide_name === "string" ? data.pesticide_name : "",
-    information_source: data.information_source || "",
-    information_source_url: data.information_source_url || "",
-    detection_date: data.detection_date || "정보 없음",
-    user_image_url: normalizeMediaUrl(data.user_image_url),
-    db_image_url: normalizeMediaUrl(data.db_image_url),
+    occurrence_environment: detectionPayload.occurrence_environment || "정보 없음",
+    symptom_description: detectionPayload.symptom_description || "정보 없음",
+    prevention_methods: detectionPayload.prevention_methods || "정보 없음",
+    pesticide_name: typeof detectionPayload.pesticide_name === "string" ? detectionPayload.pesticide_name : "",
+    information_source: detectionPayload.information_source || "",
+    information_source_url: detectionPayload.information_source_url || "",
+    detection_date: detectionPayload.detection_date || "정보 없음",
+    user_image_url: normalizeMediaUrl(detectionPayload.user_image_url),
+    db_image_url: normalizeMediaUrl(detectionPayload.db_image_url),
   };
 };
 

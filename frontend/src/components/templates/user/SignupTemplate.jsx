@@ -24,22 +24,22 @@ const SignupTemplate = () => {
   const [usernameError, setUsernameError] = useState("");
   const [usernameAvailable, setUsernameAvailable] = useState("");
   const [emailError, setEmailError] = useState("");
-  const [verificationCodeSent, setVerificationCodeSent] = useState(false);
-  const [verificationCodeSuccess, setVerificationCodeSuccess] = useState(""); // 성공 메시지 상태 추가
+  const [isVerificationCodeSent, setIsVerificationCodeSent] = useState(false);
+  const [verificationCodeSuccess, setVerificationCodeSuccess] = useState("");
   const [verificationCodeError, setVerificationCodeError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [signupError, setSignupError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
-  const [modalTitle, setModalTitle] = useState("오류"); // 모달 타이틀 상태 추가
-  const [isSignupSuccess, setIsSignupSuccess] = useState(false); // 회원가입 성공 상태 추가
-  const [isSendingCode, setIsSendingCode] = useState(false); // 인증번호 발송 중 상태 추가
+  const [modalTitle, setModalTitle] = useState("오류");
+  const [isSignupSuccess, setIsSignupSuccess] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
   const clientValidation = getSignupValidation(formData);
   const isButtonDisabled = hasValidationErrors(clientValidation)
     || Boolean(usernameError || emailError || passwordError || verificationCodeError);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
     setFormData({ ...formData, [name]: value });
 
     if (name === "email") setEmailError(getEmailError(value));
@@ -89,7 +89,7 @@ const SignupTemplate = () => {
     setIsSendingCode(true);
     sendVerificationEmail(email)
       .then(() => {
-        setVerificationCodeSent(true);
+        setIsVerificationCodeSent(true);
         setVerificationCodeSuccess("이메일로 인증번호가 발송되었습니다. 메일함을 확인해주세요");
       })
       .catch((error) => {
@@ -108,8 +108,8 @@ const SignupTemplate = () => {
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
     const { username, email, verification_code, password1, password2 } = formData;
     const validation = getSignupValidation(formData);
     if (hasValidationErrors(validation)) {
@@ -166,7 +166,7 @@ const SignupTemplate = () => {
       });
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
     if (isSignupSuccess) {
       navigate("/login");
@@ -202,7 +202,7 @@ const SignupTemplate = () => {
             />
           {emailError && <ErrorMessage>{emailError}</ErrorMessage>}
           {verificationCodeError && <ErrorMessage>{verificationCodeError}</ErrorMessage>}
-          {verificationCodeSent && !verificationCodeError && <SuccessMessage>{verificationCodeSuccess}</SuccessMessage>}
+          {isVerificationCodeSent && !verificationCodeError && <SuccessMessage>{verificationCodeSuccess}</SuccessMessage>}
             <Button type="button" onClick={handleSendVerificationCode} disabled={!isValidEmail(formData.email) || isSendingCode}>
               {isSendingCode ? "인증번호 발송 중..." : "인증번호 전송"}
             </Button>
@@ -244,7 +244,7 @@ const SignupTemplate = () => {
         </InputGroup>
         <Button type="submit" disabled={isButtonDisabled}>가입하기</Button>
       </Form>
-      <CustomModal isOpen={isModalOpen} onRequestClose={closeModal} title={modalTitle} content={modalContent} />
+      <CustomModal isOpen={isModalOpen} onRequestClose={handleCloseModal} title={modalTitle} content={modalContent} />
     </Container>
   );
 };

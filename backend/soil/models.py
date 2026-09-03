@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class CropData(models.Model):
     user_id = models.IntegerField()
     session_id = models.CharField(max_length=255, default=None, null=True, blank=True)
@@ -11,4 +12,4 @@ class CropData(models.Model):
     fertilizer_data = models.JSONField(default=dict)
 
     class Meta:
-        db_table = "soil_crop_data"
+        db_table = 'soil_crop_data'

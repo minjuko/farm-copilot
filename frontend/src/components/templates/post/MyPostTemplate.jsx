@@ -64,7 +64,7 @@ const PostTitle = styled.span`
 const getMyPostsError = () => "내 게시글을 불러오지 못했습니다.";
 
 const MyPostTemplate = () => {
-  const { setIsLoading, isLoading } = useLoading();
+  const { setIsLoading } = useLoading();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -97,7 +97,7 @@ const MyPostTemplate = () => {
     setIsLoading(false);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsDeleteModalOpen(false);
     setSelectedPostId(null);
   };
@@ -108,7 +108,7 @@ const MyPostTemplate = () => {
 
   return (
     <ListPage>
-      <GlobalLoader isLoading={isLoading} />
+      <GlobalLoader />
       {(loadError || actionError) && <p role="alert">{loadError || actionError}</p>}
       <PostList>
         {posts.length === 0 && !loadError ? <EmptyState>등록한 게시글이 없습니다.</EmptyState> : <Table>
@@ -137,11 +137,11 @@ const MyPostTemplate = () => {
       <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageClick} />
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title="삭제 확인"
         content="이 게시글을 삭제하시겠습니까?"
         onConfirm={handleDelete}
-        closeModal={closeModal}
+        closeModal={handleCloseModal}
         confirmText="삭제"
         cancelText="취소"
         confirmColor="#e53e3e"

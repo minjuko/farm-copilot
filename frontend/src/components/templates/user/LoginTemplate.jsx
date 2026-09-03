@@ -124,16 +124,16 @@ const LoginTemplate = () => {
   const validation = getLoginValidation(formData);
   const isButtonDisabled = hasValidationErrors(validation);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
     setFormData({ ...formData, [name]: value });
 
     if (name === "email") setEmailError(getEmailError(value));
     if (name === "password") setPasswordError(getLoginPasswordError(value));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
     if (isLoading) return;
 
     const { email, password } = formData;
@@ -186,7 +186,7 @@ const LoginTemplate = () => {
       });
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
   };
 
@@ -231,7 +231,7 @@ const LoginTemplate = () => {
       </Form>
       <CustomModal
         isOpen={isModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title={modalTitle}
         content={modalContent}
         showConfirmButton={false}

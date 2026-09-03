@@ -159,7 +159,7 @@ export const SaveButton = styled.button`
   border-radius: 0.3125rem; 
   padding: 0.5rem 0.875rem; 
   cursor: pointer;
-  font-size: 1rem; /* 16px in rem */
+  font-size: 1rem;
   transition: background-color 0.3s;
 
   &:hover {

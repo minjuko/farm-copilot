@@ -36,7 +36,7 @@ const PostImage = styled.img`
   max-height: 400px;
   width: 100%;
   height: auto;
-  margin: 16px auto 0 auto; /* Center the image */
+  margin: 16px auto 0 auto;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   display: block; 

@@ -14,21 +14,21 @@ export default function useSessionDetails(sessionId) {
   const [isFetching, setIsFetching] = useState(true);
 
   const load = useCallback(async () => {
-    const id = sessionId || location.state?.session_id;
-    if (!id) {
+    const resolvedSessionId = sessionId || location.state?.session_id;
+    if (!resolvedSessionId) {
       setErrorMessage("세션 ID가 없습니다. 목록에서 다시 선택해주세요.");
       setIsFetching(false);
       return;
     }
     try {
       setIsLoading(true);
-      const response = await getSessionDetails(id);
-      const normalized = normalizePredictionResult(response.data);
-      if (normalized.results.length === 0) {
+      const response = await getSessionDetails(resolvedSessionId);
+      const normalizedDetails = normalizePredictionResult(response.data);
+      if (normalizedDetails.results.length === 0) {
         setErrorMessage("표시할 예측 결과가 없습니다.");
         return;
       }
-      setSessionDetails(normalized);
+      setSessionDetails(normalizedDetails);
     } catch (error) {
       if (error.response?.status === 401) navigate("/login");
       else setErrorMessage(getServiceErrorMessage(error, "세션 상세 정보를 불러오지 못했습니다."));

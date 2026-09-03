@@ -112,7 +112,7 @@ const EditPostTemplate = () => {
     }
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
     navigate(`/post/${id}`);
   };
@@ -176,10 +176,10 @@ const EditPostTemplate = () => {
 
       <CustomModal
         isOpen={isModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title={modalTitle}
         content={modalContent}
-        onConfirm={closeModal}
+        onConfirm={handleCloseModal}
         showConfirmButton={false}
       />
     </Container>

@@ -92,14 +92,14 @@ const CropSelectionPage = () => {
     navigate(`/session-details/${session.session_id}`, { state: { session_id: session.session_id } });
   };
 
-  const handleEditClick = (session, e) => {
-    e.stopPropagation();
+  const handleEditClick = (session, event) => {
+    event.stopPropagation();
     setEditingSession(session);
     setNewSessionName(session.session_name);
   };
 
-  const handleSaveClick = async (sessionId, e) => {
-    e.stopPropagation();
+  const handleSaveClick = async (sessionId, event) => {
+    event.stopPropagation();
     const trimmedName = newSessionName.trim();
     if (!trimmedName || savingSessionId) {
       if (!trimmedName) setError('세션 이름을 입력해주세요.');
@@ -128,13 +128,13 @@ const CropSelectionPage = () => {
     }
   };
 
-  const openDeleteModal = (sessionId, e) => {
-    e.stopPropagation();
+  const handleOpenDeleteModal = (sessionId, event) => {
+    event.stopPropagation();
     setSessionIdToDelete(sessionId);
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
   };
 
@@ -189,7 +189,7 @@ const CropSelectionPage = () => {
                             <EditButton onClick={(e) => handleEditClick(session, e)}>
                               <FaEdit />
                             </EditButton>
-                            <DeleteButton onClick={(e) => openDeleteModal(session.session_id, e)}>
+                            <DeleteButton onClick={(e) => handleOpenDeleteModal(session.session_id, e)}>
                               <FaTrash />
                             </DeleteButton>
                           </ButtonContainer>
@@ -205,11 +205,11 @@ const CropSelectionPage = () => {
         </ContentContainer>
         <ConfirmModal
           isOpen={isModalOpen}
-          onRequestClose={closeModal}
+          onRequestClose={handleCloseModal}
           title="삭제 확인"
           content="이 항목을 삭제하시겠습니까?"
           onConfirm={handleDelete}
-          closeModal={closeModal}
+          closeModal={handleCloseModal}
           confirmText="삭제"
           cancelText="취소"
           confirmColor="#e53e3e"

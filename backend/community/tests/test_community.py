@@ -5,6 +5,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from accounts.models import User
+
 from ..models import Comment, Post
 
 
@@ -83,9 +84,7 @@ class CommunitySmokeTests(TestCase):
             reverse('community:post_edit', args=[post_id]),
             data={'title': 'Tampered', 'content': 'Tampered', 'post_type': 'sell'},
         )
-        delete_response = self.client.post(
-            reverse('community:post_delete', args=[post_id])
-        )
+        delete_response = self.client.post(reverse('community:post_delete', args=[post_id]))
 
         self.assertEqual(edit_response.status_code, 404)
         self.assertEqual(delete_response.status_code, 404)
@@ -109,9 +108,7 @@ class CommunitySmokeTests(TestCase):
         second_post = Post.objects.create(
             user=self.user, title='Second', content='Second content', post_type='sell'
         )
-        parent = Comment.objects.create(
-            user=self.user, post=first_post, content='Parent'
-        )
+        parent = Comment.objects.create(user=self.user, post=first_post, content='Parent')
 
         response = self.client.post(
             reverse('community:comment_create', args=[second_post.id]),
@@ -123,9 +120,7 @@ class CommunitySmokeTests(TestCase):
         self.assertFalse(Comment.objects.filter(content='Invalid reply').exists())
 
     def test_invalid_list_filter_and_wrong_methods_are_rejected(self):
-        invalid_filter = self.client.get(
-            reverse('community:post_list'), {'post_type': 'invalid'}
-        )
+        invalid_filter = self.client.get(reverse('community:post_list'), {'post_type': 'invalid'})
         self.assertEqual(invalid_filter.status_code, 400)
         self.assertEqual(
             self.client.post(reverse('community:post_list')).status_code,
@@ -153,7 +148,8 @@ class CommunitySmokeTests(TestCase):
     def test_post_image_larger_than_five_mb_is_rejected(self):
         oversized_gif = SimpleUploadedFile(
             'oversized.gif',
-            b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;' + b'\x00' * (5 * 1024 * 1024),
+            b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+            + b'\x00' * (5 * 1024 * 1024),
             content_type='image/gif',
         )
         response = self.client.post(

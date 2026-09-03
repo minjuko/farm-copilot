@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 import Pagination from "../../molecules/Pagination";
 import { fetchMyCommentedPosts } from "../../../apis/post";
-import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
 import { EmptyState, ListPage } from "../../../styles/primitives";
@@ -64,7 +63,6 @@ const PostTitle = styled.span`
 `;
 
 const MyCommentedPostsTemplate = () => {
-  const { isLoading } = useLoading();
   const [currentPage, setCurrentPage] = useState(0);
   const loadPosts = useCallback(async () => {
     const response = await fetchMyCommentedPosts();
@@ -85,7 +83,7 @@ const MyCommentedPostsTemplate = () => {
 
   return (
     <ListPage>
-      <GlobalLoader isLoading={isLoading} />
+      <GlobalLoader />
       {loadError && <p role="alert">{loadError}</p>}
       <PostList>
         {posts.length === 0 && !loadError ? <EmptyState>댓글을 작성한 게시글이 없습니다.</EmptyState> : <Table>

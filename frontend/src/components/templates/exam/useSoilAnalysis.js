@@ -14,7 +14,7 @@ const resetResultState = (setters) => {
   setters.setSoilData([]);
   setters.setSelectedSample(null);
   setters.setFertilizerData(null);
-  setters.setFertilizerUnavailable(false);
+  setters.setIsFertilizerUnavailable(false);
 };
 
 export const useSoilAnalysis = () => {
@@ -26,9 +26,9 @@ export const useSoilAnalysis = () => {
   const [soilData, setSoilData] = useState([]);
   const [selectedSample, setSelectedSample] = useState(null);
   const [fertilizerData, setFertilizerData] = useState(null);
-  const [fertilizerUnavailable, setFertilizerUnavailable] = useState(false);
+  const [isFertilizerUnavailable, setIsFertilizerUnavailable] = useState(false);
   const [error, setError] = useState(null);
-  const [errorModalIsOpen, setErrorModalIsOpen] = useState(false);
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [isSoilLoading, setIsSoilLoading] = useState(false);
   const [isFertilizerLoading, setIsFertilizerLoading] = useState(false);
   const [isAddressSearching, setIsAddressSearching] = useState(false);
@@ -43,36 +43,36 @@ export const useSoilAnalysis = () => {
     setSoilData,
     setSelectedSample,
     setFertilizerData,
-    setFertilizerUnavailable,
+    setIsFertilizerUnavailable,
   };
 
   const showError = (message) => {
     setError(message);
-    setErrorModalIsOpen(true);
+    setIsErrorModalOpen(true);
   };
 
   useEffect(() => {
-    let active = true;
+    let isActive = true;
     fetchCapabilities()
       .then((response) => {
-        if (active) setServiceCapability(normalizeCapability(response?.data, "soil"));
+        if (isActive) setServiceCapability(normalizeCapability(response?.data, "soil"));
       })
       .catch(() => {
-        if (active) setServiceCapability({ status: "limited", available: false });
+        if (isActive) setServiceCapability({ status: "limited", available: false });
       });
-    return () => { active = false; };
+    return () => { isActive = false; };
   }, []);
 
   useEffect(() => {
-    let active = true;
+    let isActive = true;
     getCropNames()
       .then((response) => {
-        if (active) setCropNames(Array.isArray(response?.data?.crop_names) ? response.data.crop_names : []);
+        if (isActive) setCropNames(Array.isArray(response?.data?.crop_names) ? response.data.crop_names : []);
       })
       .catch(() => {
-        if (active) showError("작물 이름을 불러오는 중 오류가 발생했습니다.");
+        if (isActive) showError("작물 이름을 불러오는 중 오류가 발생했습니다.");
       });
-    return () => { active = false; };
+    return () => { isActive = false; };
   }, []);
 
   const changeCropName = (value) => {
@@ -100,14 +100,14 @@ export const useSoilAnalysis = () => {
     try {
       setIsAddressSearching(true);
       const response = await searchSoilAddresses(address.trim());
-      const results = response?.data?.results;
-      if (!Array.isArray(results) || results.length === 0) {
+      const addressResults = response?.data?.results;
+      if (!Array.isArray(addressResults) || addressResults.length === 0) {
         setAddressResults([]);
         showError("검색된 주소가 없습니다.");
         return;
       }
       setAddress(response?.data?.normalized_query || address.trim());
-      setAddressResults(results);
+      setAddressResults(addressResults);
       setError(null);
     } catch (requestError) {
       setAddressResults([]);
@@ -157,8 +157,8 @@ export const useSoilAnalysis = () => {
     }
   };
 
-  const selectAddress = (result) => {
-    const selectedAddress = result.display_name || result.address_name;
+  const selectAddress = (addressResult) => {
+    const selectedAddress = addressResult.display_name || addressResult.address_name;
     setAddress(selectedAddress);
     setAddressResults([]);
     fetchSoilExamData(selectedAddress);
@@ -166,16 +166,16 @@ export const useSoilAnalysis = () => {
 
   const selectSample = async (sampleIndex) => {
     if (!serviceCapability.available || fertilizerRequestInFlight.current) return;
-    const selected = soilData[Number(sampleIndex)];
-    if (!selected) return;
-    setSelectedSample(selected);
+    const selectedSoilSample = soilData[Number(sampleIndex)];
+    if (!selectedSoilSample) return;
+    setSelectedSample(selectedSoilSample);
     setFertilizerData(null);
-    setFertilizerUnavailable(false);
+    setIsFertilizerUnavailable(false);
 
     const { payload, error: payloadError } = buildFertilizerPayload({
       cropName,
       address: address.trim(),
-      soilItem: selected,
+      soilItem: selectedSoilSample,
     });
     if (payloadError) {
       showError(payloadError);
@@ -189,14 +189,14 @@ export const useSoilAnalysis = () => {
       const response = await getSoilFertilizerInfo(payload);
       const fertilizerItems = response?.data?.data;
       if (!Array.isArray(fertilizerItems) || fertilizerItems.length === 0) {
-        setFertilizerUnavailable(true);
+        setIsFertilizerUnavailable(true);
         return;
       }
       setFertilizerData(fertilizerItems);
       setError(null);
     } catch (requestError) {
       if (isFertilizerNotFound(requestError)) {
-        setFertilizerUnavailable(true);
+        setIsFertilizerUnavailable(true);
       } else {
         showError(getServiceErrorMessage(
           requestError,
@@ -216,13 +216,13 @@ export const useSoilAnalysis = () => {
     addressResults,
     changeAddress,
     changeCropName,
-    closeErrorModal: () => setErrorModalIsOpen(false),
+    closeErrorModal: () => setIsErrorModalOpen(false),
     cropName,
     cropNames,
     error,
-    errorModalIsOpen,
+    isErrorModalOpen,
     fertilizerData,
-    fertilizerUnavailable,
+    isFertilizerUnavailable,
     isAddressSearching,
     isFertilizerLoading,
     isSoilLoading,

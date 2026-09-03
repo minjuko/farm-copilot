@@ -93,6 +93,8 @@ test("disables paid requests while the chatbot is archived", async () => {
   fetchChatbotStatus.mockResolvedValue({ data: { status: "archived", available: false } });
   render(<ChatTemplate />);
 
-  expect(screen.getByPlaceholderText("질문을 입력하세요")).toBeDisabled();
+  await waitFor(() => {
+    expect(screen.getByPlaceholderText("질문을 입력하세요")).toBeDisabled();
+  });
   expect(screen.getByRole("button", { name: "질문 보내기" })).toBeDisabled();
 });

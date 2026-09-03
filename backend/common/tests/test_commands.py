@@ -1,8 +1,9 @@
 from io import StringIO
 from unittest.mock import patch
 
-from django.core.management import call_command, CommandError
+from django.core.management import CommandError, call_command
 from django.test import SimpleTestCase, override_settings
+from django.test.utils import ignore_warnings
 
 
 class ExternalServiceCheckCommandTests(SimpleTestCase):
@@ -25,6 +26,7 @@ class ExternalServiceCheckCommandTests(SimpleTestCase):
         self.assertIn('kakao: ok', stdout.getvalue())
 
 
+@ignore_warnings(category=UserWarning)
 class DeploymentConfigCommandTests(SimpleTestCase):
     production_settings = {
         'DEBUG': False,
@@ -37,14 +39,16 @@ class DeploymentConfigCommandTests(SimpleTestCase):
         'CSRF_COOKIE_SECURE': True,
         'SECURE_SSL_REDIRECT': True,
         'SECURE_HSTS_SECONDS': 31536000,
-        'DATABASES': {'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'app',
-            'USER': 'app',
-            'PASSWORD': 'secret',
-            'HOST': 'database',
-            'PORT': '5432',
-        }},
+        'DATABASES': {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': 'app',
+                'USER': 'app',
+                'PASSWORD': 'secret',
+                'HOST': 'database',
+                'PORT': '5432',
+            }
+        },
         'EMAIL_BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
         'EMAIL_HOST': 'smtp.example.com',
         'EMAIL_HOST_USER': 'sender@example.com',
@@ -65,10 +69,20 @@ class DeploymentConfigCommandTests(SimpleTestCase):
 
     @override_settings(**{**production_settings, 'DEBUG': True})
     def test_unsafe_config_fails(self):
+        stderr = StringIO()
         with self.assertRaises(CommandError):
-            call_command('check_deployment_config', '--allow-local-storage')
+            call_command(
+                'check_deployment_config',
+                '--allow-local-storage',
+                stderr=stderr,
+            )
 
     @override_settings(**{**production_settings, 'SECRET_KEY': 'a' * 50})
     def test_low_entropy_secret_key_fails(self):
+        stderr = StringIO()
         with self.assertRaises(CommandError):
-            call_command('check_deployment_config', '--allow-local-storage')
+            call_command(
+                'check_deployment_config',
+                '--allow-local-storage',
+                stderr=stderr,
+            )

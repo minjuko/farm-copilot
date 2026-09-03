@@ -202,7 +202,7 @@ const ChatTemplate = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { status } = useAuth();
   const { messages, setMessages, errorMessage, setErrorMessage, chatbotStatus } = useChatSession(sessionId, status);
 
@@ -218,8 +218,8 @@ const ChatTemplate = () => {
     }
   }, [messages]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     const { payload, error } = buildChatPayload({
       question: inputValue,
       sessionId,
@@ -240,7 +240,7 @@ const ChatTemplate = () => {
     setInputValue('');
     setErrorMessage('');
     requestInFlight.current = true;
-    setLoading(true);
+    setIsLoading(true);
 
     try {
       const response = await sendChatMessage(payload);
@@ -251,7 +251,7 @@ const ChatTemplate = () => {
       setErrorMessage(getChatErrorMessage(error));
     } finally {
       requestInFlight.current = false;
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -275,7 +275,7 @@ const ChatTemplate = () => {
               {msg.isUser && <ProfileImage src={`${process.env.PUBLIC_URL}/user_icon.jpg`} alt="Profile" $isUser />}
             </MessageContainer>
           ))}
-          {loading && (
+          {isLoading && (
             <MessageContainer $isUser={false}>
               <ProfileImage src={`${process.env.PUBLIC_URL}/android-chrome-192x192.png`} alt="Profile" />
               <Message $isUser={false} style={{ display: 'flex', alignItems: 'center' }}>
@@ -283,7 +283,7 @@ const ChatTemplate = () => {
                   <span>답변을 불러오는 중입니다.</span>
                   <SyncLoader
                     color="#75e781"
-                    loading={loading}
+                    loading={isLoading}
                     margin={2}
                     size={8}
                     speedMultiplier={0.7}
@@ -301,9 +301,9 @@ const ChatTemplate = () => {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="질문을 입력하세요"
-          disabled={loading || chatbotStatus !== 'available'}
+          disabled={isLoading || chatbotStatus !== 'available'}
         />
-        <Button type="submit" disabled={loading || chatbotStatus !== 'available'} aria-label="질문 보내기"><FaPaperPlane size="20px"/></Button>
+        <Button type="submit" disabled={isLoading || chatbotStatus !== 'available'} aria-label="질문 보내기"><FaPaperPlane size="20px"/></Button>
       </InputBox>
       {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
     </Container>

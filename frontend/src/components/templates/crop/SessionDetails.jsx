@@ -212,14 +212,14 @@ const columns = [
 
 const generateBarChartData = (adjustedData, cropName) => {
   const labels = columns;
-  const data = columns.map(column => finiteNumberOrZero(adjustedData?.[column]));
+  const chartValues = columns.map(column => finiteNumberOrZero(adjustedData?.[column]));
 
   return {
     labels,
     datasets: [
       {
         label: cropName,
-        data,
+        data: chartValues,
         backgroundColor: [
           'rgba(255, 99, 132, 0.6)',
           'rgba(54, 162, 235, 0.6)',
@@ -252,24 +252,24 @@ const generateBarChartData = (adjustedData, cropName) => {
 
 const generateLineChartData = (cropChartData, cropName, additionalPrice) => {
   const points = cropChartData
-    .map(item => ({ date: new Date(item.tm), price: finiteNumberOrZero(item.price) }))
+    .map((pricePoint) => ({ date: new Date(pricePoint.tm), price: finiteNumberOrZero(pricePoint.price) }))
     .filter(point => !Number.isNaN(point.date.getTime()));
   const labels = points.map(point => point.date);
-  const data = points.map(point => point.price);
+  const priceValues = points.map(point => point.price);
 
   return {
     labels,
     datasets: [
       {
         label: `${cropName} 가격`,
-        data,
+        data: priceValues,
         fill: false,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.1
       },
       {
         label: `다음날 예측 도매가: ${additionalPrice}원`,
-        data: Array(data.length).fill(finiteNumberOrZero(additionalPrice)),
+        data: Array(priceValues.length).fill(finiteNumberOrZero(additionalPrice)),
         fill: false,
         borderColor: 'rgb(255, 99, 132)',
         tension: 0.1
@@ -303,7 +303,7 @@ const lineChartOptions = {
   plugins: {
     legend: {
       labels: {
-        color: 'black'  // 레이블 색상을 검정색으로 설정
+        color: 'black'
       },
       display: true
     }
@@ -336,7 +336,7 @@ const barChartOptions = {
     },
     legend: {
       labels: {
-        color: 'black'  // 레이블 색상을 검정색으로 설정
+        color: 'black'
       }
     },
     datalabels: {
@@ -376,8 +376,8 @@ const SessionDetails = () => {
 
   const updateCharts = (details, index) => {
     if (!details.results[index]) return;
-    const cropNames = details.results.map(result => result.crop_name);
-    const additionalPrices = details.results.map(result => result.price);
+    const cropNames = details.results.map((cropResult) => cropResult.crop_name);
+    const additionalPrices = details.results.map((cropResult) => cropResult.price);
     const barData = generateBarChartData(details.results[index].adjusted_data, cropNames[index]);
     setBarChartData(barData);
     const lineData = generateLineChartData(details.results[index].crop_chart_data, cropNames[index], additionalPrices[index]);
@@ -414,8 +414,8 @@ const SessionDetails = () => {
     return <PageContainer><ErrorText>표시할 예측 결과가 없습니다.</ErrorText></PageContainer>;
   }
 
-  const cropNames = sessionDetails.results.map(result => result.crop_name);
-  const adjustedDataList = sessionDetails.results.map(result => result.adjusted_data);
+  const cropNames = sessionDetails.results.map((cropResult) => cropResult.crop_name);
+  const adjustedDataList = sessionDetails.results.map((cropResult) => cropResult.adjusted_data);
 
   return (
     <PageContainer>

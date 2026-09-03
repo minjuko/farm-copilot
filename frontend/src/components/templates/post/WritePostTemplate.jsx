@@ -36,16 +36,16 @@ const WritePostTemplate = () => {
   const [content, setContent] = useState("");
   const [postType, setPostType] = useState(() => getInitialPostType(postTypeQueryParam));
   const [image, setImage] = useState(null);
-  const [fileName, setFileName] = useState(""); // 파일 이름 상태 추가
-  const [imagePreview, setImagePreview] = useState(""); // 이미지 미리보기 상태 추가
+  const [fileName, setFileName] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
 
   const [titleError, setTitleError] = useState("");
   const [contentError, setContentError] = useState("");
 
-  const [isModalOpen, setIsModalOpen] = useState(false); // 모달 상태 추가
-  const [modalTitle, setModalTitle] = useState(""); // 모달 타이틀 상태 추가
-  const [modalContent, setModalContent] = useState(""); // 모달 내용 상태 추가
-  const [createdPostId, setCreatedPostId] = useState(null); // 생성된 글 ID 저장
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalContent, setModalContent] = useState("");
+  const [createdPostId, setCreatedPostId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -127,7 +127,7 @@ const WritePostTemplate = () => {
     }
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
     if (createdPostId) {
       navigate(`/post/${createdPostId}`);
@@ -181,10 +181,10 @@ const WritePostTemplate = () => {
 
       <CustomModal
         isOpen={isModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title={modalTitle}
         content={modalContent}
-        onConfirm={closeModal}
+        onConfirm={handleCloseModal}
         showConfirmButton={false}
       />
     </Container>

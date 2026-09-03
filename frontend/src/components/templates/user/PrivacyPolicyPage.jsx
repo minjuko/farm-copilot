@@ -60,7 +60,7 @@ const ResponsiveH1 = styled.h1`
 const PrivacyPolicyPage = () => {
   const [openSections, setOpenSections] = useState({});
 
-  const toggleSection = (section) => {
+  const handleToggleSection = (section) => {
     setOpenSections((prev) => ({
       ...prev,
       [section]: !prev[section],
@@ -71,7 +71,7 @@ const PrivacyPolicyPage = () => {
     <Container>
       <ResponsiveH1>&lt;꾼꾼농사꾼&gt; 개인정보 처리방침</ResponsiveH1>
       <Section>
-        <Title onClick={() => toggleSection("section1")}>
+        <Title onClick={() => handleToggleSection("section1")}>
           <span>제1장 개인정보의 처리 목적</span>
           <span>{openSections["section1"] ? "▲" : "▼"}</span>
         </Title>
@@ -92,7 +92,7 @@ const PrivacyPolicyPage = () => {
         </Content>
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section2")}>
+        <Title onClick={() => handleToggleSection("section2")}>
           <span>제2장 개인정보의 처리 및 보유 기간</span>
           <span>{openSections["section2"] ? "▲" : "▼"}</span>
         </Title>
@@ -108,7 +108,7 @@ const PrivacyPolicyPage = () => {
         </Content>
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section4")}>
+        <Title onClick={() => handleToggleSection("section4")}>
           <span>제3장 개인정보의 파기절차 및 파기방법</span>
           <span>{openSections["section4"] ? "▲" : "▼"}</span>
         </Title>
@@ -125,7 +125,7 @@ const PrivacyPolicyPage = () => {
           
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section6")}>
+        <Title onClick={() => handleToggleSection("section6")}>
           <span>
             제4장 정보주체와 법정대리인의 권리 · 의무 및 그 행사방법에 관한 사항
           </span>
@@ -143,7 +143,7 @@ const PrivacyPolicyPage = () => {
           
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section7")}>
+        <Title onClick={() => handleToggleSection("section7")}>
           <span>
             제5장 개인정보 보호책임자에 관한 사항
           </span>
@@ -163,7 +163,7 @@ const PrivacyPolicyPage = () => {
           
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section8")}>
+        <Title onClick={() => handleToggleSection("section8")}>
           <span>제6장 처리하는 개인정보의 항목</span>
           <span>{openSections["section8"] ? "▲" : "▼"}</span>
         </Title>
@@ -179,7 +179,7 @@ const PrivacyPolicyPage = () => {
         </Content>
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section9")}>
+        <Title onClick={() => handleToggleSection("section9")}>
           <span>제7장 개인정보의 안전성 확보조치에 관한 사항</span>
           <span>{openSections["section9"] ? "▲" : "▼"}</span>
         </Title>
@@ -192,7 +192,7 @@ const PrivacyPolicyPage = () => {
         </Content>
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section10")}>
+        <Title onClick={() => handleToggleSection("section10")}>
           <span>제8장 개인정보 처리방침의 변경에 관한 사항</span>
           <span>{openSections["section10"] ? "▲" : "▼"}</span>
         </Title>
@@ -204,7 +204,7 @@ const PrivacyPolicyPage = () => {
           
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section11")}>
+        <Title onClick={() => handleToggleSection("section11")}>
           <span>제9장 개인정보의 열람청구를 접수 · 처리하는 부서</span>
           <span>{openSections["section11"] ? "▲" : "▼"}</span>
         </Title>
@@ -220,7 +220,7 @@ const PrivacyPolicyPage = () => {
           
       </Section>
       <Section>
-        <Title onClick={() => toggleSection("section12")}>
+        <Title onClick={() => handleToggleSection("section12")}>
           <span>제10장 정보주체의 권익침해에 대한 구제방법</span>
           <span>{openSections["section12"] ? "▲" : "▼"}</span>
         </Title>

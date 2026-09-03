@@ -75,7 +75,7 @@ const SoilTemplate = () => {
       </BoxContainer>
       <Divider />
       <CustomModal
-        isOpen={analysis.errorModalIsOpen}
+        isOpen={analysis.isErrorModalOpen}
         onRequestClose={analysis.closeErrorModal}
         title="오류"
         content={analysis.error}
@@ -90,7 +90,7 @@ const SoilTemplate = () => {
           cropName={analysis.cropName}
           selectedSoilSample={analysis.selectedSample}
           fertilizerData={analysis.fertilizerData}
-          fertilizerUnavailable={analysis.fertilizerUnavailable}
+          isFertilizerUnavailable={analysis.isFertilizerUnavailable}
           isFertilizerLoading={analysis.isFertilizerLoading}
           handleBackToList={() => navigate("/soil-list")}
         />

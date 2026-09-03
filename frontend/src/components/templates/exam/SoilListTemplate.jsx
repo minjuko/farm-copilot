@@ -126,9 +126,9 @@ const SoilListTemplate = () => {
     initialData: [],
   });
 
-  const handleSoilDataClick = (data) => {
-    navigate(`/soil-details/${data.session_id}`, {
-      state: { soilData: data.soil_data, fertilizerData: data.fertilizer_data, crop: data.crop_name, crop_add: data.detailed_address },
+  const handleSoilDataClick = (soilSession) => {
+    navigate(`/soil-details/${soilSession.session_id}`, {
+      state: { soilData: soilSession.soil_data, fertilizerData: soilSession.fertilizer_data, crop: soilSession.crop_name, detailedAddress: soilSession.detailed_address },
     });
   };
 
@@ -138,7 +138,7 @@ const SoilListTemplate = () => {
       setIsLoading(true);
       await deleteSoilData(selectedSessionId);
       setSoilData((current) => current.filter(soil => soil.session_id !== selectedSessionId));
-      closeModal();
+      handleCloseModal();
     } catch {
       setActionError("토양 데이터 삭제에 실패했습니다. 다시 시도해주세요.");
     } finally {
@@ -146,12 +146,12 @@ const SoilListTemplate = () => {
     }
   };
 
-  const openModal = (sessionId) => {
+  const handleOpenModal = (sessionId) => {
     setSelectedSessionId(sessionId);
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedSessionId(null);
   };
@@ -166,21 +166,15 @@ const SoilListTemplate = () => {
 
   const indexOfLastSession = (currentPage + 1) * sessionsPerPage;
   const indexOfFirstSession = indexOfLastSession - sessionsPerPage;
-  const currentSessions = Object.keys(soilData.reduce((acc, item) => {
-    if (!acc[item.session_id]) {
-      acc[item.session_id] = [];
+  const sessionsById = new Map();
+  soilData.forEach((soilRecord) => {
+    if (!sessionsById.has(soilRecord.session_id)) {
+      sessionsById.set(soilRecord.session_id, soilRecord);
     }
-    acc[item.session_id].push(item);
-    return acc;
-  }, {})).slice(indexOfFirstSession, indexOfLastSession);
-
-  const pageCount = Math.ceil(Object.keys(soilData.reduce((acc, item) => {
-    if (!acc[item.session_id]) {
-      acc[item.session_id] = [];
-    }
-    acc[item.session_id].push(item);
-    return acc;
-  }, {})).length / sessionsPerPage);
+  });
+  const sessionSummaries = [...sessionsById.values()];
+  const currentSessions = sessionSummaries.slice(indexOfFirstSession, indexOfLastSession);
+  const pageCount = Math.ceil(sessionSummaries.length / sessionsPerPage);
 
   return (
     <ListPage>
@@ -191,17 +185,17 @@ const SoilListTemplate = () => {
         <EmptyState>목록이 존재하지 않습니다. 첫 토양 분석을 진행해보세요</EmptyState>
       ) : (
         <SessionList>
-          {currentSessions.map(sessionId => (
-            <SessionItem key={sessionId} onClick={() => handleSoilDataClick(soilData.find(soil => soil.session_id === sessionId))}>
+          {currentSessions.map((soilSession) => (
+            <SessionItem key={soilSession.session_id} onClick={() => handleSoilDataClick(soilSession)}>
               <SessionInfo>
-                <SessionDate>{formatDateTime(soilData.find(soil => soil.session_id === sessionId).created_at)}</SessionDate>
-                <div><strong>작물:</strong> {soilData.find(soil => soil.session_id === sessionId).crop_name}</div>
-                <div><strong>주소:</strong> {soilData.find(soil => soil.session_id === sessionId).address}</div>
-                <div><strong>상세 주소:</strong> {soilData.find(soil => soil.session_id === sessionId).detailed_address}</div>
+                <SessionDate>{formatDateTime(soilSession.created_at)}</SessionDate>
+                <div><strong>작물:</strong> {soilSession.crop_name}</div>
+                <div><strong>주소:</strong> {soilSession.address}</div>
+                <div><strong>상세 주소:</strong> {soilSession.detailed_address}</div>
               </SessionInfo>
               <DeleteButton onClick={(e) => {
                 e.stopPropagation();
-                openModal(sessionId);
+                handleOpenModal(soilSession.session_id);
               }}>
                 <FaTrash />
               </DeleteButton>
@@ -212,11 +206,11 @@ const SoilListTemplate = () => {
       <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageChange} />
       <ConfirmModal
         isOpen={isModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title="삭제 확인"
         content="정말로 이 토양 데이터를 삭제하시겠습니까?"
         onConfirm={handleDeleteSoilData}
-        closeModal={closeModal}
+        closeModal={handleCloseModal}
         confirmText="삭제"
         cancelText="취소"
         confirmColor="#e53e3e"

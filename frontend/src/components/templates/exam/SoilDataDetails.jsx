@@ -134,7 +134,7 @@ const SoilDataDetails = () => {
     soilData: state.soilData,
     fertilizerData: state.fertilizerData || {},
     crop: state.crop,
-    crop_add: state.crop_add,
+    detailedAddress: state.detailedAddress,
   } : null);
   const [isLoading, setIsLoading] = useState(Boolean(sessionId));
   const [loadError, setLoadError] = useState("");
@@ -148,14 +148,14 @@ const SoilDataDetails = () => {
       setLoadError("");
       try {
         const response = await getSoilDataDetails(sessionId);
-        const data = response?.data;
-        if (!data || !data.soil_data) throw new Error("MALFORMED_SOIL_DETAIL");
+        const soilDetail = response?.data;
+        if (!soilDetail || !soilDetail.soil_data) throw new Error("MALFORMED_SOIL_DETAIL");
         if (isActive) {
           setDetails({
-            soilData: data.soil_data,
-            fertilizerData: data.fertilizer_data || {},
-            crop: data.crop_name,
-            crop_add: data.detailed_address,
+            soilData: soilDetail.soil_data,
+            fertilizerData: soilDetail.fertilizer_data || {},
+            crop: soilDetail.crop_name,
+            detailedAddress: soilDetail.detailed_address,
           });
         }
       } catch (error) {
@@ -173,7 +173,7 @@ const SoilDataDetails = () => {
     return () => { isActive = false; };
   }, [sessionId]);
 
-  const { soilData, fertilizerData = {}, crop, crop_add } = details || {};
+  const { soilData, fertilizerData = {}, crop, detailedAddress } = details || {};
 
   const handleBackToList = () => {
     navigate('/soil-list');
@@ -197,7 +197,7 @@ const SoilDataDetails = () => {
       <RecommendationContainer>
           <CropInfoContainer>
             <CropInfo>작물: <CropInfoText>{crop}</CropInfoText></CropInfo>
-            <CropInfo>상세 주소: <CropInfoText>{crop_add}</CropInfoText></CropInfo>
+            <CropInfo>상세 주소: <CropInfoText>{detailedAddress}</CropInfoText></CropInfo>
           </CropInfoContainer>
           <SectionTitle>토양 분석 데이터</SectionTitle>
           <TableContainer>

@@ -204,7 +204,7 @@ const ChatListTemplate = () => {
   const pageCount = Math.ceil(chatSessions.length / sessionsPerPage);
   const offset = currentPage * sessionsPerPage;
 
-  const startNewChat = () => {
+  const handleStartNewChat = () => {
     setNewSessionName('');
     setError('');
     setErrorMessage('');
@@ -239,16 +239,16 @@ const ChatListTemplate = () => {
     }
   };
 
-  const openChat = (sessionId, sessionName) => {
+  const handleOpenChat = (sessionId, sessionName) => {
     navigate(`/chat/${sessionId}?session_name=${encodeURIComponent(sessionName)}`);
   };
 
-  const confirmDeleteSession = (sessionId) => {
+  const handleConfirmDeleteSession = (sessionId) => {
     setSessionToDelete(sessionId);
     setIsConfirmModalOpen(true);
   };
 
-  const deleteSession = async () => {
+  const handleDeleteSession = async () => {
     if (sessionToDelete && !actionInFlight.current) {
       await remove(sessionToDelete);
       setIsConfirmModalOpen(false);
@@ -256,7 +256,7 @@ const ChatListTemplate = () => {
     }
   };
 
-  const editSession = (session) => {
+  const handleEditSession = (session) => {
     setNewSessionName(session.session_name);
     setEditingSession(session);
     setIsModalOpen(true);
@@ -268,7 +268,7 @@ const ChatListTemplate = () => {
     setCurrentPage(selected);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingSession(null);
     setError('');
@@ -281,22 +281,22 @@ const ChatListTemplate = () => {
       {(loadError || errorMessage) && <ErrorMessage role="alert">{loadError || errorMessage}</ErrorMessage>}
       {status === 'checking' ? null : isLoggedIn ? (
         <>
-          <NewChatButton onClick={startNewChat}>새 대화 시작하기</NewChatButton>
+          <NewChatButton onClick={handleStartNewChat}>새 대화 시작하기</NewChatButton>
           {chatSessions.length === 0 ? (
             <NoChatMessage>대화 내역이 없습니다.</NoChatMessage>
           ) : (
             <>
               <ChatList>
                 {chatSessions.slice(offset, offset + sessionsPerPage).map((session, index) => (
-                  <ChatListItem key={session.session_id} onClick={() => openChat(session.session_id, session.session_name)}>
+                  <ChatListItem key={session.session_id} onClick={() => handleOpenChat(session.session_id, session.session_name)}>
                     <span>
                       {session.session_name || session.session_id}
                     </span>
                     <div>
-                      <EditButton onClick={(e) => { e.stopPropagation(); editSession(session); }}>
+                      <EditButton onClick={(e) => { e.stopPropagation(); handleEditSession(session); }}>
                         <FaEdit />
                       </EditButton>
-                      <DeleteButton onClick={(e) => { e.stopPropagation(); confirmDeleteSession(session.session_id); }}>
+                      <DeleteButton onClick={(e) => { e.stopPropagation(); handleConfirmDeleteSession(session.session_id); }}>
                         <FaTrash />
                       </DeleteButton>
                     </div>
@@ -308,10 +308,10 @@ const ChatListTemplate = () => {
           <Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={handlePageClick} />
           <ModalContainer
             isOpen={isModalOpen}
-            onRequestClose={closeModal}
+            onRequestClose={handleCloseModal}
             appElement={document.getElementById('root')}
           >
-            <CloseButton onClick={closeModal}><FaTimes /></CloseButton>
+            <CloseButton onClick={handleCloseModal}><FaTimes /></CloseButton>
             <ModalTitle>{editingSession ? '대화 제목 수정' : '새 대화 생성'}</ModalTitle>
             <ModalContent>
               <InputContainer>
@@ -332,14 +332,14 @@ const ChatListTemplate = () => {
             onRequestClose={() => setIsConfirmModalOpen(false)}
             title="삭제 확인"
             content="이 대화를 삭제하시겠습니까?"
-            onConfirm={deleteSession}
+            onConfirm={handleDeleteSession}
             closeModal={() => setIsConfirmModalOpen(false)}
             confirmText="삭제"
             cancelText="취소"
           />
         </>
       ) : (
-        <NewChatButton onClick={startNewChat}>바로 챗봇 이용하기</NewChatButton>
+        <NewChatButton onClick={handleStartNewChat}>바로 챗봇 이용하기</NewChatButton>
       )}
     </Container>
   );

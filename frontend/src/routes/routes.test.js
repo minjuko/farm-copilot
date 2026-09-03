@@ -1,5 +1,3 @@
-jest.mock("../components/templates/crop/SessionDetails", () => () => null);
-
 import {
   chatRoutes,
   diagnosisRoutes,
@@ -9,6 +7,8 @@ import {
 } from "./analysisRoutes";
 import { protectedCommunityRoutes, publicCommunityRoutes } from "./communityRoutes";
 import { guestOnlyRoutes, protectedUserRoutes, publicUserRoutes } from "./userRoutes";
+
+jest.mock("../components/templates/crop/SessionDetails", () => () => null);
 
 const allRoutes = [
   ...publicUserRoutes,

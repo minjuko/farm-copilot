@@ -99,7 +99,7 @@ const PasswordResetTemplate = () => {
 
   return (
     <Container>
-      <GlobalLoader isLoading={isLoading} />
+      <GlobalLoader />
       <Form onSubmit={handleSubmit}>
         <InputGroup>
           <Label htmlFor="reset-email">이메일</Label>

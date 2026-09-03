@@ -80,7 +80,7 @@ const Button = styled.button`
 `;
 
 const ChangeUsernameModal = ({ isOpen, onRequestClose, setUsername }) => {
-  const { setIsLoading, isLoading } = useLoading();
+  const { setIsLoading } = useLoading();
   const [newUsername, setNewUsername] = useState("");
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -115,7 +115,7 @@ const ChangeUsernameModal = ({ isOpen, onRequestClose, setUsername }) => {
   return (
     <>
       <ModalContainer isOpen={isOpen} onRequestClose={onRequestClose}>
-        <GlobalLoader isLoading={isLoading} />
+        <GlobalLoader />
         <CloseButton onClick={onRequestClose}><FaTimes /></CloseButton>
         <ModalTitle>사용자 이름 변경</ModalTitle>
         <ModalContent>

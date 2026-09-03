@@ -13,11 +13,11 @@ export const LoadingProvider = ({ children }) => {
 
   const beginLoading = useCallback(() => {
     setLoadingCount((count) => count + 1);
-    let finished = false;
+    let isFinished = false;
 
     return () => {
-      if (finished) return;
-      finished = true;
+      if (isFinished) return;
+      isFinished = true;
       setLoadingCount((count) => Math.max(0, count - 1));
     };
   }, []);

@@ -101,7 +101,7 @@ const ErrorMessage = styled.div`
 `;
 
 const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
-  const { setIsLoading, isLoading } = useLoading(); // Access loading context
+  const { setIsLoading, isLoading } = useLoading();
   const { clearSession } = useAuth();
   const [formData, setFormData] = useState({
     old_password: "",
@@ -127,14 +127,14 @@ const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
     || Boolean(fieldError)
     || isLoading;
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
     setFormData({ ...formData, [name]: value });
     setError("");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (isButtonDisabled) return;
     setIsLoading(true);
     try {
@@ -154,14 +154,14 @@ const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
     setIsLoading(false);
   };
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsSuccessModalOpen(false);
     navigate('/login');
   };
 
   return (
     <>
-      <GlobalLoader isLoading={isLoading} />
+      <GlobalLoader />
       <ModalContainer
         isOpen={isOpen}
         onRequestClose={onRequestClose}
@@ -212,7 +212,7 @@ const ChangePasswordModal = ({ isOpen, onRequestClose }) => {
       </ModalContainer>
       <CustomModal
         isOpen={isSuccessModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title="알림"
         content={modalContent}
       />

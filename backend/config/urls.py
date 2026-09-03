@@ -1,18 +1,20 @@
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
 from django.shortcuts import render
-from django.contrib.auth import views as auth_views
+from django.urls import include, path
+
 from common.views import capabilities
 
+
 def index(request):
-    return render(request,'index.html')
+    return render(request, 'index.html')
+
 
 urlpatterns = [
     path('', index),
     path('api/capabilities/', capabilities, name='capabilities'),
-    path("admin/", admin.site.urls),
+    path('admin/', admin.site.urls),
     path('login/', include('accounts.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path('community/', include('community.urls')),

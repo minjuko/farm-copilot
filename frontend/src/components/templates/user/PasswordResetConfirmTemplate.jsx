@@ -125,7 +125,7 @@ const PasswordResetConfirmTemplate = () => {
 
   return (
     <Container>
-      <GlobalLoader isLoading={isLoading} />
+      <GlobalLoader />
       <Form onSubmit={handleSubmit}>
         <InputGroup>
           <Label htmlFor="new-password">새 비밀번호</Label>

@@ -37,7 +37,7 @@ const Hint = styled.p`
   margin-top: ${appTheme.spacing.sm};
 `;
 
-const CropTest = () => {
+const CropPredictionPage = () => {
   const { setIsLoading, isLoading } = useLoading();
   const [landArea, setLandArea] = useState("");
   const [region, setRegion] = useState("");
@@ -45,13 +45,13 @@ const CropTest = () => {
   const [crops, setCrops] = useState([]);
   const [regions, setRegions] = useState([]);
   const [filteredCropNames, setFilteredCropNames] = useState([]);
-  const [showRegionList, setShowRegionList] = useState(false);
+  const [isRegionListVisible, setIsRegionListVisible] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState("");
   const [modalTitle, setModalTitle] = useState("");
   const [isError, setIsError] = useState(false);
   const [addError, setAddError] = useState("");
-  const [selectKey, setSelectKey] = useState(0); // 추가된 key state
+  const [cropSelectResetKey, setCropSelectResetKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const serviceCapability = useServiceCapability('prediction');
   const navigate = useNavigate();
@@ -91,7 +91,7 @@ const CropTest = () => {
     setCurrentCrop({ ...currentCrop, name: selectedOption ? selectedOption.value : "" });
   };
 
-  const addCrop = async () => {
+  const handleAddCrop = async () => {
     if (!serviceCapability.available) {
       setAddError('수익 예측 외부 API가 설정되지 않았습니다.');
       return;
@@ -109,8 +109,8 @@ const CropTest = () => {
       setCrops([...crops, { ...currentCrop, ratio, id: crops.length + 1 }]);
       setCurrentCrop({ name: "", ratio: "" });
       setAddError("");
-      setSelectKey(prevKey => prevKey + 1); // key를 변경하여 Select 컴포넌트를 재설정
-      await fetchCropNames(); // 작물 이름 리스트를 다시 불러옴
+      setCropSelectResetKey(previousKey => previousKey + 1);
+      await fetchCropNames();
     } else {
       setAddError("재배 면적, 지역, 작물 및 비율을 모두 입력해주세요.");
     }
@@ -134,8 +134,8 @@ const CropTest = () => {
     return newErrors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (isSubmitting) return;
     if (!serviceCapability.available) {
       setModalContent('수익 예측 외부 API가 설정되지 않아 현재 실시간 예측을 지원하지 않습니다.');
@@ -196,12 +196,12 @@ const CropTest = () => {
 
   const handleRegionSelect = (region) => {
     setRegion(region);
-    setShowRegionList(false);
+    setIsRegionListVisible(false);
   };
 
   const handleClickOutside = useCallback((event) => {
     if (regionRef.current && !regionRef.current.contains(event.target)) {
-      setShowRegionList(false);
+      setIsRegionListVisible(false);
     }
   }, []);
 
@@ -212,7 +212,7 @@ const CropTest = () => {
     };
   }, [handleClickOutside]);
 
-  const closeModal = () => {
+  const handleCloseModal = () => {
     setIsModalOpen(false);
   };
 
@@ -237,11 +237,11 @@ const CropTest = () => {
             type="text"
             placeholder="지역 선택"
             value={region}
-            onClick={() => setShowRegionList(!showRegionList)}
+            onClick={() => setIsRegionListVisible(!isRegionListVisible)}
             readOnly
             autoComplete="off"
           />
-          {showRegionList && (
+          {isRegionListVisible && (
             <List>
               {regions.map((region, index) => (
                 <ListItem key={index} onClick={() => handleRegionSelect(region)}>
@@ -254,7 +254,7 @@ const CropTest = () => {
         <Hint>원하는 작물과 비율을 선택하여 추가하기를 눌러주세요.</Hint>
         <Label>작물 이름</Label>
         <Select
-          key={selectKey}
+          key={cropSelectResetKey}
           options={filteredCropNames}
           onChange={handleInputChange}
           value={filteredCropNames.find(option => option.value === currentCrop.name)}
@@ -288,7 +288,7 @@ const CropTest = () => {
             onChange={(e) => setCurrentCrop({ ...currentCrop, ratio: e.target.value })}
             autoComplete="off"
           />
-          <AddButton onClick={addCrop} disabled={!serviceCapability.available || !landArea || !region || !currentCrop.name || !currentCrop.ratio}>
+          <AddButton onClick={handleAddCrop} disabled={!serviceCapability.available || !landArea || !region || !currentCrop.name || !currentCrop.ratio}>
             <FaPlus style={{ marginRight: '0.5rem' }} /> 추가하기
           </AddButton>
         </div>
@@ -320,7 +320,7 @@ const CropTest = () => {
       </SummaryContainer>
       <CustomModal
         isOpen={isModalOpen}
-        onRequestClose={closeModal}
+        onRequestClose={handleCloseModal}
         title={modalTitle}
         content={modalContent}
         showConfirmButton={false}
@@ -330,4 +330,4 @@ const CropTest = () => {
   );
 };
 
-export default CropTest;
+export default CropPredictionPage;

@@ -61,11 +61,11 @@ const CropAutocomplete = ({ cropName, cropNames, onChange, onSelect }) => {
   );
 
   useEffect(() => {
-    const closeOnOutsideClick = (event) => {
+    const handleOutsideClick = (event) => {
       if (containerRef.current && !containerRef.current.contains(event.target)) setIsOpen(false);
     };
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
   return (
