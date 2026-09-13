@@ -1,9 +1,20 @@
 import {
   buildPredictionPayload,
   finiteNumberOrZero,
+  formatKoreanCurrency,
   normalizePredictionResult,
   removeCropAt,
 } from './predictionFlow';
+
+test.each([
+  [9500, '9,500원'],
+  [2200000, '220만원'],
+  [123000000, '1억 2,300만원'],
+  [100000000, '1억원'],
+  [-2200000, '-220만원'],
+])('formats %s with familiar Korean currency units', (value, expected) => {
+  expect(formatKoreanCurrency(value)).toBe(expected);
+});
 
 const validInput = {
   landArea: '302.5',

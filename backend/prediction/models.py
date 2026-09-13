@@ -26,6 +26,7 @@ class PredictionResult(models.Model):
     latest_year = models.IntegerField(default=timezone.now().year)
     r2_score = models.FloatField(default=0.0)
     rmse = models.FloatField(default=0.0)
+    crop_ratio = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return f'{self.crop_name} - {self.session.session_name}'

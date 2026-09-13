@@ -1,14 +1,19 @@
 import styled from 'styled-components';
 import { FaEllipsisV } from 'react-icons/fa';
+import { color, radius, shadow } from './theme';
 
 export const Container = styled.div`
-  margin: 0 auto;
-  padding: 2rem;
+  margin: 24px auto;
+  padding: 24px;
   max-width: 50rem;
-  width: 100%;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: calc(100% - 32px);
+  box-sizing: border-box;
+  background-color: ${color("surface")};
+  border: 1px solid ${color("borderStrong")};
+  border-radius: ${radius("lg")};
+  box-shadow: ${shadow("sm")};
+
+  @media (max-width: 480px) { padding: 18px 16px; }
 `;
 
 export const Form = styled.form`
@@ -218,15 +223,15 @@ export const Divider = styled.div`
 export const CommentList = styled.ul`
   list-style-type: none;
   padding: 0;
-  margin-top: 24px;
+  margin: 24px 0 0;
 `;
 
 export const CommentItem = styled.li`
-  background-color: #ffffff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 8px 16px;
+  background-color: ${color("surface")};
+  border: 1px solid ${color("border")};
+  border-radius: ${radius("md")};
+  box-shadow: ${shadow("sm")};
+  padding: 12px 16px;
   margin-bottom: 12px;
   position: relative;
   margin-left: ${(props) => (props.$isReply ? "40px" : "0")};

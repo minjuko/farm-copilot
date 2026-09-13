@@ -52,9 +52,12 @@ export const normalizeDetectionResult = (detectionPayload) => {
     occurrence_environment: detectionPayload.occurrence_environment || "정보 없음",
     symptom_description: detectionPayload.symptom_description || "정보 없음",
     prevention_methods: detectionPayload.prevention_methods || "정보 없음",
-    pesticide_name: typeof detectionPayload.pesticide_name === "string" ? detectionPayload.pesticide_name : "",
+    pesticide_name: Array.isArray(detectionPayload.pesticide_name)
+      ? detectionPayload.pesticide_name.filter(Boolean).join("\n")
+      : (typeof detectionPayload.pesticide_name === "string" ? detectionPayload.pesticide_name : ""),
     information_source: detectionPayload.information_source || "",
     information_source_url: detectionPayload.information_source_url || "",
+    reference_image_license: detectionPayload.reference_image_license || "",
     detection_date: detectionPayload.detection_date || "정보 없음",
     user_image_url: normalizeMediaUrl(detectionPayload.user_image_url),
     db_image_url: normalizeMediaUrl(detectionPayload.db_image_url),

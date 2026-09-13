@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaTrash, FaEdit, FaPlus } from 'react-icons/fa';
+import { FaTrash, FaEdit, FaPlus, FaChevronRight } from 'react-icons/fa';
 import { getCropList, deleteCrop, updateSessionName } from '../../../apis/crop';
 import ConfirmModal from '../../atoms/ConfirmModal';
 import Pagination from '../../molecules/Pagination';
 import { useLoading } from '../../../LoadingContext';
 import GlobalLoader from "../../atoms/GlobalLoader";
 import { getApiErrorMessage } from '../../../apis/error';
-import { finiteNumberOrZero } from './predictionFlow';
+import { formatKoreanCurrency } from './predictionFlow';
 import useAsyncResource from '../../../hooks/useAsyncResource';
 import {
   PageContainer,
@@ -16,10 +16,12 @@ import {
   SessionListContainer,
   SessionList,
   SessionItem,
+  SessionHeader,
   SessionName,
   EditInput,
   SessionDetails,
   ButtonContainer,
+  ResultHint,
   SaveButton,
   DeleteButton,
   EditButton,
@@ -42,21 +44,6 @@ const CropSelectionPage = () => {
   const [savingSessionId, setSavingSessionId] = useState(null);
   const sessionsPerPage = 4;
   const navigate = useNavigate();
-
-  const formatNumber = (num) => {
-    num = finiteNumberOrZero(num);
-    if (num >= 1000000000000) {
-      return (num / 1000000000000).toFixed(1) + '조원';
-    } else if (num >= 100000000) {
-      return (num / 100000000).toFixed(1) + '억원';
-    } else if (num >= 10000000) {
-      return (num / 10000000).toFixed(1) + '천만원';
-    } else if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + '백만원';
-    } else {
-      return num.toLocaleString() + '원';
-    }
-  };
 
   const loadSessions = useCallback(async () => {
     const response = await getCropList();
@@ -176,14 +163,15 @@ const CropSelectionPage = () => {
                         </>
                       ) : (
                         <>
-                          <SessionName>
-                            {session.session_name}
-                          </SessionName>
+                          <SessionHeader>
+                            <SessionName>{session.session_name}</SessionName>
+                            <ResultHint>수익 예측 결과 보기 <FaChevronRight aria-hidden="true" /></ResultHint>
+                          </SessionHeader>
                           <SessionDetails>
                             <div>{session.created_at}</div>
                             <div>면적: {session.land_area}평</div>
                             <div>지역: {session.region}</div>
-                            <div>총 소득: {formatNumber(session.total_income)}</div>
+                            <div>예상 소득: {formatKoreanCurrency(session.total_income)}</div>
                           </SessionDetails>
                           <ButtonContainer>
                             <EditButton onClick={(e) => handleEditClick(session, e)}>

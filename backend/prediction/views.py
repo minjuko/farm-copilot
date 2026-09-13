@@ -268,6 +268,7 @@ def predict_income(request):
                     PredictionResult.objects.create(
                         session=prediction_session,
                         crop_name=crop_name,
+                        crop_ratio=crop_ratio,
                         predicted_income=int(adjusted_income),
                         adjusted_data=convert_values(adjusted_data),
                         price=predicted_price,
@@ -280,6 +281,8 @@ def predict_income(request):
                     crop_results.append(
                         {
                             'crop_name': crop_name,
+                            'crop_ratio': crop_ratio,
+                            'allocated_area': land_area * crop_ratio,
                             'latest_year': int(latest_year),
                             'adjusted_data': convert_values(adjusted_data),
                             'price': predicted_price,
@@ -363,12 +366,16 @@ def prediction_session_details(request, session_id):
     try:
         session = PredictionSession.objects.get(session_id=session_id, user=request.user)
         results = session.results.all().order_by('crop_name')
+        result_count = results.count()
         details = []
 
         start_date = (timezone.now() - timezone.timedelta(days=365)).strftime('%Y%m%d')
         end_date = timezone.now().strftime('%Y%m%d')
 
         for prediction_result in results:
+            crop_ratio = prediction_result.crop_ratio
+            if crop_ratio is None:
+                crop_ratio = 1 / result_count if result_count else 0
             try:
                 market_frame = fetch_market_prices(
                     prediction_result.crop_name, session.region, start_date, end_date
@@ -389,6 +396,8 @@ def prediction_session_details(request, session_id):
             details.append(
                 {
                     'crop_name': prediction_result.crop_name,
+                    'crop_ratio': crop_ratio,
+                    'allocated_area': session.land_area * crop_ratio,
                     'predicted_income': prediction_result.predicted_income,
                     'adjusted_data': prediction_result.adjusted_data,
                     'price': prediction_result.price,

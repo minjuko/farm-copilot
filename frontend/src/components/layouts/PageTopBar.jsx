@@ -6,15 +6,18 @@ import CustomModal from "../atoms/CustomModal";
 import TopBarLoader from "../atoms/TopBarLoader";
 import { useLoading } from "../../LoadingContext";
 import { useAuth } from "../../AuthContext";
+import { color } from "../../styles/theme";
 
 const TopBars = styled.nav`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f3f4f6;
-  padding: 12px;
-  border-bottom: 1px solid #c8c5c5;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-height: 60px;
+  box-sizing: border-box;
+  background-color: ${color("surface")};
+  padding: 10px 16px;
+  border-bottom: 2px solid ${color("borderStrong")};
+  box-shadow: 0 4px 14px rgba(35, 74, 58, 0.14);
   position: sticky;
   z-index: 1000;
 `;
@@ -38,9 +41,9 @@ const Title = styled.div`
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 20px;
+  font-size: 1.125rem;
   font-weight: 800;
-  color: #333;
+  color: ${color("text")};
 `;
 
 const BackButton = styled.button`
@@ -48,6 +51,9 @@ const BackButton = styled.button`
   border: none;
   font-size: 20px;
   cursor: pointer;
+  width: 36px;
+  height: 36px;
+  color: ${color("text")};
 `;
 
 const RightSection = styled.div`
@@ -64,9 +70,11 @@ const IconButton = styled.button`
   background: none;
   border: none;
   font-size: 20px;
-  color: #4aaa87;
+  color: ${color("primary")};
   cursor: pointer;
   margin-left: 4px;
+  width: 36px;
+  height: 36px;
 `;
 
 const PageTopBar = () => {
@@ -78,12 +86,12 @@ const PageTopBar = () => {
   const location = useLocation();
 
   const pageTitles = {
-    "/board": "게시판",
-    "/buy-board": "구매 게시판",
-    "/sell-board": "판매 게시판",
-    "/exchange-board": "품앗이 게시판",
+    "/board": "커뮤니티",
+    "/buy-board": "커뮤니티",
+    "/sell-board": "커뮤니티",
+    "/exchange-board": "커뮤니티",
     "/post/create": "게시글 작성",
-    "/post/:id": "게시글 상세보기",
+    "/post/:id": "커뮤니티",
     "/chat-list": "대화 목록",
     "/my-page": "마이페이지",
     "/post/edit/:id": "게시글 수정",

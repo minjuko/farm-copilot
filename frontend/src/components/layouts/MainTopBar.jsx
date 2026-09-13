@@ -5,15 +5,18 @@ import CustomModal from "../atoms/CustomModal";
 import TopBarLoader from "../atoms/TopBarLoader";
 import { useLoading } from "../../LoadingContext";
 import { useAuth } from "../../AuthContext";
+import { color, radius, shadow } from "../../styles/theme";
 
 const TopBars = styled.nav`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #f3f4f6;
-  padding: 12px;
-  border-bottom: 1px solid #c8c5c5;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-height: 60px;
+  box-sizing: border-box;
+  background-color: ${color("surface")};
+  padding: 10px 16px;
+  border-bottom: 2px solid ${color("borderStrong")};
+  box-shadow: 0 4px 14px rgba(35, 74, 58, 0.14);
   position: sticky;
   z-index: 1000;
 `;
@@ -31,8 +34,7 @@ const LogoImage = styled.img`
 const LogoText = styled.div`
   font-size: 20px;
   font-weight: 800;
-  color: #4aaa87;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  color: ${color("primary")};
   margin-left: 8px;
 `;
 
@@ -47,20 +49,21 @@ const TopBarButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 20px;
-  background-color: #4aaa87;
+  min-height: 40px;
+  padding: 8px 18px;
+  background-color: ${color("primary")};
   color: #ffffff;
   font-family: 'Freesentation', sans-serif;
   font-weight: 600;
   border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: ${radius("sm")};
+  font-size: 0.9rem;
+  box-shadow: ${shadow("sm")};
   cursor: pointer;
 `;
 
 const UsernameText = styled.span`
-  font-size: 16px;
+  font-size: 0.9rem;
   margin-right: 10px;
   display: flex;
   align-items: center;

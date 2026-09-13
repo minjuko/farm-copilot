@@ -7,25 +7,28 @@ import DeleteAccountModal from "./DeleteAccountModal";
 import { FaUserEdit, FaKey, FaTrashAlt, FaPen, FaCommentDots } from "react-icons/fa";
 import TopBarLoader from "../../atoms/TopBarLoader";
 import { useAuth } from "../../../AuthContext";
+import { color, radius, shadow, space } from "../../../styles/theme";
 
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem 1.5rem;
+  gap: ${space("md")};
+  padding: ${space("lg")} ${space("md")} 96px;
+  background: ${color("background")};
   box-sizing: border-box;
 `;
 const UserProfile = styled.div`
   display: flex;
   align-items: center;
-  padding: 1.25rem;
-  background-color: #fff;
+  padding: ${space("lg")};
+  background-color: ${color("surface")};
   width: 100%;
   max-width: 37.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.25rem;
+  border: 1px solid ${color("border")};
+  border-radius: ${radius("lg")};
+  box-shadow: ${shadow("sm")};
   position: relative;
 `;
 
@@ -45,7 +48,7 @@ const UserInfo = styled.div`
 
 const UserName = styled.h2`
   font-size: 1.25rem;
-  color: #333;
+  color: ${color("text")};
   margin: 0;
   display: flex;
   align-items: center;
@@ -54,17 +57,17 @@ const UserName = styled.h2`
 const Section = styled.div`
   width: 100%;
   max-width: 37.5rem;
-  background-color: #fff;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
-  margin-bottom: 1rem;
-  padding: 1rem;
+  background-color: ${color("surface")};
+  border: 1px solid ${color("border")};
+  border-radius: ${radius("lg")};
+  box-shadow: ${shadow("sm")};
+  padding: ${space("lg")};
 `;
 
 const SectionTitle = styled.h3`
   font-size: 1.125rem;
-  color: #333;
-  margin-bottom: 1.25rem;
+  color: ${color("text")};
+  margin: 0 0 ${space("md")};
 `;
 
 const ActionList = styled.div`
@@ -85,13 +88,13 @@ const ActionItem = styled.div`
 
 const ActionIcon = styled.div`
   font-size: 1.5rem; 
-  color: #4aaa87;
+  color: ${color("primary")};
   margin-bottom: 0.5rem; 
 `;
 
 const ActionText = styled.div`
-  font-size: 0.875rem; 
-  color: #333;
+  font-size: 0.94rem;
+  color: ${color("text")};
 `;
 
 const MyPageTemplate = () => {

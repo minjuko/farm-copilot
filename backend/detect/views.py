@@ -8,6 +8,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.http import JsonResponse
+from django.templatetags.static import static
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from PIL import Image, UnidentifiedImageError
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL_PATH = Path(settings.BASE_DIR) / 'best.pt'
 CONFIDENCE_THRESHOLD = 0.6
+REFERENCE_IMAGE_LICENSE = '공공누리 제2유형: 출처표시 + 상업적 이용금지'
 MAPPING_UNAVAILABLE_MESSAGE = '병해 탐지 모델의 상세정보 매핑이 준비되지 않았습니다.'
 MODEL_CONTRACT_MISMATCH_MESSAGE = '병해 탐지 모델의 클래스 계약이 일치하지 않습니다.'
 EXPECTED_MODEL_CLASS_NAMES = {
@@ -161,6 +163,15 @@ def image_url_or_none(image_field):
         return None
 
 
+def reference_image_url(pest):
+    """Resolve a fixture-owned static asset without hard-coding the static host."""
+    if not pest.image_url:
+        return None
+    if pest.image_url.startswith(('http://', 'https://')):
+        return pest.image_url
+    return static(pest.image_url.lstrip('/'))
+
+
 def process_image(image_path):
     """Run inference and return (Pest PK or None, confidence, image content)."""
     model = get_yolo_model()
@@ -255,7 +266,8 @@ def upload_image_for_detection(request):
             'information_source_url': pest_info.information_source_url,
             'confidence': confidence,
             'user_image_url': image_url_or_none(detection.image),
-            'db_image_url': detection.pest.image_url,
+            'db_image_url': reference_image_url(detection.pest),
+            'reference_image_license': REFERENCE_IMAGE_LICENSE,
             'detection_date': timezone.localtime(detection.detection_date).strftime(
                 '%Y-%m-%d %H:%M'
             ),
@@ -313,7 +325,8 @@ def detection_session_details(request, session_id):
             'detection_date': timezone.localtime(session.detection_date).strftime('%Y-%m-%d %H:%M'),
             'confidence': session.confidence,
             'user_image_url': image_url_or_none(session.image),
-            'db_image_url': session.pest.image_url,
+            'db_image_url': reference_image_url(session.pest),
+            'reference_image_license': REFERENCE_IMAGE_LICENSE,
         }
         return JsonResponse(details)
     except PestDetection.DoesNotExist:

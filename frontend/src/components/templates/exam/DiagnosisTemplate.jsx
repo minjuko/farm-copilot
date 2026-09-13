@@ -326,7 +326,8 @@ const DiagnosisTemplate = () => {
           &#60;탐지 가능 병해충 목록&#62;<br/>
           고추: 탄저병, 흰가루병<br/>
           오이: 노균병, 흰가루병<br/>
-          토마토: 잿빛곰팡이병, 흰가루병
+          토마토: 흰가루병<br/>
+          <small>현재 모델은 6개 출력 인덱스를 5개 고유 병해 정보로 연결합니다.</small>
         </ExplanationText>
         <ButtonWrapper>
           <UploadButton onClick={handleOpenFileDialog}>
