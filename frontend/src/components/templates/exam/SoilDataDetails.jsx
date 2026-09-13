@@ -9,6 +9,7 @@ const PageContainer = styled.div`
   align-items: center;
   padding: 1.5rem 1rem;
   background-color: #f9f9f9;
+  box-sizing: border-box;
 `;
 
 const RecommendationContainer = styled.div`

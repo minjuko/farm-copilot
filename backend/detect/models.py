@@ -15,7 +15,7 @@ class Pest(models.Model):
     occurrence_environment = models.TextField(blank=True, null=True)
     symptom_description = models.TextField(blank=True, null=True)
     prevention_methods = models.TextField(blank=True, null=True)
-    pesticide_name = models.CharField(max_length=100, blank=True, null=True)
+    pesticide_name = models.TextField(blank=True, null=True)
     image_url = models.URLField(max_length=200, blank=True, null=True)
     information_source = models.CharField(max_length=100, blank=True, null=True)
     information_source_url = models.URLField(max_length=500, blank=True, null=True)

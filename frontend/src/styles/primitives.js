@@ -8,15 +8,16 @@ export const PageContainer = styled.main`
   width: 100%;
   max-width: ${layout("content")};
   margin: 0 auto;
-  padding: ${space("md")};
+  padding: ${space("lg")} ${space("md")} 96px;
+  box-sizing: border-box;
 `;
 
 export const Surface = styled.section`
   width: 100%;
-  padding: ${space("md")};
+  padding: ${space("lg")};
   background: ${color("surface")};
   border: 1px solid ${color("border")};
-  border-radius: ${radius("md")};
+  border-radius: ${radius("lg")};
   box-shadow: ${shadow("sm")};
 `;
 

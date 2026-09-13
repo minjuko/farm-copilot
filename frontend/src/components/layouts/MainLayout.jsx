@@ -9,7 +9,8 @@ import { color, zIndex } from "../../styles/theme";
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
+  background: ${color("background")};
 `;
 
 const Header = styled.div`
@@ -20,13 +21,9 @@ const Header = styled.div`
 `;
 
 const Footer = styled.div`
-  position: sticky;
-  padding-top: 60px;
-  z-index: ${zIndex("header")};
-  background-color: ${color("surface")};
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  height: calc(72px + env(safe-area-inset-bottom));
+  flex: 0 0 calc(72px + env(safe-area-inset-bottom));
+  background: ${color("surface")};
 `;
 
 export const MainLayout = () => {

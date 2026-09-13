@@ -22,6 +22,7 @@ export const useSoilAnalysis = () => {
   const [cropName, setCropName] = useState("");
   const [cropNames, setCropNames] = useState([]);
   const [address, setAddress] = useState("");
+  const [backendAddress, setBackendAddress] = useState("");
   const [addressResults, setAddressResults] = useState([]);
   const [soilData, setSoilData] = useState([]);
   const [selectedSample, setSelectedSample] = useState(null);
@@ -29,6 +30,7 @@ export const useSoilAnalysis = () => {
   const [isFertilizerUnavailable, setIsFertilizerUnavailable] = useState(false);
   const [error, setError] = useState(null);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
   const [isSoilLoading, setIsSoilLoading] = useState(false);
   const [isFertilizerLoading, setIsFertilizerLoading] = useState(false);
   const [isAddressSearching, setIsAddressSearching] = useState(false);
@@ -38,6 +40,7 @@ export const useSoilAnalysis = () => {
   });
   const soilRequestInFlight = useRef(false);
   const fertilizerRequestInFlight = useRef(false);
+  const toastTimer = useRef(null);
 
   const resultSetters = {
     setSoilData,
@@ -50,6 +53,16 @@ export const useSoilAnalysis = () => {
     setError(message);
     setIsErrorModalOpen(true);
   };
+
+  const showToast = (message) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastMessage(message);
+    toastTimer.current = setTimeout(() => setToastMessage(""), 2500);
+  };
+
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -87,6 +100,7 @@ export const useSoilAnalysis = () => {
 
   const changeAddress = (value) => {
     setAddress(value);
+    setBackendAddress("");
     setAddressResults([]);
     resetResultState(resultSetters);
   };
@@ -94,7 +108,7 @@ export const useSoilAnalysis = () => {
   const searchAddress = async () => {
     if (!serviceCapability.available || isAddressSearching) return;
     if (!address.trim()) {
-      showError("검색할 주소를 입력해 주세요.");
+      showToast("주소를 입력해주세요.");
       return;
     }
     try {
@@ -106,9 +120,14 @@ export const useSoilAnalysis = () => {
         showError("검색된 주소가 없습니다.");
         return;
       }
-      setAddress(response?.data?.normalized_query || address.trim());
       setAddressResults(addressResults);
       setError(null);
+      const firstResult = addressResults[0];
+      const resolvedAddress = firstResult.display_name || firstResult.address_name;
+      setBackendAddress(resolvedAddress);
+      if (cropNames.includes(cropName)) {
+        await fetchSoilExamData(resolvedAddress);
+      }
     } catch (requestError) {
       setAddressResults([]);
       showError(getApiErrorMessage(
@@ -143,6 +162,7 @@ export const useSoilAnalysis = () => {
         return;
       }
       setSoilData(soilItems);
+      setBackendAddress(selectedAddress.trim());
       setError(null);
     } catch (requestError) {
       setSoilData([]);
@@ -159,7 +179,7 @@ export const useSoilAnalysis = () => {
 
   const selectAddress = (addressResult) => {
     const selectedAddress = addressResult.display_name || addressResult.address_name;
-    setAddress(selectedAddress);
+    setBackendAddress(selectedAddress);
     setAddressResults([]);
     fetchSoilExamData(selectedAddress);
   };
@@ -174,7 +194,7 @@ export const useSoilAnalysis = () => {
 
     const { payload, error: payloadError } = buildFertilizerPayload({
       cropName,
-      address: address.trim(),
+      address: backendAddress || address.trim(),
       soilItem: selectedSoilSample,
     });
     if (payloadError) {
@@ -233,5 +253,6 @@ export const useSoilAnalysis = () => {
     selectedSample,
     serviceCapability,
     soilData,
+    toastMessage,
   };
 };

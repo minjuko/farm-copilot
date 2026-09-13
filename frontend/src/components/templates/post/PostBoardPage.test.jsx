@@ -37,7 +37,7 @@ beforeEach(() => {
 test.each([
   ["buy", "구매 게시판"],
   ["sell", "판매 게시판"],
-  ["exchange", "나눔 게시판"],
+  ["exchange", "품앗이 게시판"],
 ])("loads only the %s post contract", async (postType, boardLabel) => {
   renderBoard({ postType, boardLabel });
 
@@ -59,12 +59,24 @@ test("filters titles and shows an explicit empty result", async () => {
 
 test("shows the correctly typed create link only to authenticated users", async () => {
   mockAuthStatus = "authenticated";
-  renderBoard({ postType: "exchange", boardLabel: "나눔 게시판" });
+  renderBoard({ postType: "exchange", boardLabel: "품앗이 게시판" });
   await screen.findByText("pepper");
 
   expect(screen.getByRole("link", { name: /글 작성/ })).toHaveAttribute(
     "href", "/post/create?post_type=exchange"
   );
+});
+
+test("provides links to every community board and marks the current board", async () => {
+  renderBoard({ postType: "exchange", boardLabel: "품앗이 게시판" });
+  await screen.findByText("pepper");
+
+  fireEvent.click(screen.getByRole("button", { name: "게시판 선택" }));
+  const navigation = screen.getByRole("navigation", { name: "게시판 선택" });
+  expect(navigation).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "판매 게시판" })).toHaveAttribute("href", "/sell-board");
+  expect(screen.getByRole("link", { name: "구매 게시판" })).toHaveAttribute("href", "/buy-board");
+  expect(screen.getByRole("link", { name: "품앗이 게시판" })).toHaveAttribute("aria-current", "page");
 });
 
 test("renders a controlled API error instead of a browser alert", async () => {

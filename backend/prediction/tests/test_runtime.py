@@ -358,6 +358,8 @@ class PredictionRuntimeTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['results'][0]['crop_chart_data'], [])
+        self.assertEqual(response.json()['results'][0]['crop_ratio'], 1)
+        self.assertEqual(response.json()['results'][0]['allocated_area'], 100)
 
 
 class PredictionCsrfBoundaryTests(TestCase):

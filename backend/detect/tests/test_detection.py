@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, RequestFactory, SimpleTestCase, TestCase
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from PIL import Image
 
 from common.exceptions import ServiceUnavailableError, ValidationError
@@ -40,6 +40,21 @@ class DetectionRuntimeTests(SimpleTestCase):
     def test_backend_root_template_renders(self):
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
+
+    @override_settings(STATIC_URL='/static/')
+    def test_reference_image_url_resolves_fixture_static_path(self):
+        pest = SimpleNamespace(image_url='detect/reference/example.jpg')
+        self.assertEqual(
+            views.reference_image_url(pest),
+            '/static/detect/reference/example.jpg',
+        )
+
+    def test_reference_image_url_preserves_external_url(self):
+        pest = SimpleNamespace(image_url='https://example.com/reference.jpg')
+        self.assertEqual(
+            views.reference_image_url(pest),
+            'https://example.com/reference.jpg',
+        )
 
     @patch.object(views, 'MODEL_PATH')
     def test_missing_model_is_isolated_to_detection_feature(self, model_path):
@@ -256,6 +271,8 @@ class DetectionFixtureContractTests(TestCase):
                 self.assertTrue(mapping.pest.prevention_methods)
                 self.assertTrue(mapping.pest.information_source)
                 self.assertTrue(mapping.pest.information_source_url.startswith('https://'))
+                if mapping.pest.image_url:
+                    self.assertTrue(mapping.pest.image_url.startswith('detect/reference/'))
 
 
 class DetectCsrfBoundaryTests(TestCase):

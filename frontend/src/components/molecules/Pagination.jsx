@@ -1,21 +1,28 @@
 import React from "react";
 import ReactPaginate from "react-paginate";
 import styled from "styled-components";
-import { color, radius, space } from "../../styles/theme";
+import { color, radius } from "../../styles/theme";
 
 const Container = styled.nav`
   display: flex;
   justify-content: center;
-  margin-top: ${space("lg")};
+  margin-top: 18px;
 
-  .pagination { display: flex; list-style: none; padding: 0; }
-  .pagination li { margin: 0 5px; }
+  .pagination { display: flex; align-items: center; list-style: none; padding: 0; margin: 0; }
+  .pagination li { margin: 0 3px; }
   .pagination li a {
-    padding: 8px 12px;
+    display: grid;
+    place-items: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    box-sizing: border-box;
     border: 1px solid ${color("border")};
     border-radius: ${radius("sm")};
     cursor: pointer;
     color: ${color("primary")};
+    font-size: 0.88rem;
+    line-height: 1;
     text-decoration: none;
   }
   .pagination li a:hover { background: ${color("surfaceHover")}; color: ${color("primaryHover")}; }

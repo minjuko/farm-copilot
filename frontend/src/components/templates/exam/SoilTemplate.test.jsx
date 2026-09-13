@@ -48,6 +48,21 @@ beforeEach(() => {
   getSoilFertilizerInfo.mockResolvedValue({ data: { data: [{ pre_Fert_N: "10" }] } });
 });
 
+test("shows a toast when address search is requested without an address", async () => {
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <SoilTemplate />
+    </MemoryRouter>
+  );
+
+  const searchButton = screen.getByRole("button", { name: /주소 검색/ });
+  await waitFor(() => expect(searchButton).toBeEnabled());
+  fireEvent.click(searchButton);
+
+  expect(screen.getByText("주소를 입력해주세요.")).toBeInTheDocument();
+  expect(searchSoilAddresses).not.toHaveBeenCalled();
+});
+
 test("connects crop, address, soil sample, and fertilizer steps through the analysis hook", async () => {
   render(
     <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -66,7 +81,9 @@ test("connects crop, address, soil sample, and fertilizer steps through the anal
   fireEvent.click(await screen.findByRole("button", { name: "selected parcel 1-2" }));
 
   expect(getSoilExamData).toHaveBeenCalledWith("pepper", "selected parcel 1-2");
-  fireEvent.change(await screen.findByLabelText("상세 주소 선택"), { target: { value: "0" } });
+  const sampleSelect = screen.getByLabelText("상세 주소 선택");
+  await waitFor(() => expect(sampleSelect).toBeEnabled());
+  fireEvent.change(sampleSelect, { target: { value: "0" } });
 
   await waitFor(() => expect(screen.getByTestId("soil-results")).toHaveTextContent("pepper:10"));
   expect(getSoilFertilizerInfo).toHaveBeenCalledWith(expect.objectContaining({

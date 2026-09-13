@@ -46,6 +46,27 @@ export const finiteNumberOrZero = (value) => {
   return number ?? 0;
 };
 
+export const formatKoreanCurrency = (value) => {
+  const amount = Math.round(finiteNumberOrZero(value));
+  const sign = amount < 0 ? '-' : '';
+  const absoluteAmount = Math.abs(amount);
+
+  if (absoluteAmount < 10000) {
+    return `${amount.toLocaleString('ko-KR')}원`;
+  }
+
+  const totalManwon = Math.round(absoluteAmount / 10000);
+  if (totalManwon < 10000) {
+    return `${sign}${totalManwon.toLocaleString('ko-KR')}만원`;
+  }
+
+  const eok = Math.floor(totalManwon / 10000);
+  const manwon = totalManwon % 10000;
+  return manwon
+    ? `${sign}${eok.toLocaleString('ko-KR')}억 ${manwon.toLocaleString('ko-KR')}만원`
+    : `${sign}${eok.toLocaleString('ko-KR')}억원`;
+};
+
 export const removeCropAt = (crops, index) => crops.filter((_, cropIndex) => cropIndex !== index);
 
 export const normalizePredictionResult = (predictionPayload) => ({
@@ -57,6 +78,8 @@ export const normalizePredictionResult = (predictionPayload) => ({
     adjusted_data: cropResult?.adjusted_data && typeof cropResult.adjusted_data === "object" ? cropResult.adjusted_data : {},
     crop_chart_data: Array.isArray(cropResult?.crop_chart_data) ? cropResult.crop_chart_data : [],
     price: finiteNumberOrZero(cropResult?.price),
+    crop_ratio: finiteNumberOrZero(cropResult?.crop_ratio),
+    allocated_area: finiteNumberOrZero(cropResult?.allocated_area),
     r2_score: finiteNumberOrZero(cropResult?.r2_score),
     rmse: finiteNumberOrZero(cropResult?.rmse),
   })) : [],

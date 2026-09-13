@@ -20,6 +20,11 @@ ADDRESS_ALIASES = {
     '강원도': '강원특별자치도',
     '제주도': '제주특별자치도',
 }
+# Kakao has started returning the reorganized district code for this area,
+# while SoilExam V2 still stores its records under the former Gwangju code.
+SOIL_STDG_CODE_ALIASES = {
+    '1230013600': '2917013600',  # 북구 용전동
+}
 MIN_ADDRESS_QUERY_LENGTH = 2
 MAX_ADDRESS_QUERY_LENGTH = 200
 MAX_ADDRESS_RESULTS = 10
@@ -187,15 +192,21 @@ def _find_address_document(address):
     raise NotFoundError('No legal district code was found for the address.')
 
 
+def _soil_compatible_stdg_code(code):
+    """Bridge address-provider codes that SoilExam has not migrated yet."""
+    normalized_code = str(code or '')[:10]
+    return SOIL_STDG_CODE_ALIASES.get(normalized_code, normalized_code)
+
+
 def find_legal_district_code(address):
     parcel = _find_address_document(address)
-    return str(parcel['b_code'])[:10]
+    return _soil_compatible_stdg_code(parcel['b_code'])
 
 
 def find_address_codes(address):
     """Resolve a parcel address to both legal-district and 19-digit PNU codes."""
     parcel = _find_address_document(address)
-    legal_code = parcel['b_code']
+    legal_code = _soil_compatible_stdg_code(parcel['b_code'])
     return {
         'stdg_code': str(legal_code)[:10],
         'pnu_code': build_pnu_code(
@@ -205,6 +216,28 @@ def find_address_codes(address):
             parcel.get('sub_address_no'),
         ),
     }
+
+
+def _soil_record_sort_key(row):
+    sample_number = str(row.get('No') or '')
+    return (
+        str(row.get('Exam_Day') or ''),
+        int(sample_number) if sample_number.isdigit() else 0,
+    )
+
+
+def _latest_soil_record_per_address(records):
+    """Keep the newest examination for each parcel address."""
+    latest_records = []
+    seen_addresses = set()
+    for record in sorted(records, key=_soil_record_sort_key, reverse=True):
+        address = ''.join(str(record.get('PNU_Nm') or '').split())
+        if address:
+            if address in seen_addresses:
+                continue
+            seen_addresses.add(address)
+        latest_records.append(record)
+    return latest_records
 
 
 def fetch_soil_exam(stdg_code):
@@ -244,14 +277,7 @@ def fetch_soil_exam(stdg_code):
     ]
     if not soil_records:
         raise NotFoundError('Soil examination data was empty.')
-    return sorted(
-        soil_records,
-        key=lambda row: (
-            str(row.get('Exam_Day') or ''),
-            int(row.get('No') or 0) if str(row.get('No') or '').isdigit() else 0,
-        ),
-        reverse=True,
-    )
+    return _latest_soil_record_per_address(soil_records)
 
 
 def fetch_fertilizer(crop_name, soil_values, pnu_code=None):

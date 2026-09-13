@@ -151,6 +151,26 @@ class SoilServiceTests(TestCase):
         )
 
     @patch('soil.services.requests.get')
+    @patch.dict(os.environ, {'KAKAO_REST_API_KEY': 'test-key'}, clear=True)
+    def test_reorganized_yongjeon_code_uses_soil_exam_legacy_code(self, mock_get):
+        mock_get.return_value = Mock(
+            status_code=200,
+            json=lambda: {'documents': [{'address': {
+                'address_name': '전남광주통합특별시 북구 용전동 1167',
+                'b_code': '1230013600',
+                'mountain_yn': 'N',
+                'main_address_no': '1167',
+                'sub_address_no': '',
+            }}]},
+        )
+
+        self.assertEqual(find_legal_district_code('광주광역시 북구 용전동'), '2917013600')
+        self.assertEqual(
+            find_address_codes('광주광역시 북구 용전동 1167')['pnu_code'],
+            '2917013600111670000',
+        )
+
+    @patch('soil.services.requests.get')
     @patch.dict(os.environ, {'DATA_GO_KR_SOIL_SERVICE_KEY': 'test-key'}, clear=True)
     def test_soil_v2_success_parsing_and_parameter(self, mock_get):
         mock_get.return_value = Mock(
@@ -169,7 +189,7 @@ class SoilServiceTests(TestCase):
 
     @patch('soil.services.requests.get')
     @patch.dict(os.environ, {'DATA_GO_KR_SOIL_SERVICE_KEY': 'test-key'}, clear=True)
-    def test_soil_samples_are_sorted_by_latest_exam_without_dropping_same_parcel_rows(
+    def test_soil_samples_keep_only_latest_exam_for_each_parcel(
         self, mock_get
     ):
         mock_get.return_value = Mock(
@@ -179,12 +199,13 @@ class SoilServiceTests(TestCase):
               <item><No>1</No><Exam_Day>20230101</Exam_Day><PNU_Nm>same</PNU_Nm></item>
               <item><No>2</No><Exam_Day>20240101</Exam_Day><PNU_Nm>same</PNU_Nm></item>
               <item><No>3</No><Exam_Day>20240101</Exam_Day><PNU_Nm>same</PNU_Nm></item>
+              <item><No>4</No><Exam_Day>20230601</Exam_Day><PNU_Nm>other</PNU_Nm></item>
             </items></body></response>
         """,
         )
         result = fetch_soil_exam('1234567890')
-        self.assertEqual([row['No'] for row in result], ['3', '2', '1'])
-        self.assertEqual(len(result), 3)
+        self.assertEqual([row['No'] for row in result], ['3', '4'])
+        self.assertEqual([row['PNU_Nm'] for row in result], ['same', 'other'])
 
     @patch('soil.services.requests.get')
     @patch.dict(os.environ, {'DATA_GO_KR_SOIL_SERVICE_KEY': 'test-key'}, clear=True)

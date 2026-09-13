@@ -8,14 +8,14 @@ import { useLoading } from "../../../LoadingContext";
 import Pagination from "../../molecules/Pagination";
 import useAsyncResource from "../../../hooks/useAsyncResource";
 import { EmptyState, ListPage } from "../../../styles/primitives";
-import { color, shadow } from "../../../styles/theme";
+import { color, radius, shadow, space } from "../../../styles/theme";
 
 const SessionList = styled.div`
   width: 100%;
-  padding: 1rem 0.5rem;
+  padding: ${space("md")} 0;
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: ${space("sm")};
   max-width: 75rem;
 `;
 
@@ -23,14 +23,17 @@ const SessionItem = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.625rem;
-  border: 1px solid ${color("borderStrong")};
-  border-radius: 0.625rem;
+  padding: ${space("md")};
+  border: 1px solid ${color("border")};
+  border-radius: ${radius("lg")};
   background-color: ${color("surface")};
   box-shadow: ${shadow("sm")};
   cursor: pointer;
   position: relative;
-  margin: 0 0.5rem;
+  margin: 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  &:hover { transform: translateY(-2px); box-shadow: ${shadow("md")}; }
 
   @media (max-width: 37.5rem) {
     flex-direction: column;
@@ -49,7 +52,7 @@ const SessionInfo = styled.div`
 `;
 
 const SessionDate = styled.div`
-  font-size: 0.875rem;
+  font-size: 0.94rem;
   color: ${color("textMuted")};
 `;
 
@@ -73,9 +76,9 @@ const AddButton = styled.button`
   color: white;
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 0.3125rem;
+  border-radius: ${radius("sm")};
   cursor: pointer;
-  font-size: 1.3rem;
+  font-size: 1rem;
   box-shadow: ${shadow("sm")};
   margin-top: 0.2rem;
 

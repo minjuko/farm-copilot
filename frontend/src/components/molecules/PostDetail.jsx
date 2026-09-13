@@ -47,14 +47,15 @@ const TitleBar = styled.div`
   align-items: center;
   justify-content: space-between; 
   position: relative;
+  min-height: 36px;
 `;
 
 const Title = styled.h1`
   font-size: 1.5rem;
   color: #444;
+  margin: 14px 0 0;
   padding-bottom: 8px;
-  text-align: center;
-  flex: 1;
+  text-align: left;
   word-break: break-word; 
 `;
 
@@ -130,20 +131,18 @@ const Divider = styled.div`
   margin: 4px 0;
 `;
 
-const ListIconContainer = styled.div`
+const ListIconContainer = styled.button`
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
   cursor: pointer;
   color: #888;
-  margin-right: 16px;
 
   &:hover {
     color: #3e8e75;
-  }
-
-  span {
-    margin-left: 8px;
-    font-size: 16px;
   }
 `;
 
@@ -193,10 +192,14 @@ const PostDetail = ({
   return (
     <>
       <TitleBar>
-        <ListIconContainer onClick={() => handleBoardClick(post.post_type)}>
-          <FaThList />
+        <ListIconContainer
+          type="button"
+          onClick={() => handleBoardClick(post.post_type)}
+          aria-label={`${getPostTypeLabel(post.post_type)} 목록으로 돌아가기`}
+        >
+          <FaThList aria-hidden="true" />
+          <PostTypeBadge>{getPostTypeLabel(post.post_type)}</PostTypeBadge>
         </ListIconContainer>
-        <Title>{post.title}</Title>
         {canManagePost && (
           <>
             <SettingsIcon aria-label="게시글 관리" onClick={() => handleSettingsClick(0)} />
@@ -212,7 +215,7 @@ const PostDetail = ({
           </>
         )}
       </TitleBar>
-      <PostTypeBadge>{getPostTypeLabel(post.post_type)}</PostTypeBadge>
+      <Title>{post.title}</Title>
       <PostMeta>
         <span>작성자: {post.username}</span>
         <span>작성일: {new Date(post.creation_date).toLocaleDateString()}</span>

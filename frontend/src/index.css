@@ -59,7 +59,23 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: #263a32;
+  background: #f6f8f7;
+  font-size: 17px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  color: #263a32;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+}
+
+p { line-height: 1.6; }
+
+button, a, input, select, textarea { transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
@@ -124,13 +140,5 @@ button, input, select, textarea {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
-}
-
-* {
-  transition: all 0.2s ease-in-out;
-}
-
-input {
-  autocomplete: off;
 }
 

@@ -9,7 +9,7 @@ import { useLoading } from "../../../LoadingContext";
 import GlobalLoader from "../../atoms/GlobalLoader";
 import useAsyncResource from "../../../hooks/useAsyncResource";
 import { EmptyState, ListPage } from "../../../styles/primitives";
-import { color, shadow } from "../../../styles/theme";
+import { color, radius, shadow, space } from "../../../styles/theme";
 import {
   formatDetectionConfidence,
   normalizeMediaUrl,
@@ -21,7 +21,7 @@ const Content = styled.div`
   align-items: center;
   width: 100%;
   max-width: 75rem; 
-  margin-top: 1rem;
+  margin-top: ${space("md")};
 
   @media (max-width: 48rem) { 
     max-width: 37.5rem; 
@@ -36,7 +36,7 @@ const SessionList = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem; 
+  gap: ${space("sm")};
   max-width: 75rem;
 `;
 
@@ -44,20 +44,20 @@ const SessionItem = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.625rem;
-  border: 1px solid ${color("borderStrong")};
-  border-radius: 0.625rem; 
-  background-color: ${color("background")};
+  padding: ${space("md")};
+  border: 1px solid ${color("border")};
+  border-radius: ${radius("lg")};
+  background-color: ${color("surface")};
   box-shadow: ${shadow("sm")};
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   &:hover {
     background-color: ${color("surfaceHover")};
     transform: translateY(-0.125rem); 
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    box-shadow: ${shadow("md")};
   }
   flex-wrap: wrap;
-  font-size: clamp(0.8rem, 2.5vw, 1.2rem); 
+  font-size: 1rem;
   position: relative;
 `;
 
@@ -68,14 +68,15 @@ const SessionInfo = styled.div`
   gap: 0.3125rem; 
   flex: 1;
   min-width: 9.375rem; 
-  font-size: clamp(0.9rem, 2.5vw, 1.2rem); 
+  font-size: 1rem;
+  color: ${color("text")};
 `;
 
 const SessionImage = styled.img`
   width: 5rem; 
   height: 5rem; 
   object-fit: cover;
-  border-radius: 0.3125rem; 
+  border-radius: ${radius("sm")};
   margin-right: 0.625rem; 
   flex-shrink: 0;
 
@@ -114,10 +115,10 @@ const AddButtonContainer = styled.button`
   background-color: ${color("primary")};
   color: white;
   border: none;
-  border-radius: 0.3rem;
+  border-radius: ${radius("sm")};
   box-shadow: ${shadow("sm")};
   transition: background-color 0.3s;
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-size: 1rem;
 
   &:hover {
     background-color: ${color("primaryFocus")};
@@ -239,7 +240,7 @@ const DiagnosisListTemplate = () => {
                   <SessionInfo>
                     <div><strong>질병명:</strong> {session.pest_name && session.pest_name !== "0" ? session.pest_name : "정보 없음"}</div>
                     <div><strong>진단 날짜:</strong> {session.detection_date || "정보 없음"}</div>
-                    <div><strong>AI 모델 정확도:</strong> {formatDetectionConfidence(session.confidence)}</div>
+                    <div><strong>신뢰도:</strong> {formatDetectionConfidence(session.confidence)}</div>
                   </SessionInfo>
                   <DeleteButton onClick={(e) => {
                     e.stopPropagation();

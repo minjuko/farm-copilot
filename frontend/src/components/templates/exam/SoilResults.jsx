@@ -4,13 +4,16 @@ import { formatSoilValue } from "./soilFlow";
 
 const RecommendationContainer = styled.div`
   width: 100%;
-  {% comment %} max-width: 800px; {% endcomment %}
+  box-sizing: border-box;
   background-color: #fff;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-  padding: 1rem 2rem;
-  max-width: 75rem;
+  border: 1px solid #e1e9e5;
+  box-shadow: 0 8px 24px rgba(35, 74, 58, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 600px;
   margin: 0 auto;
+
+  @media (max-width: 600px) { padding: 1rem; }
 `;
 
 const CropInfoContainer = styled.div`

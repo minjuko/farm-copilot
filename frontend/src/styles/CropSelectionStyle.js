@@ -1,11 +1,13 @@
 import styled from 'styled-components';
+import { color, radius, shadow, space } from './theme';
 
 export const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.25rem 0; 
-  height: 100vh;
+  padding: ${space("lg")} 0 96px;
+  min-height: 100vh;
+  background: ${color("background")};
   position: relative;
   overflow: hidden;
 `;
@@ -24,20 +26,20 @@ export const Button = styled.button`
   align-items: center;
   justify-content: center;
   padding: 0.5rem 1.25rem; 
-  margin-top: 1.25rem; 
-  margin-bottom: 1.25rem; 
+  margin: 0 0 ${space("lg")};
   font-weight: 600;
-  background-color: #4aaa87;
+  background-color: ${color("primary")};
   color: white;
   border: none;
-  border-radius: 0.3125rem; 
+  border-radius: ${radius("sm")};
   cursor: pointer;
   font-size: 1rem; 
   transition: background-color 0.3s;
   width: 9.375rem; 
+  box-shadow: ${shadow("sm")};
 
   &:hover {
-    background-color: #3e8e75;
+    background-color: ${color("primaryHover")};
   }
 
   svg {
@@ -57,40 +59,41 @@ export const SessionListContainer = styled.div`
 export const SessionList = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); 
-  gap: 0.625rem;
-  max-width: 62.5rem;
-  width: 100%;
-  padding: 0 1.25rem;
+  gap: ${space("md")};
+  max-width: 60rem;
+  width: calc(100% - 2.5rem);
+  padding: 0;
   box-sizing: border-box;
-  margin-bottom: 1.25rem; 
+  margin: 0 auto 1.25rem;
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(auto-fill, minmax(11.25rem, 1fr)); 
   }
 
   @media (max-width: 480px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+    grid-template-columns: 1fr;
+    gap: ${space("sm")};
+    width: calc(100% - 2rem);
   }
 `;
 
 export const SessionItem = styled.div`
-  background-color: #f9f9f9;
-  border-radius: 0.625rem; 
-  border: 1px solid #ccc;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2); 
+  background-color: ${color("surface")};
+  border-radius: ${radius("lg")};
+  border: 1px solid ${color("borderStrong")};
+  box-shadow: ${shadow("sm")};
   display: flex;
   flex-direction: column;
   align-items: flex-start; 
   justify-content: space-between;
-  padding: 0.625rem; 
+  padding: 14px ${space("md")} 12px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   height: auto; 
 
   &:hover {
-    transform: translateY(-0.3125rem); 
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2); 
+    transform: translateY(-0.125rem);
+    box-shadow: ${shadow("md")};
   }
 
   &:active {
@@ -100,9 +103,9 @@ export const SessionItem = styled.div`
 `;
 
 export const SessionName = styled.span`
-  font-size: 1.2rem; 
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #333;
+  color: ${color("text")};
   margin-bottom: 0.5rem; 
   word-break: break-word;
   text-align: center;
@@ -129,23 +132,28 @@ export const EditInput = styled.input`
 `;
 
 export const SessionDetails = styled.div`
-  font-size: 1rem; 
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem; 
+  width: 100%;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  margin: 0;
   text-align: left;
-  color: dimgray; 
+  color: ${color("textMuted")};
 
   @media (max-width: 480px) {
-    font-size: 0.875rem; 
+    font-size: 0.93rem;
     margin-bottom: 0.375rem;
   }
 `;
 
 export const ButtonContainer = styled.div`
   display: flex;
+  align-items: center;
+  gap: ${space("sm")};
   justify-content: flex-end;
   width: 100%;
-  margin-top: 0.5rem; 
+  margin-top: ${space("sm")};
+  padding-top: ${space("sm")};
+  border-top: 1px solid ${color("border")};
 
   @media (max-width: 480px) {
     margin-top: 0.375rem;
@@ -153,7 +161,7 @@ export const ButtonContainer = styled.div`
 `;
 
 export const SaveButton = styled.button`
-  background-color: #4aaa87;
+  background-color: ${color("primary")};
   color: white;
   border: none;
   border-radius: 0.3125rem; 
@@ -163,7 +171,7 @@ export const SaveButton = styled.button`
   transition: background-color 0.3s;
 
   &:hover {
-    background-color: #3e8e75;
+    background-color: ${color("primaryHover")};
   }
 
   @media (max-width: 480px) {
@@ -175,12 +183,12 @@ export const SaveButton = styled.button`
 export const DeleteButton = styled.button`
   background: none;
   border: none;
-  color: #e53e3e;
+  color: ${color("danger")};
   cursor: pointer;
   font-size: 1rem; 
 
   &:hover {
-    color: #c53030;
+    color: ${color("dangerHover")};
   }
 
   @media (max-width: 480px) {
@@ -191,12 +199,12 @@ export const DeleteButton = styled.button`
 export const EditButton = styled.button`
   background: none;
   border: none;
-  color: #4aaa87;
+  color: ${color("primary")};
   cursor: pointer;
   font-size: 1rem; 
 
   &:hover {
-    color: #3e8e75;
+    color: ${color("primaryHover")};
   }
 
   @media (max-width: 480px) {
@@ -270,7 +278,26 @@ export const PaginationContainer = styled.div`
 
 export const EmptyMessage = styled.div`
   text-align: center;
-  color: #888;
+  color: ${color("textMuted")};
   font-size: 1rem;
   margin: 2rem;
+`;
+
+export const SessionHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: ${space("sm")};
+  width: 100%;
+`;
+
+export const ResultHint = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  color: ${color("primaryHover")};
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.4;
 `;

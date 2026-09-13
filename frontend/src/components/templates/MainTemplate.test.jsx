@@ -27,7 +27,7 @@ test("renders feature cards without environment status labels", async () => {
     </MemoryRouter>,
   );
 
-  expect(screen.getByText("병해충 진단")).toBeInTheDocument();
+  expect(screen.getAllByText("병해충 진단").length).toBeGreaterThanOrEqual(1);
   expect(screen.queryByText("AVAILABLE")).not.toBeInTheDocument();
 });
 

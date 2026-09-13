@@ -12,46 +12,69 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px;
+  gap: 24px;
+  padding: 32px 24px 24px;
+  box-sizing: border-box;
   background-color: #f9f9f9;
-  min-height: 160vh;
-  @media (max-width: 768px) { padding: 16px; }
+  min-height: 100vh;
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
 const BoxContainer = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   background-color: #fff;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  border: 1px solid #e1e9e5;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(35, 74, 58, 0.08);
   width: 100%;
   max-width: 600px;
-  @media (max-width: 768px) { padding: 12px; }
+  box-sizing: border-box;
+  @media (max-width: 768px) { padding: 20px 16px; }
 `;
-
-const Divider = styled.hr`
-  width: 100%;
-  max-width: 600px;
-  border: 1px solid #ccc;
-`;
-
-const Help = styled.p`
-  color: #7f8c8d;
-  font-size: 0.875rem;
-  margin-top: 0.625rem;
+const Toast = styled.div`
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 12px 18px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: #263a32;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(22, 44, 35, 0.22);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
 `;
 
 const SoilTemplate = () => {
   const navigate = useNavigate();
   const analysis = useSoilAnalysis();
   const serviceAvailable = analysis.serviceCapability.available;
+  const hasValidCrop = analysis.cropNames.includes(analysis.cropName);
+  const hasAddress = Boolean(analysis.address.trim());
+  const sampleGuidance = !hasValidCrop && !hasAddress
+    ? "작물 이름과 주소를 먼저 입력해주세요."
+    : !hasValidCrop
+      ? "작물 이름을 목록에서 선택해주세요."
+      : !hasAddress
+        ? "주소를 입력해주세요."
+        : analysis.isSoilLoading
+          ? "상세 주소를 불러오고 있습니다."
+          : "주소 검색 버튼을 눌러 상세 주소를 불러와주세요.";
 
   return (
     <Container>
+      {analysis.toastMessage && <Toast role="status">{analysis.toastMessage}</Toast>}
       <BoxContainer>
-        <Help>토양 분석을 위한 작물 이름과 주소를 입력하세요.</Help>
         <CropAutocomplete
           cropName={analysis.cropName}
           cropNames={analysis.cropNames}
@@ -69,11 +92,12 @@ const SoilTemplate = () => {
         />
         <SoilSampleSelect
           disabled={analysis.isFertilizerLoading || !serviceAvailable}
+          guidance={sampleGuidance}
           onSelect={analysis.selectSample}
           samples={analysis.soilData}
+          selectedSample={analysis.selectedSample}
         />
       </BoxContainer>
-      <Divider />
       <CustomModal
         isOpen={analysis.isErrorModalOpen}
         onRequestClose={analysis.closeErrorModal}
