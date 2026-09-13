@@ -155,13 +155,19 @@ class SoilServiceTests(TestCase):
     def test_reorganized_yongjeon_code_uses_soil_exam_legacy_code(self, mock_get):
         mock_get.return_value = Mock(
             status_code=200,
-            json=lambda: {'documents': [{'address': {
-                'address_name': '전남광주통합특별시 북구 용전동 1167',
-                'b_code': '1230013600',
-                'mountain_yn': 'N',
-                'main_address_no': '1167',
-                'sub_address_no': '',
-            }}]},
+            json=lambda: {
+                'documents': [
+                    {
+                        'address': {
+                            'address_name': '전남광주통합특별시 북구 용전동 1167',
+                            'b_code': '1230013600',
+                            'mountain_yn': 'N',
+                            'main_address_no': '1167',
+                            'sub_address_no': '',
+                        }
+                    }
+                ]
+            },
         )
 
         self.assertEqual(find_legal_district_code('광주광역시 북구 용전동'), '2917013600')
@@ -189,9 +195,7 @@ class SoilServiceTests(TestCase):
 
     @patch('soil.services.requests.get')
     @patch.dict(os.environ, {'DATA_GO_KR_SOIL_SERVICE_KEY': 'test-key'}, clear=True)
-    def test_soil_samples_keep_only_latest_exam_for_each_parcel(
-        self, mock_get
-    ):
+    def test_soil_samples_keep_only_latest_exam_for_each_parcel(self, mock_get):
         mock_get.return_value = Mock(
             status_code=200,
             content=b"""

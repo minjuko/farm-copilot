@@ -300,7 +300,11 @@ class Command(BaseCommand):
                     '농기계·시설 임차료': machinery_rent,
                     '토지임차료': land_rent,
                     '위탁영농비': outsourced_farming,
-                    '총중간재비': management_cost - hired_labor - machinery_rent - land_rent - outsourced_farming,
+                    '총중간재비': management_cost
+                    - hired_labor
+                    - machinery_rent
+                    - land_rent
+                    - outsourced_farming,
                     '기타비용': int(income * 0.015),
                 }
                 PredictionResult.objects.create(
