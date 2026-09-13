@@ -371,18 +371,6 @@ npm run build
 | **[API / External Service Status](./docs/reference/API_STATUS.md)** | 외부 API와 서비스의 실제 호출 검증 결과 및 검증 시점 |
 | **Technical Case Study** | 요구사항 · Frontend 설계 · 시스템 아키텍처 · 핵심 구현 · 트러블슈팅 · 기술적 의사결정 · 테스트 · 개인 기여 |
 
-### 병해충 진단 참고 이미지 출처
-
-진단 결과 화면의 질병 이미지는 농촌진흥청 공공저작물을 참고 자료로 사용했습니다. 화면에는 공통 출처 문구를 표시하고, 파일별 원문 URL과 질병명은 [이미지 출처 상세 목록](./backend/static/detect/reference/SOURCES.md)에 기록했습니다.
-
-| 이미지 파일 | 질병 | 제공기관 | 이용조건 |
-| --- | --- | --- | --- |
-| `pepper-anthracnose.png` | 고추 탄저병 | 농촌진흥청 | 공공누리 제2유형 |
-| `pepper-powdery-mildew.png` | 고추 흰가루병 | 농촌진흥청 | 공공누리 제2유형 |
-| `cucumber-downy-mildew.png` | 오이 노균병 | 농촌진흥청 | 공공누리 제2유형 |
-| `cucumber-powdery-mildew.png` | 오이 흰가루병 | 농촌진흥청 | 공공누리 제2유형 |
-| `tomato-powdery-mildew.png` | 토마토 흰가루병 | 농촌진흥청 | 공공누리 제2유형 |
-
 ---
 
 ## 프로젝트를 통해 얻은 경험
