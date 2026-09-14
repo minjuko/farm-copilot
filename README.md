@@ -2,7 +2,7 @@
 
 > AI와 공공데이터를 연결해 수익 분석, 병해충 진단, 토양검정과 영농 상담을 제공하는 초보 농업인 지원 서비스
 
-[![CI](https://github.com/minjuko/kunkunnongsakun/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/kunkunnongsakun/actions/workflows/ci.yml)
+[![CI](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml)
 
 KT AIVLE School 5기 Big Project에서 6명이 개발한 서비스입니다. 프로젝트 당시 서비스명은 **꾼꾼농사꾼**이며, **Collaboration상**을 수상했습니다.
 
