@@ -4,11 +4,11 @@
 
 [![CI](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml)
 
-KT AIVLE School 5기 Big Project에서 6명이 개발한 서비스입니다. 프로젝트 당시 서비스명은 **꾼꾼농사꾼**이며, **Collaboration상**을 수상했습니다.
+KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다. 프로젝트 당시 서비스명은 **꾼꾼농사꾼**이며, **Collaboration상**을 수상했습니다.
 
 저는 Frontend 개발자로 참여해 공통 UI와 인증·커뮤니티를 구현했으며, Backend·AI·공공데이터 기능을 사용자가 이용할 수 있는 화면 흐름으로 연결했습니다.
 
-> 이 저장소는 원본 팀 저장소를 바탕으로 실행환경, Frontend 구조, 테스트와 문서를 개선한 개인 Fork입니다. AI 모델과 Backend 전체 구현은 각 담당 팀원이 맡았습니다.
+> 이 저장소는 원본 팀 저장소를 바탕으로 실행환경, Frontend 구조, 테스트와 문서를 정리한 개인 Fork입니다. AI 모델과 Backend 전체 구현은 각 담당 팀원이 맡았습니다.
 
 ## 프로젝트 정보
 
