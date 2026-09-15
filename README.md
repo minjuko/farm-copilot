@@ -1,14 +1,14 @@
 # 농업코파일럿
 
-> AI와 공공데이터를 연결해 수익 분석, 병해충 진단, 토양검정과 영농 상담을 제공하는 초보 농업인 지원 서비스
+> AI와 공공데이터를 연결해 수익 분석, 병해충 진단, 토양검정, 영농 상담을 제공하는 초보 농업인 지원 서비스
 
 [![CI](https://github.com/minjuko/kunkunnongsakun/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/kunkunnongsakun/actions/workflows/ci.yml)
 
 KT AIVLE School 5기 Big Project에서 6명이 개발한 서비스입니다. 프로젝트 당시 서비스명은 **꾼꾼농사꾼**이며, **Collaboration상**을 수상했습니다.
 
-저는 Frontend 개발자로 참여해 공통 UI와 인증·커뮤니티를 구현하고, 서로 다른 Backend·AI·공공데이터 기능을 사용자가 이용할 수 있는 화면 흐름으로 연결했습니다.
+저는 Frontend 개발자로 참여해 공통 UI와 인증·커뮤니티를 구현했으며, Backend·AI·공공데이터 기능을 사용자가 이용할 수 있는 화면 흐름으로 연결했습니다.
 
-> 이 저장소는 원본 팀 저장소를 기반으로 실행환경, Frontend 구조, 테스트와 문서를 개선한 개인 Fork입니다. AI 모델과 Backend 전체 구현은 각 담당 팀원의 기여입니다.
+> 이 저장소는 원본 팀 저장소를 바탕으로 실행환경, Frontend 구조, 테스트와 문서를 개선한 개인 Fork입니다. AI 모델과 Backend 전체 구현은 각 담당 팀원이 맡았습니다.
 
 ## 프로젝트 정보
 
@@ -30,7 +30,7 @@ KT AIVLE School 5기 Big Project에서 6명이 개발한 서비스입니다. 프
 | 토양검정·비료 처방 | 농지 주소 입력 → 토양 시료 선택 → 작물별 처방 확인 |
 | 농업 AI 챗봇 | 대화 세션 생성 → 질문 전송 → RAG 기반 답변·이력 확인 |
 | 농업 커뮤니티 | 판매·구매 게시글과 댓글 작성·조회·수정·삭제 |
-| 회원·마이페이지 | 회원가입·로그인, 회원정보와 사용자 활동 관리 |
+| 회원·마이페이지 | 회원가입·로그인, 회원정보·사용자 활동 관리 |
 
 ## 서비스 화면
 
@@ -53,7 +53,7 @@ KT AIVLE School 5기 Big Project에서 6명이 개발한 서비스입니다. 프
   </tr>
 </table>
 
-> 화면 이미지는 팀 프로젝트 최종 시연 자료를 기준으로 구성했습니다.
+> 화면 이미지는 팀 프로젝트 최종 시연 자료를 바탕으로 구성했습니다.
 
 ## 기술 스택
 
@@ -82,7 +82,7 @@ KT AIVLE School 5기 Big Project에서 6명이 개발한 서비스입니다. 프
 | AI 챗봇 | 대화 Session · Message UI · Chat API · 대화 이력 |
 | 협업 | 화면 요구 데이터 확인 · Backend 담당자와 API Contract 조율 |
 
-Frontend에서는 처리 방식이 다른 기능을 공통적으로 **입력 → 검증 → 요청 → Loading/Error/Empty → 결과**의 흐름으로 구성했습니다. AI 모델 개발과 Backend 전체 구현은 담당 범위에 포함하지 않습니다.
+Frontend에서는 처리 방식이 다른 기능도 **입력 → 검증 → 요청 → Loading/Error/Empty → 결과**의 공통 흐름으로 구성했습니다. AI 모델 개발과 Backend 전체 구현은 담당 범위에 포함하지 않습니다.
 
 ### 개선 작업
 
@@ -148,7 +148,7 @@ flowchart LR
 
 CI는 Node.js 22.20.0과 Python 3.11.9에서 Frontend와 Backend를 독립적으로 검증합니다. SQLite와 테스트 전용 설정을 사용하므로 외부 Credential, AI Dependency와 Model Artifact 없이 실행할 수 있습니다.
 
-실제 외부 Provider 호출, YOLO 추론, RAG 질의와 Production 인프라 통합은 각각 Credential·Artifact·운영 환경이 필요하므로 CI 결과에 포함하지 않습니다.
+실제 외부 Provider 호출, YOLO 추론, RAG 질의, Production 인프라 통합은 각각 Credential·Artifact·운영 환경이 필요하므로 CI 결과에 포함하지 않습니다.
 
 ## Local 실행
 
@@ -176,7 +176,7 @@ npm start
 REACT_APP_API_BASE_URL=http://localhost:8000
 ```
 
-환경변수, 운영 Database·Storage, AI Artifact와 외부 API 설정은 [Local Setup Guide](./docs/SETUP.md)를 참고해 주세요.
+환경변수, 운영 Database·Storage, AI Artifact, 외부 API 설정은 [Local Setup Guide](./docs/SETUP.md)를 참고해 주세요.
 
 ## 검증 명령
 
@@ -208,4 +208,4 @@ python -m pip check
 
 ## 현재 운영 상태
 
-이 저장소는 Local 실행과 자동화 검증을 위한 공개 코드입니다. 공개 배포 완료 상태로 표시하지 않으며, 외부 서비스와 Production 환경은 별도 검증이 필요합니다.
+이 저장소는 Local 실행과 자동화 검증을 위한 공개 코드입니다. 공개 배포가 완료된 상태는 아니며, 외부 서비스와 Production 환경은 별도 검증이 필요합니다.
