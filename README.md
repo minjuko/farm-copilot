@@ -26,19 +26,19 @@
 
 KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다. 프로젝트 당시 서비스명은 **꾼꾼농사꾼**이며, **Collaboration상**을 수상했습니다.
 
-저는 Frontend 개발자로 참여해 공통 UI와 인증·커뮤니티를 구현했으며, Backend·AI·공공데이터 기능을 사용자가 이용할 수 있는 화면 흐름으로 연결했습니다.
+저는 프론트엔드 개발자로 참여해 공통 UI와 인증·커뮤니티를 구현했으며, 백엔드·AI·공공데이터 기능을 사용자가 이용할 수 있는 화면 흐름으로 연결했습니다.
 
-> 이 저장소는 원본 팀 저장소를 바탕으로 실행환경, Frontend 구조, 테스트와 문서를 정리한 개인 Fork입니다. AI 모델과 Backend 전체 구현은 각 담당 팀원이 맡았습니다.
+> 이 저장소는 원본 팀 저장소를 바탕으로 실행환경, 프론트엔드 구조, 테스트와 문서를 정리한 개인 Fork입니다. AI 모델과 백엔드 전체 구현은 각 담당 팀원이 맡았습니다.
 
 ## 프로젝트 정보
 
 | 항목 | 내용 |
 | --- | --- |
 | 기간 | 2024.06.17–2024.07.30 |
-| 인원 | 6명 — Frontend 2 · Backend 2 · AI/Server 2 |
-| 본인 역할 | Frontend — 공통 UI · 주요 기능 연동 |
+| 인원 | 6명 — 프론트엔드 2 · 백엔드 2 · AI/Server 2 |
+| 본인 역할 | 프론트엔드 — 공통 UI · 주요 기능 연동 |
 | 성과 | KT AIVLE School 5기 Big Project Collaboration상 |
-| 원본 저장소 | [Frontend](https://github.com/kt-bigproject28/kunkunnongsakun) · [Backend](https://github.com/kt-bigproject28/bigproject28) |
+| 원본 저장소 | [프론트엔드](https://github.com/kt-bigproject28/kunkunnongsakun) · [백엔드](https://github.com/kt-bigproject28/bigproject28) |
 | 상세 문서 | [농업코파일럿 상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) |
 
 ## 주요 기능
@@ -81,8 +81,8 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 
 | 영역 | 기술 |
 | --- | --- |
-| Frontend | React 18 · JavaScript · React Router · Axios · styled-components · Chart.js · Create React App |
-| Backend | Python · Django 5 · Django REST Framework |
+| 프론트엔드 | React 18 · JavaScript · React Router · Axios · styled-components · Chart.js · Create React App |
+| 백엔드 | Python · Django 5 · Django REST Framework |
 | Database·Storage | PostgreSQL · AWS S3 |
 | AI·Data | ElasticNet · YOLOv8 · PyTorch · pandas · NumPy · scikit-learn |
 | RAG | LangChain · Chroma · OpenAI |
@@ -102,9 +102,9 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 | 병해충 진단 | 이미지 Upload · 분석 요청 · 결과 및 진단 이력 화면 |
 | 토양검정 | 주소·작물 입력 · 토양 조회 · 시료 선택 · 비료 처방 연동 |
 | AI 챗봇 | 대화 Session · Message UI · Chat API · 대화 이력 |
-| 협업 | 화면 요구 데이터 확인 · Backend 담당자와 API Contract 조율 |
+| 협업 | 화면 요구 데이터 확인 · 백엔드 담당자와 API Contract 조율 |
 
-Frontend에서는 처리 방식이 다른 기능도 **입력 → 검증 → 요청 → Loading/Error/Empty → 결과**의 공통 흐름으로 구성했습니다. AI 모델 개발과 Backend 전체 구현은 담당 범위에 포함하지 않습니다.
+프론트엔드에서는 처리 방식이 다른 기능도 **입력 → 검증 → 요청 → Loading/Error/Empty → 결과**의 공통 흐름으로 구성했습니다. AI 모델 개발과 백엔드 전체 구현은 담당 범위에 포함하지 않습니다.
 
 ### 개선 작업
 
@@ -113,11 +113,11 @@ Frontend에서는 처리 방식이 다른 기능도 **입력 → 검증 → 요�
 - 반복되는 비동기 상태와 외부 데이터의 Error·Empty State 구분
 - 환경변수, Credential, Local·Production 설정 분리
 - YOLO Model Artifact·Class Mapping과 RAG 활성화 조건 점검
-- Frontend·Backend 회귀 테스트와 GitHub Actions CI 구성
+- 프론트엔드·백엔드 회귀 테스트와 GitHub Actions CI 구성
 
 ## 핵심 설계
 
-### Frontend API 구조
+### 프론트엔드 API 구조
 
 ```text
 Page · Component
@@ -133,11 +133,17 @@ Loading · Error · Empty · Result
 
 Axios에 Session Cookie와 CSRF Token 전달을 공통 적용하고, Component는 사용자 입력과 화면 상태에 집중하도록 역할을 나눴습니다.
 
+### 외부 기능을 Django API 경계로 통합
+
+AI·공공데이터 Provider를 프론트엔드에서 직접 호출하지 않고 Django API를 경유했습니다. 외부 서비스별 요청 형식과 인증 정보를 화면에서 분리해, 프론트엔드는 사용자 입력·표시 상태에 집중하고 기능별 API Module이 응답을 일관된 화면 흐름으로 연결하도록 했습니다.
+
+이 구조는 외부 Provider의 Credential을 브라우저에 노출하지 않는 대신, 실제 Provider 호출·YOLO 추론·RAG 질의는 Credential·Model Artifact·운영 환경이 있어야 검증할 수 있습니다. 따라서 해당 통합 결과는 자동화 테스트 범위와 구분해 문서화했습니다.
+
 ### AI·외부 데이터 연동
 
 ```mermaid
 flowchart LR
-    U["사용자"] --> F["React Frontend"]
+    U["사용자"] --> F["React 프론트엔드"]
     F --> D["Django API"]
     D --> DB[("PostgreSQL")]
     D --> AI["AI · RAG"]
@@ -146,7 +152,7 @@ flowchart LR
 ```
 
 - 병해충 이미지는 `multipart/form-data`, 일반 요청은 JSON으로 전달합니다.
-- AI와 외부 Provider는 Frontend에서 직접 호출하지 않고 Django API를 경유합니다.
+- AI와 외부 Provider는 프론트엔드에서 직접 호출하지 않고 Django API를 경유합니다.
 - Local 기본 환경은 재현성을 위해 SQLite와 `FileSystemStorage`를 사용합니다.
 
 ## 테스트 및 품질 검증
@@ -155,12 +161,12 @@ flowchart LR
 
 | 검증 항목 | 결과 |
 | --- | ---: |
-| Frontend Test Suites | **30 / 30 passed** |
-| Frontend Tests | **151 / 151 passed** |
-| Backend Tests | **117 / 117 passed** |
+| 프론트엔드 Test Suites | **30 / 30 passed** |
+| 프론트엔드 Tests | **151 / 151 passed** |
+| 백엔드 Tests | **117 / 117 passed** |
 | 실패·Skip | **0** |
-| Frontend ESLint | **0 warnings** |
-| Frontend Production Build | **passed** |
+| 프론트엔드 ESLint | **0 warnings** |
+| 프론트엔드 Production Build | **passed** |
 | Main JavaScript | **284.36 kB gzip** |
 | CSS | **892 B gzip** |
 | Ruff lint·format | **passed** |
@@ -168,13 +174,13 @@ flowchart LR
 | Python Dependency Check | **passed** |
 | GitHub Actions CI | **passed** |
 
-CI는 Node.js 22.20.0과 Python 3.11.9에서 Frontend와 Backend를 독립적으로 검증합니다. SQLite와 테스트 전용 설정을 사용하므로 외부 Credential, AI Dependency와 Model Artifact 없이 실행할 수 있습니다.
+CI는 Node.js 22.20.0과 Python 3.11.9에서 프론트엔드와 백엔드를 독립적으로 검증합니다. SQLite와 테스트 전용 설정을 사용하므로 외부 Credential, AI Dependency와 Model Artifact 없이 실행할 수 있습니다.
 
 실제 외부 Provider 호출, YOLO 추론, RAG 질의, Production 인프라 통합은 각각 Credential·Artifact·운영 환경이 필요하므로 CI 결과에 포함하지 않습니다.
 
 ## Local 실행
 
-### Backend
+### 백엔드
 
 ```bash
 cd backend
@@ -184,7 +190,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-### Frontend
+### 프론트엔드
 
 ```bash
 cd frontend
@@ -192,7 +198,7 @@ npm ci
 npm start
 ```
 
-기본 Backend 주소는 `http://127.0.0.1:8000`, Frontend 주소는 `http://localhost:3000`입니다.
+기본 백엔드 주소는 `http://127.0.0.1:8000`, 프론트엔드 주소는 `http://localhost:3000`입니다.
 
 ```dotenv
 REACT_APP_API_BASE_URL=http://localhost:8000
@@ -205,14 +211,14 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 ## 검증 명령
 
 ```bash
-# Frontend
+# 프론트엔드
 cd frontend
 npm ci
 npm run lint
 npm test -- --runInBand
 npm run build
 
-# Backend
+# 백엔드
 cd backend
 python -m pip install -r requirements-dev.txt
 ruff check .
@@ -227,7 +233,6 @@ python -m pip check
 | 문서 | 내용 |
 | --- | --- |
 | [Local Setup Guide](./docs/SETUP.md) | Local 실행 · 환경변수 · Database · AI Artifact · 외부 API · Storage |
-| [원본 README](./docs/archive/README-2024-original.md) | 2024년 원본 팀 저장소 README |
 | [상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) | 요구사항 · 설계 · 핵심 구현 · 문제 해결 · 개인 기여 |
 
 ## 현재 운영 상태
