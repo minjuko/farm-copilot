@@ -4,6 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock, patch
 
+from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -36,7 +37,7 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
         with patch.dict('os.environ', {'CHROMA_DB_PATH': 'artifacts/chroma'}):
             self.assertEqual(
                 views.resolve_vector_db_path(),
-                views.VECTOR_DB_PATH.parent / 'artifacts' / 'chroma',
+                settings.BASE_DIR / 'artifacts' / 'chroma',
             )
 
     def test_vector_index_requires_chroma_database_file(self):
@@ -123,6 +124,19 @@ class ChatbotSourceContractTests(SimpleTestCase):
         def __init__(self, page_content, metadata):
             self.page_content = page_content
             self.metadata = metadata
+
+    @patch.dict('os.environ', {}, clear=True)
+    def test_missing_corpus_is_a_command_error_without_creating_index(self):
+        with TemporaryDirectory() as directory:
+            source = Path(directory) / 'absent.csv'
+            output = Path(directory) / 'chroma'
+
+            with self.assertRaisesMessage(CommandError, 'source CSV was not found'):
+                call_command(
+                    'build_chatbot_index', '--source', str(source), '--output', str(output)
+                )
+
+            self.assertFalse(output.exists())
 
     def test_source_csv_requires_attribution_and_https_url(self):
         with TemporaryDirectory() as directory:
@@ -214,6 +228,53 @@ class ChatbotCsrfBoundaryTests(TestCase):
             HTTP_X_CSRFTOKEN=self.csrf_token(),
         )
         self.assertEqual(with_token.status_code, 503)
+
+
+class ChatbotUnavailableEndpointTests(TestCase):
+    def setUp(self):
+        from accounts.models import User
+
+        user = User.objects.create_user(
+            email='chatbot-unavailable@example.com',
+            username='chatbot-unavailable',
+            password='test-password',
+        )
+        self.client.force_login(user)
+        views._rag_chain = None
+
+    def tearDown(self):
+        views._rag_chain = None
+
+    @override_settings(CHATBOT_ENABLED=True)
+    @patch.dict('os.environ', {}, clear=True)
+    def test_missing_openai_key_returns_controlled_503(self):
+        response = self.client.post(
+            '/selfchatbot/chatbot/',
+            data=json.dumps({'question': '재배 질문', 'session_id': 'test-session'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()['status'], 'error')
+        self.assertEqual(response.json()['code'], 2001)
+        self.assertNotIn('OPENAI_API_KEY', response.content.decode())
+        self.assertNotIn('Traceback', response.content.decode())
+
+    @override_settings(CHATBOT_ENABLED=True)
+    @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-only-key'}, clear=True)
+    @patch.object(views, 'vector_index_available', return_value=False)
+    def test_missing_chroma_index_returns_controlled_503(self, _index_available):
+        response = self.client.post(
+            '/selfchatbot/chatbot/',
+            data=json.dumps({'question': '재배 질문', 'session_id': 'test-session'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()['status'], 'error')
+        self.assertEqual(response.json()['code'], 2001)
+        self.assertNotIn('CHROMA_DB_PATH', response.content.decode())
+        self.assertNotIn('Traceback', response.content.decode())
 
 
 class ChatbotPersistenceContractTests(TestCase):

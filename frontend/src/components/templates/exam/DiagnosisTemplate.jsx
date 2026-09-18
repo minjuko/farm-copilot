@@ -321,6 +321,21 @@ const DiagnosisTemplate = () => {
     <PageContainer>
       {isLoading && <GlobalLoader text="AI 진단 중입니다." />}
       <Content>
+        {serviceCapability.status === "checking" && (
+          <ExplanationText role="status">진단 기능의 사용 가능 여부를 확인하는 중입니다.</ExplanationText>
+        )}
+        {serviceCapability.status === "limited" && (
+          <div role="status">
+            <ExplanationText>진단 모델이 준비되지 않아 현재 분석할 수 없습니다. 모델 준비 후 상태를 다시 확인해 주세요.</ExplanationText>
+            <button type="button" onClick={serviceCapability.retry}>상태 다시 확인</button>
+          </div>
+        )}
+        {serviceCapability.status === "error" && (
+          <div role="alert">
+            <ExplanationText>진단 기능의 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.</ExplanationText>
+            <button type="button" onClick={serviceCapability.retry}>상태 다시 확인</button>
+          </div>
+        )}
         <UploadText>병해충 진단을 위한 사진을 업로드해주세요</UploadText>
         <ExplanationText>
           &#60;탐지 가능 병해충 목록&#62;<br/>

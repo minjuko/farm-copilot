@@ -6,8 +6,8 @@
 
 | 영역 | 실행한 명령과 결과 |
 | --- | --- |
-| Frontend | `npm ci --offline --no-audit --no-fund` 성공, `npm run lint` 통과, `CI=true npm test -- --watchAll=false --runInBand` 31 스위트·155 테스트 통과, `CI=true npm run build` 통과 |
-| Backend | `python manage.py check` 문제 0개, `python manage.py migrate --noinput` 적용할 마이그레이션 없음, `python manage.py test` 126개 통과 (가상환경 Python 3.11.9, dotenv 비활성화·SQLite 설정) |
+| Frontend | `npm ci --offline --no-audit --no-fund` 성공, `npm run lint` 통과, `CI=true npm test -- --watchAll=false --runInBand` 31 스위트·159 테스트 통과, `CI=true npm run build` 통과 |
+| Backend | `python manage.py check` 문제 0개, `python manage.py migrate --noinput` 적용할 마이그레이션 없음, `python manage.py test` 130개 통과 (가상환경 Python 3.11.9, dotenv 비활성화·SQLite 설정) |
 
 | 기능 | 자격증명 없이 검증한 범위 | 남은 검증 |
 | --- | --- | --- |
@@ -18,7 +18,9 @@
 
 토양검정과 수익 예측은 로컬에서 각각 한 번만 수동 조회했습니다. 토양 시료 목록 1건, 날씨 365행, 시장가격 243행이 서비스 파서를 통과했습니다. `backend/soil/tests/fixtures/`와 `backend/prediction/tests/fixtures/`에는 **로컬 실연동에서 응답 구조를 확인하고 민감정보를 제거한 최소 계약 fixture**만 두었습니다. 주소·필지번호·인증정보·실제 날짜는 포함하지 않았으며, 필수 날짜는 예시값으로 바꿨습니다. fixture 테스트는 외부 API를 호출하지 않습니다. 이 결과는 실시간 데이터 정확성이나 외부 API 전체 호환성을 보장하지 않습니다.
 
-이번 개인 변경은 수익 예측 이력 화면의 조회 실패를 빈 이력과 구분하고, 오류 안내와 `다시 시도` 버튼을 추가한 것입니다. 기존 URL과 API 응답 구조는 유지했습니다. CI 설정은 프론트엔드 설치·lint·테스트·빌드 및 백엔드 설치·Ruff·check·테스트·의존성 검사를 실행하도록 되어 있으며, 이 문단은 로컬 실행 결과만 기록합니다. 실제 배포 동작은 확인하지 않았습니다.
+2026년 개인 개선·검증에서는 수익 예측 이력 화면의 조회 실패를 빈 이력과 구분하고, 병해충 진단·챗봇의 준비 중·제한·상태 조회 오류 안내와 재확인 버튼을 추가했습니다. 기존 URL과 API 응답 구조는 유지했습니다. CI 설정은 프론트엔드 설치·lint·테스트·빌드 및 백엔드 설치·Ruff·check·테스트·의존성 검사를 실행하도록 되어 있으며, 이 문단은 로컬 실행 결과만 기록합니다. 실제 배포 동작은 확인하지 않았습니다.
+
+병해충 모델 경로·Chroma 인덱스·OpenAI 키가 없는 설정에서도 Django 서버의 기본 화면과 기능 상태 API가 기동하고, 두 기능은 `limited`로 표시됩니다. 기능 요청은 성공으로 꾸미지 않고 503 오류로 처리하며 화면에서 제한 이유와 재확인 방법을 안내합니다. 챗봇 corpus가 없을 때 인덱스 생성 명령은 오류로 종료됩니다. `detect/views.py`의 클래스 계약과 `detect/fixtures/model_classes.json` 기준 지원 범위는 **출력 인덱스 6개, 고유 병해 정보 5개**입니다: 고추 탄저병·흰가루병, 오이 노균병·흰가루병, 토마토 흰가루병. 이는 코드·fixture의 매핑 범위이며 실제 모델 추론 정확도를 검증한 결과는 아닙니다.
 
 > AI와 공공데이터를 연결해 수익 분석, 병해충 진단, 토양검정, 영농 상담을 제공하는 초보 농업인 지원 서비스
 

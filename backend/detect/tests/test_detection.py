@@ -275,6 +275,34 @@ class DetectionFixtureContractTests(TestCase):
                     self.assertTrue(mapping.pest.image_url.startswith('detect/reference/'))
 
 
+class DetectionUnavailableEndpointTests(TestCase):
+    def setUp(self):
+        from accounts.models import User
+
+        user = User.objects.create_user(
+            email='detect-unavailable@example.com',
+            username='detect-unavailable',
+            password='test-password',
+        )
+        self.client.force_login(user)
+
+    @patch.object(views, 'MODEL_PATH')
+    @patch.object(views, 'save_temp_image', return_value='unused-test-path')
+    def test_missing_model_returns_controlled_503(self, _save_image, model_path):
+        model_path.exists.return_value = False
+        buffer = BytesIO()
+        Image.new('RGB', (8, 8), color='green').save(buffer, format='PNG')
+        image = SimpleUploadedFile('crop.png', buffer.getvalue(), content_type='image/png')
+
+        response = self.client.post('/detect/upload/', {'image': image})
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()['status'], 'error')
+        self.assertEqual(response.json()['code'], 2001)
+        self.assertNotIn('best.pt', response.content.decode())
+        self.assertNotIn('Traceback', response.content.decode())
+
+
 class DetectCsrfBoundaryTests(TestCase):
     def setUp(self):
         from accounts.models import User
