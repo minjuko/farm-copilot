@@ -56,6 +56,8 @@ const CropSelectionPage = () => {
   const {
     data: sessions,
     error: loadError,
+    isLoading: isLoadingSessions,
+    refetch: retryLoadSessions,
     setData: setSessions,
   } = useAsyncResource(loadSessions, {
     getError: getPredictionSessionsError,
@@ -141,11 +143,21 @@ const CropSelectionPage = () => {
         <Button onClick={() => navigate('/crop-test')}>
           <FaPlus /> 작물 조합 추가
         </Button>
-        {(loadError || error) && <p role="alert">{loadError || error}</p>}
+        {loadError && (
+          <div role="alert">
+            <p>{loadError} 연결 상태를 확인한 뒤 다시 시도해 주세요.</p>
+            <button type="button" onClick={retryLoadSessions} disabled={isLoadingSessions}>
+              다시 시도
+            </button>
+          </div>
+        )}
+        {error && <p role="alert">{error}</p>}
         <ContentContainer>
           <SessionListContainer>
-            {sessions.length === 0 ? (
+            {sessions.length === 0 && !loadError && !isLoadingSessions ? (
               <EmptyMessage>등록한 작물 조합이 존재하지 않습니다. 작물 조합을 추가해보세요.</EmptyMessage>
+            ) : sessions.length === 0 ? (
+              isLoadingSessions ? <p role="status">이력을 불러오는 중입니다.</p> : null
             ) : (
               <>
                 <SessionList>

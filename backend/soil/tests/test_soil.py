@@ -1,5 +1,7 @@
 import json
 import os
+import xml.etree.ElementTree as ET
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import requests
@@ -24,6 +26,48 @@ from ..services import (
 
 
 class SoilServiceTests(TestCase):
+    @patch('soil.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_SOIL_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_sanitized_soil_contract_fixture_parses_used_fields(self, mock_get):
+        fixture_path = Path(__file__).parent / 'fixtures' / 'soil_exam_v2_contract.json'
+        fixture = json.loads(fixture_path.read_text(encoding='utf-8'))
+        mock_get.return_value = Mock(status_code=200, content=fixture['xml'].encode('utf-8'))
+
+        samples = fetch_soil_exam('0000000000')
+
+        self.assertEqual(len(samples), 1)
+        sample = samples[0]
+        self.assertEqual(sample['PNU_Nm'], '예시 필지')
+        self.assertEqual(sample['ACID'], '6.5')
+        self.assertEqual(sample['SELC'], '1.2')
+        self.assertNotIn('ELCD', sample)
+        self.assertEqual(
+            {key for key in sample if key not in {'No', 'Exam_Day', 'PNU_Nm'}},
+            {'ACID', 'OM', 'VLDPHA', 'POSIFERT_K', 'POSIFERT_CA', 'POSIFERT_MG', 'VLDSIA', 'SELC'},
+        )
+
+    @patch('soil.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_SOIL_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_sanitized_soil_contract_fixture_failure_variants(self, mock_get):
+        fixture_path = Path(__file__).parent / 'fixtures' / 'soil_exam_v2_contract.json'
+        fixture = json.loads(fixture_path.read_text(encoding='utf-8'))
+        for variant, expected_error in (
+            ('empty', NotFoundError),
+            ('missing_code', ServiceUnavailableError),
+            ('api_error', ServiceUnavailableError),
+        ):
+            with self.subTest(variant=variant):
+                root = ET.fromstring(fixture['xml'])
+                if variant == 'empty':
+                    root.find('.//items').clear()
+                elif variant == 'missing_code':
+                    root.find('.//header').clear()
+                else:
+                    root.find('.//Result_Code').text = '500'
+                mock_get.return_value = Mock(status_code=200, content=ET.tostring(root))
+                with self.assertRaises(expected_error):
+                    fetch_soil_exam('0000000000')
+
     def test_legacy_province_names_are_normalized(self):
         self.assertEqual(
             normalize_address('  전라북도   전주시 덕진구  '),
@@ -218,6 +262,26 @@ class SoilServiceTests(TestCase):
             status_code=200, content=b'<response><Result_Code>201</Result_Code></response>'
         )
         with self.assertRaises(ValidationError):
+            fetch_soil_exam('1234567890')
+
+    @patch('soil.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_SOIL_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_soil_v2_missing_result_code_is_unavailable(self, mock_get):
+        mock_get.return_value = Mock(
+            status_code=200,
+            content=b'<response><body><items><item><ACID>6.5</ACID></item></items></body></response>',
+        )
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_soil_exam('1234567890')
+
+    @patch('soil.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_SOIL_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_soil_v2_empty_items_are_not_found(self, mock_get):
+        mock_get.return_value = Mock(
+            status_code=200,
+            content=b'<response><header><Result_Code>200</Result_Code></header><body><items /></body></response>',
+        )
+        with self.assertRaises(NotFoundError):
             fetch_soil_exam('1234567890')
 
     @patch('soil.services.requests.get', side_effect=requests.Timeout)

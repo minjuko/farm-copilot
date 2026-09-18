@@ -1,5 +1,7 @@
 import json
 import os
+from copy import deepcopy
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -17,6 +19,63 @@ from ..views import _build_price_dataset, fetch_crop_data, predict_prices, read_
 
 
 class PredictionRuntimeTests(TestCase):
+    @patch('prediction.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_WEATHER_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_sanitized_weather_contract_fixture_parses_used_fields(self, mock_get):
+        fixture_path = Path(__file__).parent / 'fixtures' / 'weather_daily_contract.json'
+        fixture = json.loads(fixture_path.read_text(encoding='utf-8'))
+        mock_get.return_value = Mock(status_code=200, content=fixture['xml'].encode('utf-8'))
+
+        frame = fetch_weather_data('서울', {'서울': ['1101', '108']})
+
+        self.assertEqual(len(frame), 1)
+        self.assertEqual(
+            set(frame.columns),
+            {'tm', 'avgRhm', 'minTa', 'maxTa', 'maxWs', 'avgTa', 'avgWs', 'sumRn', 'ddMes'},
+        )
+        self.assertTrue(pd.api.types.is_datetime64_any_dtype(frame['tm']))
+
+    @patch('prediction.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_MARKET_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_sanitized_market_contract_fixture_parses_used_fields(self, mock_get):
+        fixture_path = Path(__file__).parent / 'fixtures' / 'market_price_contract.json'
+        fixture = json.loads(fixture_path.read_text(encoding='utf-8'))
+        mock_get.return_value = Mock(status_code=200, json=lambda: fixture)
+
+        frame = fetch_market_prices(
+            '감자', '서울', '20000101', '20000101', self._market_codes(), {}
+        )
+
+        self.assertEqual(len(frame), 1)
+        self.assertEqual(set(frame.columns), {'tm', 'price', 'itemname'})
+        self.assertEqual(frame['price'].iloc[0], 1000.0)
+        self.assertTrue(pd.api.types.is_datetime64_any_dtype(frame['tm']))
+
+    @patch('prediction.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_MARKET_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_sanitized_market_contract_fixture_failure_variants(self, mock_get):
+        fixture_path = Path(__file__).parent / 'fixtures' / 'market_price_contract.json'
+        fixture = json.loads(fixture_path.read_text(encoding='utf-8'))
+        for variant, expected_error in (
+            ('empty', NotFoundError),
+            ('missing_price', ServiceUnavailableError),
+            ('api_error', ServiceUnavailableError),
+        ):
+            with self.subTest(variant=variant):
+                payload = deepcopy(fixture)
+                if variant == 'empty':
+                    payload['response']['body']['items']['item'] = []
+                    payload['response']['body']['totalCount'] = 0
+                elif variant == 'missing_price':
+                    del payload['response']['body']['items']['item'][0]['exmn_dd_cnvs_prc']
+                else:
+                    payload['response']['header']['resultCode'] = '30'
+                mock_get.return_value = Mock(status_code=200, json=lambda: payload)
+                with self.assertRaises(expected_error):
+                    fetch_market_prices(
+                        '감자', '서울', '20000101', '20000101', self._market_codes(), {}
+                    )
+
     def setUp(self):
         self.user = User.objects.create_user(
             email='prediction-runtime@example.com',
@@ -84,6 +143,26 @@ class PredictionRuntimeTests(TestCase):
     @patch('prediction.services.requests.get', side_effect=requests.Timeout)
     @patch.dict(os.environ, {'DATA_GO_KR_WEATHER_SERVICE_KEY': 'test-key'}, clear=True)
     def test_weather_timeout_is_controlled(self, _mock_get):
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_weather_data('서울', {'서울': ['1101', '108']})
+
+    @patch('prediction.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_WEATHER_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_weather_empty_items_are_not_found(self, mock_get):
+        mock_get.return_value = Mock(
+            status_code=200,
+            content=b'<response><header><resultCode>00</resultCode></header><body><items /></body></response>',
+        )
+        with self.assertRaises(NotFoundError):
+            fetch_weather_data('서울', {'서울': ['1101', '108']})
+
+    @patch('prediction.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_WEATHER_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_weather_api_error_is_unavailable(self, mock_get):
+        mock_get.return_value = Mock(
+            status_code=200,
+            content=b'<response><header><resultCode>30</resultCode></header></response>',
+        )
         with self.assertRaises(ServiceUnavailableError):
             fetch_weather_data('서울', {'서울': ['1101', '108']})
 

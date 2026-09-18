@@ -1,5 +1,25 @@
 # 농업코파일럿
 
+## 2026년 개인 개선·검증 (2026-09-18)
+
+2024년 6인 팀 프로젝트 원본을 보존하면서, 외부 키와 AI 런타임 데이터 없이 재현 가능한 범위를 로컬에서 확인했습니다. Windows, Node.js 22.20.0, npm 10.9.3, Python 가상환경 3.11.9를 사용했습니다. 자동 테스트는 로컬 `.env` 로딩을 끄고 임시 Django 키, SQLite, 디버그 설정으로 실행했습니다. 자동 테스트에서는 실제 외부 API, 운영 DB, S3를 호출하지 않았습니다.
+
+| 영역 | 실행한 명령과 결과 |
+| --- | --- |
+| Frontend | `npm ci --offline --no-audit --no-fund` 성공, `npm run lint` 통과, `CI=true npm test -- --watchAll=false --runInBand` 31 스위트·155 테스트 통과, `CI=true npm run build` 통과 |
+| Backend | `python manage.py check` 문제 0개, `python manage.py migrate --noinput` 적용할 마이그레이션 없음, `python manage.py test` 126개 통과 (가상환경 Python 3.11.9, dotenv 비활성화·SQLite 설정) |
+
+| 기능 | 자격증명 없이 검증한 범위 | 남은 검증 |
+| --- | --- | --- |
+| 병해충 진단 | 모델 파일 존재 여부 및 업로드·오류·화면 상태를 코드와 Mock 테스트로 확인 | `best.pt`, 선택 AI 패키지와 실제 이미지 추론·이력 저장에는 런타임 데이터 필요 |
+| 토양검정 | 주소 검색→필지→토양·비료 화면 흐름과 API 예외 처리를 Mock 테스트로 확인 | 실제 비료 처방 및 여러 지역·시료의 응답은 미확인 |
+| 수익 예측 | 입력 검증·외부 데이터 오류 처리와 이력 로딩·빈 결과·오류 후 재시도를 Mock 테스트로 확인 | 실제 예측 전체 흐름 및 여러 작물·지역의 응답은 미확인 |
+| 챗봇 | 키·Chroma 부재 시 제한 상태와 요청 실패 처리를 Mock 테스트로 확인 | OpenAI 키, 원본 Chroma 인덱스 및 실제 질의 검증 필요 |
+
+토양검정과 수익 예측은 로컬에서 각각 한 번만 수동 조회했습니다. 토양 시료 목록 1건, 날씨 365행, 시장가격 243행이 서비스 파서를 통과했습니다. `backend/soil/tests/fixtures/`와 `backend/prediction/tests/fixtures/`에는 **로컬 실연동에서 응답 구조를 확인하고 민감정보를 제거한 최소 계약 fixture**만 두었습니다. 주소·필지번호·인증정보·실제 날짜는 포함하지 않았으며, 필수 날짜는 예시값으로 바꿨습니다. fixture 테스트는 외부 API를 호출하지 않습니다. 이 결과는 실시간 데이터 정확성이나 외부 API 전체 호환성을 보장하지 않습니다.
+
+이번 개인 변경은 수익 예측 이력 화면의 조회 실패를 빈 이력과 구분하고, 오류 안내와 `다시 시도` 버튼을 추가한 것입니다. 기존 URL과 API 응답 구조는 유지했습니다. CI 설정은 프론트엔드 설치·lint·테스트·빌드 및 백엔드 설치·Ruff·check·테스트·의존성 검사를 실행하도록 되어 있으며, 이 문단은 로컬 실행 결과만 기록합니다. 실제 배포 동작은 확인하지 않았습니다.
+
 > AI와 공공데이터를 연결해 수익 분석, 병해충 진단, 토양검정, 영농 상담을 제공하는 초보 농업인 지원 서비스
 
 [![CI](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml)
@@ -177,6 +197,8 @@ npm start
 ```dotenv
 REACT_APP_API_BASE_URL=http://localhost:8000
 ```
+
+`frontend/.env.example`의 `REACT_APP_API_BASE_URL`은 Create React App 빌드에 포함되는 공개 주소입니다. `VITE_*` 변수는 이 프로젝트에서 사용하지 않습니다. `backend/.env.example`의 `DJANGO_SECRET_KEY`, `DATABASE_PASSWORD`, `OPENAI_API_KEY`, `KAKAO_REST_API_KEY`, 공공데이터 API 키, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` 등은 서버 전용 비밀값이므로 프론트엔드 변수에 넣지 않습니다. 두 예시 파일의 비밀값 항목은 비어 있으며, 실제 `.env`는 Git에서 제외합니다.
 
 환경변수, 운영 Database·Storage, AI Artifact, 외부 API 설정은 [Local Setup Guide](./docs/SETUP.md)를 참고해 주세요.
 

@@ -1,0 +1,3 @@
+{
+  "xml": "<response><header><Result_Code>200</Result_Code></header><body><items><item><No>1</No><Exam_Day>20000101</Exam_Day><PNU_Nm>예시 필지</PNU_Nm><ACID>6.5</ACID><OM>2.0</OM><VLDPHA>100</VLDPHA><POSIFERT_K>0.3</POSIFERT_K><POSIFERT_CA>5.0</POSIFERT_CA><POSIFERT_MG>1.0</POSIFERT_MG><VLDSIA>200</VLDSIA><ELCD>1.2</ELCD></item></items></body></response>"
+}
