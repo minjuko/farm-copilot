@@ -161,21 +161,17 @@ flowchart LR
 
 ## 테스트 및 품질 검증
 
-2026.09.13 기준 GitHub Actions와 동일한 명령으로 검증했습니다.
+2026.09.18 기준 GitHub Actions와 동일한 명령으로 검증했습니다.
 
 | 검증 항목 | 결과 |
 | --- | ---: |
-| 프론트엔드 Test Suites | **30 / 30 passed** |
-| 프론트엔드 Tests | **151 / 151 passed** |
-| 백엔드 Tests | **117 / 117 passed** |
-| 실패·Skip | **0** |
-| 프론트엔드 ESLint | **0 warnings** |
+| 프론트엔드 Test Suites | **31 / 31 passed** |
+| 프론트엔드 Tests | **159 / 159 passed** |
+| 백엔드 Tests | **130 / 130 passed** |
+| 프론트엔드 ESLint | **passed** |
 | 프론트엔드 Production Build | **passed** |
-| Main JavaScript | **284.36 kB gzip** |
-| CSS | **892 B gzip** |
 | Ruff lint·format | **passed** |
 | Django System Check | **0 issues** |
-| Python Dependency Check | **passed** |
 | GitHub Actions CI | **passed** |
 
 CI는 Node.js 22.20.0과 Python 3.11.9에서 프론트엔드와 백엔드를 독립적으로 검증합니다. SQLite와 테스트 전용 설정을 사용하므로 외부 Credential, AI Dependency와 Model Artifact 없이 실행할 수 있습니다.
