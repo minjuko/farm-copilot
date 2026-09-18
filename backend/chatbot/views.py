@@ -94,11 +94,9 @@ def get_rag_chain():
 
     openai_api_key = os.getenv('OPENAI_API_KEY')
     if not openai_api_key:
-        raise ServiceUnavailableError('Agriculture chatbot requires an OPENAI_API_KEY.')
+        raise ServiceUnavailableError('Agriculture chatbot is not configured.')
     if not vector_index_available():
-        raise ServiceUnavailableError(
-            'Agriculture chatbot requires the original Chroma database artifact.'
-        )
+        raise ServiceUnavailableError('Agriculture chatbot knowledge index is unavailable.')
     if not CHATBOT_DEPENDENCIES_AVAILABLE:
         raise ServiceUnavailableError(
             'Agriculture chatbot optional dependencies are not installed.'

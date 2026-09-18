@@ -6,6 +6,7 @@ import { useAuth } from '../../../AuthContext';
 import useChatSession from './useChatSession';
 import {
   buildChatPayload,
+  CHATBOT_LIMITED_MESSAGE,
   getChatErrorMessage,
   normalizeChatResponse,
 } from './chatFlow';
@@ -204,7 +205,9 @@ const ChatTemplate = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { status } = useAuth();
-  const { messages, setMessages, errorMessage, setErrorMessage, chatbotStatus } = useChatSession(sessionId, status);
+  const {
+    messages, setMessages, errorMessage, setErrorMessage, chatbotStatus, retryChatbotStatus,
+  } = useChatSession(sessionId, status);
 
   const chatBoxRef = useRef(null);
   const requestInFlight = useRef(false);
@@ -305,6 +308,24 @@ const ChatTemplate = () => {
         />
         <Button type="submit" disabled={isLoading || chatbotStatus !== 'available'} aria-label="질문 보내기"><FaPaperPlane size="20px"/></Button>
       </InputBox>
+      {chatbotStatus === 'checking' && (
+        <ErrorMessage role="status">챗봇 사용 가능 여부를 확인하는 중입니다.</ErrorMessage>
+      )}
+      {chatbotStatus === 'limited' && (
+        <ErrorMessage role="status">
+          {CHATBOT_LIMITED_MESSAGE}
+          <button type="button" onClick={retryChatbotStatus}>상태 다시 확인</button>
+        </ErrorMessage>
+      )}
+      {chatbotStatus === 'error' && (
+        <ErrorMessage role="alert">
+          챗봇 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.
+          <button type="button" onClick={retryChatbotStatus}>상태 다시 확인</button>
+        </ErrorMessage>
+      )}
+      {chatbotStatus === 'archived' && (
+        <ErrorMessage role="status">챗봇 기능이 현재 비활성화돼 있습니다. 관리자에게 문의해 주세요.</ErrorMessage>
+      )}
       {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
     </Container>
   );

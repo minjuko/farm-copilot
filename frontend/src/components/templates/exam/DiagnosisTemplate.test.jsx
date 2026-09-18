@@ -80,6 +80,33 @@ test("blocks diagnosis while the model capability is limited", async () => {
 
   const button = await screen.findByRole("button", { name: /진단하기/ });
   await waitFor(() => expect(button).toBeDisabled());
-  expect(screen.queryByText("LIMITED")).not.toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("진단 모델이 준비되지 않아");
+  expect(screen.getByRole("button", { name: "상태 다시 확인" })).toBeEnabled();
+  expect(uploadImage).not.toHaveBeenCalled();
+});
+
+test("rechecks the model capability and enables diagnosis when it becomes available", async () => {
+  fetchCapabilities
+    .mockResolvedValueOnce({ data: { detection: { status: "limited", available: false } } })
+    .mockResolvedValueOnce({ data: { detection: { status: "available", available: true } } });
+  render(<DiagnosisTemplate />);
+
+  const retry = await screen.findByRole("button", { name: "상태 다시 확인" });
+  fireEvent.click(retry);
+
+  await waitFor(() => expect(fetchCapabilities).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.getByRole("button", { name: /진단하기/ })).toBeEnabled());
+  expect(screen.queryByText(/진단 모델이 준비되지 않아/)).not.toBeInTheDocument();
+});
+
+test("distinguishes a capability request error and retries", async () => {
+  fetchCapabilities.mockRejectedValueOnce(new Error("offline"))
+    .mockResolvedValueOnce({ data: { detection: { status: "available", available: true } } });
+  render(<DiagnosisTemplate />);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("연결을 확인한 뒤 다시 시도");
+  fireEvent.click(screen.getByRole("button", { name: "상태 다시 확인" }));
+  await waitFor(() => expect(fetchCapabilities).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.getByRole("button", { name: /진단하기/ })).toBeEnabled());
   expect(uploadImage).not.toHaveBeenCalled();
 });

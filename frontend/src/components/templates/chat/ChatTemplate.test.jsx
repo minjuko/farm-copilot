@@ -97,4 +97,32 @@ test("disables paid requests while the chatbot is archived", async () => {
     expect(screen.getByPlaceholderText("질문을 입력하세요")).toBeDisabled();
   });
   expect(screen.getByRole("button", { name: "질문 보내기" })).toBeDisabled();
+  expect(screen.getByRole("status")).toHaveTextContent("관리자에게 문의");
+});
+
+test("explains a limited chatbot and rechecks its status without sending a question", async () => {
+  fetchChatbotStatus
+    .mockResolvedValueOnce({ data: { status: "limited", available: false } })
+    .mockResolvedValueOnce({ data: { status: "available", available: true } });
+  render(<ChatTemplate />);
+
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(CHATBOT_LIMITED_MESSAGE));
+  expect(screen.getByRole("button", { name: "질문 보내기" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "상태 다시 확인" }));
+
+  await waitFor(() => expect(fetchChatbotStatus).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.getByRole("button", { name: "질문 보내기" })).toBeEnabled());
+  expect(sendChatMessage).not.toHaveBeenCalled();
+});
+
+test("distinguishes a chatbot status request error and retries", async () => {
+  fetchChatbotStatus.mockRejectedValueOnce(new Error("offline"))
+    .mockResolvedValueOnce({ data: { status: "available", available: true } });
+  render(<ChatTemplate />);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("연결을 확인한 뒤 다시 시도");
+  fireEvent.click(screen.getByRole("button", { name: "상태 다시 확인" }));
+  await waitFor(() => expect(fetchChatbotStatus).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.getByRole("button", { name: "질문 보내기" })).toBeEnabled());
+  expect(sendChatMessage).not.toHaveBeenCalled();
 });

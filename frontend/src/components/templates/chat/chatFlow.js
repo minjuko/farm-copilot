@@ -1,5 +1,5 @@
 export const CHATBOT_LIMITED_MESSAGE =
-  "챗봇 데이터와 외부 서비스가 준비되지 않아 현재 이용할 수 없습니다.";
+  "챗봇 데이터 또는 외부 서비스가 준비되지 않아 현재 이용할 수 없습니다. 상태를 다시 확인하고, 계속되면 관리자에게 문의해 주세요.";
 
 export const buildChatPayload = ({ question, sessionId, sessionName }) => {
   const trimmedQuestion = typeof question === "string" ? question.trim() : "";

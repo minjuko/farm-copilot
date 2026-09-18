@@ -6,13 +6,15 @@ export default function useChatSession(sessionId, authStatus) {
   const [messages, setMessages] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [chatbotStatus, setChatbotStatus] = useState("checking");
+  const [statusRequestVersion, setStatusRequestVersion] = useState(0);
 
   useEffect(() => {
     let isActive = true;
+    setChatbotStatus("checking");
     fetchChatbotStatus().then(({ data }) => isActive && setChatbotStatus(data?.status || "limited"))
-      .catch(() => isActive && setChatbotStatus("limited"));
+      .catch(() => isActive && setChatbotStatus("error"));
     return () => { isActive = false; };
-  }, []);
+  }, [statusRequestVersion]);
 
   useEffect(() => {
     if (authStatus === "unauthenticated") { setMessages([]); return undefined; }
@@ -26,5 +28,12 @@ export default function useChatSession(sessionId, authStatus) {
     return () => { isActive = false; };
   }, [sessionId, authStatus]);
 
-  return { messages, setMessages, errorMessage, setErrorMessage, chatbotStatus };
+  return {
+    messages,
+    setMessages,
+    errorMessage,
+    setErrorMessage,
+    chatbotStatus,
+    retryChatbotStatus: () => setStatusRequestVersion((version) => version + 1),
+  };
 }
