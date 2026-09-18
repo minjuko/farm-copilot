@@ -1,0 +1,11 @@
+{
+  "response": {
+    "header": { "resultCode": "00" },
+    "body": {
+      "totalCount": 1,
+      "items": {
+        "item": [{ "exmn_ymd": "20000101", "exmn_dd_cnvs_prc": "1000" }]
+      }
+    }
+  }
+}

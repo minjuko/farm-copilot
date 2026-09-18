@@ -22,7 +22,9 @@ jest.mock("../../../apis/predict", () => ({
 jest.mock("../../../LoadingContext", () => ({
   useLoading: () => ({ setIsLoading: jest.fn() }),
 }));
-jest.mock("../../atoms/CustomModal", () => () => null);
+jest.mock("../../atoms/CustomModal", () => ({ isOpen, content, onRequestClose }) => (
+  isOpen ? <div role="alert">{content}<button onClick={onRequestClose}>닫기</button></div> : null
+));
 jest.mock("./SoilResults", () => ({ cropName, fertilizerData }) => (
   <div data-testid="soil-results">{cropName}:{fertilizerData?.[0]?.pre_Fert_N}</div>
 ));
@@ -90,4 +92,48 @@ test("connects crop, address, soil sample, and fertilizer steps through the anal
     crop_code: "pepper",
     PNU_Nm: "selected parcel 1-2",
   }));
+});
+
+test("shows a genuine empty soil result and allows another search", async () => {
+  getSoilExamData.mockResolvedValueOnce({ data: { soil_data: [] } })
+    .mockResolvedValueOnce({ data: { soil_data: [soilSample] } });
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <SoilTemplate />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByLabelText("작물 이름"));
+  fireEvent.click(await screen.findByRole("option", { name: "pepper" }));
+  fireEvent.change(screen.getByLabelText("주소"), { target: { value: "sample address" } });
+  const searchButton = screen.getByRole("button", { name: /주소 검색/ });
+  await waitFor(() => expect(searchButton).toBeEnabled());
+  fireEvent.click(searchButton);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("현재 주소에 해당하는 데이터가 없습니다.");
+  expect(screen.getByLabelText("상세 주소 선택")).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+  fireEvent.click(searchButton);
+
+  await waitFor(() => expect(getSoilExamData).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(screen.getByLabelText("상세 주소 선택")).toBeEnabled());
+});
+
+test("shows an external soil lookup error without a sample", async () => {
+  getSoilExamData.mockRejectedValue({ response: { status: 503 } });
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <SoilTemplate />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByLabelText("작물 이름"));
+  fireEvent.click(await screen.findByRole("option", { name: "pepper" }));
+  fireEvent.change(screen.getByLabelText("주소"), { target: { value: "sample address" } });
+  const searchButton = screen.getByRole("button", { name: /주소 검색/ });
+  await waitFor(() => expect(searchButton).toBeEnabled());
+  fireEvent.click(searchButton);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(/서비스|조회|다시/);
+  expect(screen.getByLabelText("상세 주소 선택")).toBeDisabled();
 });

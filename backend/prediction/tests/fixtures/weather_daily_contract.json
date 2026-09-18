@@ -1,0 +1,3 @@
+{
+  "xml": "<response><header><resultCode>00</resultCode></header><body><items><item><tm>2000-01-01</tm><avgRhm>50</avgRhm><minTa>5</minTa><maxTa>15</maxTa><maxWs>3</maxWs><avgTa>10</avgTa><avgWs>1</avgWs><sumRn>0</sumRn><ddMes>0</ddMes></item></items></body></response>"
+}
