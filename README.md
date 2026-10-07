@@ -32,7 +32,7 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 | 농업 커뮤니티 | 판매·구매 게시글과 댓글 작성·조회·수정·삭제 |
 | 회원·마이페이지 | 회원가입·로그인, 회원정보·사용자 활동 관리 |
 
-## 서비스 화면
+## 화면
 
 <table>
   <tr>
@@ -55,7 +55,7 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 
 > 화면 이미지는 팀 프로젝트 최종 시연 자료를 바탕으로 구성했습니다.
 
-## 프로젝트 기술 스택
+## 기술 스택
 
 > 아래 기술은 프로젝트 전체 구성 기준입니다. 개인 구현 범위는 **본인 담당 및 기여** 섹션을 따릅니다.
 
@@ -68,7 +68,7 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 | RAG | LangChain · Chroma · OpenAI |
 | External Data | Kakao 주소 검색 · aT 가격정보 · 기상청 ASOS · 농촌진흥청 토양검정·비료사용처방 V2 |
 
-## 본인 담당 및 기여
+## 개인 기여
 
 ### 팀 프로젝트 당시
 
@@ -135,7 +135,7 @@ flowchart LR
 - AI와 외부 Provider는 프론트엔드에서 직접 호출하지 않고 Django API를 경유합니다.
 - Local 기본 환경은 재현성을 위해 SQLite와 `FileSystemStorage`를 사용합니다.
 
-## 테스트 및 품질 검증
+## 검증 결과
 
 2026.09.18 기준 GitHub Actions와 동일한 명령으로 검증했습니다.
 
