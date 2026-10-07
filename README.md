@@ -154,7 +154,7 @@ CI는 Node.js 22.20.0과 Python 3.11.9에서 프론트엔드와 백엔드를 독
 
 실제 외부 Provider 호출, YOLO 추론, RAG 질의, Production 인프라 통합은 각각 Credential·Artifact·운영 환경이 필요하므로 CI 결과에 포함하지 않습니다.
 
-## Local 실행
+## 로컬 실행
 
 ### 백엔드
 
