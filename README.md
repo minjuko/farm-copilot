@@ -93,6 +93,7 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 - 반복되는 비동기 상태와 외부 데이터의 Error·Empty State 구분
 - 환경변수, Credential, Local·Production 설정 분리
 - YOLO Model Artifact·Class Mapping과 RAG 활성화 조건 점검
+- 병해충 미탐지·잘못된 응답·서비스 제한 상태 분리와 Confidence 계약 검증
 - 프론트엔드·백엔드 회귀 테스트와 GitHub Actions CI 구성
 
 ## 핵심 설계
@@ -135,15 +136,28 @@ flowchart LR
 - AI와 외부 Provider는 프론트엔드에서 직접 호출하지 않고 Django API를 경유합니다.
 - Local 기본 환경은 재현성을 위해 SQLite와 `FileSystemStorage`를 사용합니다.
 
+### 병해충 진단 계약과 검증 범위
+
+병해충 진단은 React가 이미지를 `multipart/form-data`의 `image` 필드로 보내고, Django가 이미지 검증 → YOLO 추론 → 클래스/상세정보 매핑 → 세션 저장 순서로 처리합니다. 성공 응답과 세션 상세 응답은 `session_id`, `pest_name`, `confidence`, 상세정보와 이미지 URL을 같은 구조로 전달하며, 목록 응답은 그중 요약 필드만 제공합니다.
+
+- 백엔드는 원시 YOLO confidence `0~1`에 `0.60` 임계값을 적용한 뒤, 통과한 최상위 탐지값을 `0~100`으로 변환해 API와 DB에 저장합니다.
+- 화면의 `탐지 신뢰도`는 이 값을 소수점 둘째 자리와 `%`로 표시합니다. 모델 정확도나 질병 확진 확률을 뜻하지 않습니다.
+- 임계값 미만 또는 박스 없음은 정상 작물 판정이 아니라 **미탐지**이며 HTTP 400으로 처리하고 세션을 만들지 않습니다.
+- Checkpoint·Runtime·Class Mapping을 사용할 수 없으면 HTTP 503, 성공 응답의 필수 필드나 Confidence가 계약과 다르면 프론트엔드에서 잘못된 응답으로 차단합니다.
+- 잘못된 세션 ID는 404로 처리하고, 세션 저장 실패·삭제 시 진단 이미지 정리를 시도해 DB와 파일 저장소의 불일치를 줄입니다.
+- `/api/capabilities/`의 진단 상태는 Checkpoint 파일 존재 여부만 확인하며 실제 추론 가능 여부 전체를 보장하지 않습니다.
+
+2024년 팀 프로젝트에서 YOLO 기반 추론 API와 진단 화면·이력 흐름을 구현했습니다. 당시 데이터셋은 **AI Hub 「시설 작물 질병 진단 이미지」**를 사용했지만, 공개 저장소에는 학습 데이터·Checkpoint·완전한 학습환경이 없으므로 전처리, 학습 설정, 성능 수치는 재현하거나 검증하지 않았습니다. 2026년 개인 개선에서는 선택적 AI Runtime, 명시적 클래스 매핑, 미탐지 fallback 제거, 입력·모델 출력·응답 계약 검증과 회귀 테스트를 보강했습니다. 모델 학습환경 복원과 실제 이미지 추론·성능 평가는 후속 작업입니다.
+
 ## 검증 결과
 
-로컬 테스트 및 GitHub Actions CI #18에서 확인한 결과입니다.
+아래 테스트 수치는 이번 로컬 검증 결과이며, GitHub Actions는 기존 CI #18의 통과 상태를 함께 기록했습니다.
 
 | 검증 항목 | 결과 |
 | --- | ---: |
 | 프론트엔드 Test Suites | **31 / 31 passed** |
-| 프론트엔드 Tests | **159 / 159 passed** |
-| 백엔드 Tests | **130 / 130 passed** |
+| 프론트엔드 Tests | **183 / 183 passed** |
+| 백엔드 Tests | **138 / 138 passed** |
 | 프론트엔드 ESLint | **passed** |
 | 프론트엔드 Production Build | **passed** |
 | Ruff lint·format | **passed** |
