@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
+from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from PIL import Image
@@ -12,7 +13,7 @@ from PIL import Image
 from common.exceptions import ServiceUnavailableError, ValidationError
 
 from .. import views
-from ..models import Pest, PestModelClass
+from ..models import Pest, PestDetection, PestModelClass
 
 
 class DetectionRuntimeTests(SimpleTestCase):
@@ -177,6 +178,23 @@ class DetectionRuntimeTests(SimpleTestCase):
 
         self.assertNotIn('buffer', context.exception.message)
 
+    def test_model_box_contract_rejects_invalid_confidence_and_class(self):
+        invalid_values = [
+            (float('nan'), 0),
+            (float('inf'), 0),
+            (-0.01, 0),
+            (1.01, 0),
+            (0.9, 1.5),
+        ]
+        for confidence, class_id in invalid_values:
+            with self.subTest(confidence=confidence, class_id=class_id):
+                box = Mock()
+                box.conf.item.return_value = confidence
+                box.cls.item.return_value = class_id
+                with self.assertRaises(ServiceUnavailableError) as context:
+                    views.extract_box_prediction(box)
+                self.assertEqual(context.exception.message, views.MODEL_OUTPUT_INVALID_MESSAGE)
+
     @patch.object(views, 'process_image')
     def test_temp_image_is_removed_when_inference_fails(self, process_image):
         captured_path = []
@@ -240,14 +258,68 @@ class DetectionModelClassMappingTests(TestCase):
             np.array([1, 2, 3], dtype=np.uint8),
         )
 
-        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+        image_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+        try:
             image_file.write(b'image')
             image_file.flush()
-            pest_id, confidence, content = views.process_image(image_file.name)
+            image_path = image_file.name
+            image_file.close()
+            pest_id, confidence, content = views.process_image(image_path)
+        finally:
+            if not image_file.closed:
+                image_file.close()
+            os.remove(image_path)
 
         self.assertEqual(pest_id, higher_pest.id)
         self.assertEqual(confidence, 95.0)
         self.assertEqual(content.read(), bytes([1, 2, 3]))
+
+    @patch.object(views, 'get_yolo_model')
+    def test_process_image_treats_below_threshold_as_no_detection(self, get_model):
+        box = Mock()
+        box.conf.item.return_value = views.CONFIDENCE_THRESHOLD - 0.01
+        box.cls.item.return_value = 0
+        get_model.return_value = Mock(return_value=[SimpleNamespace(boxes=[box])])
+
+        image_file = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+        try:
+            image_file.write(b'image')
+            image_file.flush()
+            image_path = image_file.name
+            image_file.close()
+            pest_id, confidence, content = views.process_image(image_path)
+        finally:
+            if not image_file.closed:
+                image_file.close()
+            os.remove(image_path)
+
+        self.assertIsNone(pest_id)
+        self.assertEqual(confidence, 0.0)
+        self.assertEqual(content.read(), b'image')
+
+    @patch.object(views, 'import_module')
+    @patch.object(views, 'get_yolo_model')
+    def test_process_image_accepts_exact_threshold_as_sixty_percent(self, get_model, import_module):
+        pest = Pest.objects.create(code='THRESHOLD', pest_name='임계값 병해')
+        PestModelClass.objects.create(class_id=0, model_label='threshold', pest=pest)
+        box = Mock()
+        box.conf.item.return_value = views.CONFIDENCE_THRESHOLD
+        box.cls.item.return_value = 0
+        result = Mock(boxes=[box])
+        result.plot.return_value = object()
+        get_model.return_value = Mock(return_value=[result])
+        import_module.return_value.imencode.return_value = (
+            True,
+            np.array([1], dtype=np.uint8),
+        )
+
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            image_file.write(b'image')
+            image_file.flush()
+            pest_id, confidence, _content = views.process_image(image_file.name)
+
+        self.assertEqual(pest_id, pest.id)
+        self.assertEqual(confidence, 60.0)
 
 
 class DetectionFixtureContractTests(TestCase):
@@ -301,6 +373,81 @@ class DetectionUnavailableEndpointTests(TestCase):
         self.assertEqual(response.json()['code'], 2001)
         self.assertNotIn('best.pt', response.content.decode())
         self.assertNotIn('Traceback', response.content.decode())
+
+    @patch.object(views, 'process_image')
+    def test_no_detection_returns_400_without_creating_a_session(self, process_image):
+        process_image.return_value = (None, 0.0, ContentFile(b'image', name='crop.jpg'))
+        buffer = BytesIO()
+        Image.new('RGB', (8, 8), color='green').save(buffer, format='PNG')
+        image = SimpleUploadedFile('crop.png', buffer.getvalue(), content_type='image/png')
+
+        response = self.client.post('/detect/upload/', {'image': image})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['message'], 'No pest was detected in the uploaded image.')
+        self.assertFalse(PestDetection.objects.exists())
+
+
+class DetectionSessionEndpointTests(TestCase):
+    def setUp(self):
+        from accounts.models import User
+
+        self.user = User.objects.create_user(
+            email='detect-session@example.com',
+            username='detect-session',
+            password='test-password',
+        )
+        self.client.force_login(self.user)
+        self.pest = Pest.objects.create(code='SESSION_PEST', pest_name='세션 병해')
+        self.detection = PestDetection.objects.create(
+            user=self.user,
+            pest=self.pest,
+            confidence=87.5,
+        )
+
+    def test_detail_uses_the_shared_success_contract(self):
+        response = self.client.get(f'/detect/detection_session_details/{self.detection.id}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), views.serialize_detection(self.detection))
+
+    def test_malformed_session_ids_stay_on_the_not_found_boundary(self):
+        detail = self.client.get('/detect/detection_session_details/not-a-number/')
+        delete = self.client.delete('/detect/delete_detection_session/not-a-number/')
+
+        self.assertEqual(detail.status_code, 404)
+        self.assertEqual(delete.status_code, 404)
+        self.assertTrue(PestDetection.objects.filter(id=self.detection.id).exists())
+
+    @patch.object(views, 'delete_detection_image')
+    def test_delete_cleans_up_the_stored_image_after_commit(self, delete_image):
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.delete(f'/detect/delete_detection_session/{self.detection.id}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(PestDetection.objects.filter(id=self.detection.id).exists())
+        delete_image.assert_called_once()
+
+    @patch.object(views, 'delete_detection_image')
+    @patch.object(views.PestDetection, 'save', side_effect=OSError('database unavailable'))
+    @patch.object(views, 'process_image')
+    def test_failed_session_save_cleans_up_the_generated_image(
+        self, process_image, _save, delete_image
+    ):
+        process_image.return_value = (
+            self.pest.id,
+            90.0,
+            ContentFile(b'annotated', name='annotated.jpg'),
+        )
+        buffer = BytesIO()
+        Image.new('RGB', (8, 8), color='green').save(buffer, format='PNG')
+        image = SimpleUploadedFile('crop.png', buffer.getvalue(), content_type='image/png')
+
+        response = self.client.post('/detect/upload/', {'image': image})
+
+        self.assertEqual(response.status_code, 500)
+        delete_image.assert_called_once()
+        self.assertEqual(PestDetection.objects.count(), 1)
 
 
 class DetectCsrfBoundaryTests(TestCase):

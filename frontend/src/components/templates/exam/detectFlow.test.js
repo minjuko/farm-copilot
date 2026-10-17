@@ -1,7 +1,10 @@
 import {
   formatDetectionConfidence,
+  formatDetectionConfidencePercent,
+  classifyDetectionError,
   getDetectionErrorMessage,
   normalizeDetectionResult,
+  normalizeDetectionHistory,
   normalizeMediaUrl,
   validateDetectionFile,
 } from "./detectFlow";
@@ -31,12 +34,13 @@ test("normalizes relative media URLs against the API origin", () => {
 });
 
 test("rejects malformed and legacy fake-normal success results", () => {
-  expect(normalizeDetectionResult({ pest_name: "0", confidence: 0 })).toBeNull();
-  expect(normalizeDetectionResult({ pest_name: "탄저병", confidence: undefined })).toBeNull();
+  expect(normalizeDetectionResult({ session_id: 1, pest_name: "0", confidence: 0 })).toBeNull();
+  expect(normalizeDetectionResult({ session_id: 1, pest_name: "탄저병", confidence: undefined })).toBeNull();
+  expect(normalizeDetectionResult({ pest_name: "탄저병", confidence: 91 })).toBeNull();
 });
 
 test("normalizes a valid result without NaN or nullable detail crashes", () => {
-  const result = normalizeDetectionResult({ pest_name: "탄저병", confidence: "91.25" });
+  const result = normalizeDetectionResult({ session_id: 1, pest_name: "탄저병", confidence: "91.25" });
   expect(result).toMatchObject({
     pest_name: "탄저병",
     confidence: 91.25,
@@ -44,4 +48,38 @@ test("normalizes a valid result without NaN or nullable detail crashes", () => {
     user_image_url: null,
   });
   expect(formatDetectionConfidence(undefined)).toBe("정보 없음");
+});
+
+test.each([null, undefined, "", "not-a-number", NaN, Infinity, -0.01, 100.01])(
+  "rejects confidence outside the backend 0..100 contract: %p",
+  (confidence) => {
+    expect(normalizeDetectionResult({ session_id: 1, pest_name: "탄저병", confidence })).toBeNull();
+    expect(formatDetectionConfidencePercent(confidence)).toBe("정보 없음");
+  }
+);
+
+test.each([
+  [0, "0.00%"],
+  ["60", "60.00%"],
+  [91.256, "91.26%"],
+  [100, "100.00%"],
+])("formats API confidence %p as a 0..100 percentage", (confidence, expected) => {
+  expect(formatDetectionConfidencePercent(confidence)).toBe(expected);
+});
+
+test("rejects an entire malformed history instead of rendering a partial fake result", () => {
+  expect(normalizeDetectionHistory([
+    { session_id: 1, pest_name: "탄저병", confidence: 91 },
+    { session_id: 2, pest_name: "흰가루병", confidence: null },
+  ])).toBeNull();
+});
+
+test("classifies existing HTTP and client-side failure contracts", () => {
+  expect(classifyDetectionError({ response: { status: 400, data: { message: "No pest was detected in the uploaded image." } } }).status)
+    .toBe("no_detection");
+  expect(classifyDetectionError({ response: { status: 503, data: {} } }).status)
+    .toBe("service_unavailable");
+  expect(classifyDetectionError({ code: "MALFORMED_DETECTION_RESPONSE" }).status)
+    .toBe("invalid_response");
+  expect(classifyDetectionError(new Error("offline")).status).toBe("request_failed");
 });

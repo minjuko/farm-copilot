@@ -42,6 +42,61 @@ beforeEach(() => {
   });
 });
 
+test("navigates only after a valid detected response", async () => {
+  uploadImage.mockResolvedValue({
+    data: { session_id: 42, pest_name: "탄저병", confidence: 91.25 },
+  });
+  render(<DiagnosisTemplate />);
+  selectValidImage();
+
+  const button = await screen.findByRole("button", { name: /진단하기/ });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+
+  await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith(
+    "/info/42",
+    expect.objectContaining({ state: expect.any(Object) })
+  ));
+});
+
+test.each([
+  [400, "No pest was detected in the uploaded image.", "탐지되지 않았습니다"],
+  [503, "Image detection model is not available.", "진단 모델"],
+])("keeps HTTP %s diagnosis failures out of the success route", async (status, message, expected) => {
+  uploadImage.mockRejectedValue({ response: { status, data: { message } } });
+  render(<DiagnosisTemplate />);
+  selectValidImage();
+  const button = await screen.findByRole("button", { name: /진단하기/ });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(expected);
+  expect(mockNavigate).not.toHaveBeenCalled();
+});
+
+test("reports a malformed success payload instead of rendering it", async () => {
+  uploadImage.mockResolvedValue({ data: { session_id: 42, pest_name: "탄저병", confidence: null } });
+  render(<DiagnosisTemplate />);
+  selectValidImage();
+  const button = await screen.findByRole("button", { name: /진단하기/ });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("응답 형식");
+  expect(mockNavigate).not.toHaveBeenCalled();
+});
+
+test("shows a connection message for a network failure", async () => {
+  uploadImage.mockRejectedValue(new Error("offline"));
+  render(<DiagnosisTemplate />);
+  selectValidImage();
+  const button = await screen.findByRole("button", { name: /진단하기/ });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("연결을 확인");
+});
+
 test("does not navigate to details for mapping-unavailable 503", async () => {
   uploadImage.mockRejectedValue({
     response: {
