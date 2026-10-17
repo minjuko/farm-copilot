@@ -278,7 +278,9 @@ const DiagnosisTemplate = () => {
       const response = await uploadImage(selectedFile);
       const diagnosisResult = normalizeDetectionResult(response?.data);
       if (!diagnosisResult) {
-        throw new Error("MALFORMED_DETECTION_RESPONSE");
+        const error = new Error("Malformed detection response");
+        error.code = "MALFORMED_DETECTION_RESPONSE";
+        throw error;
       }
       const resultPath = diagnosisResult.session_id
         ? `/info/${diagnosisResult.session_id}`

@@ -11,7 +11,8 @@ import useAsyncResource from "../../../hooks/useAsyncResource";
 import { EmptyState, ListPage } from "../../../styles/primitives";
 import { color, radius, shadow, space } from "../../../styles/theme";
 import {
-  formatDetectionConfidence,
+  formatDetectionConfidencePercent,
+  normalizeDetectionHistory,
   normalizeMediaUrl,
 } from "./detectFlow";
 
@@ -158,8 +159,9 @@ const DiagnosisListTemplate = () => {
 
   const loadSessions = useCallback(async () => {
     const response = await fetchDetectionSessions();
-    if (!Array.isArray(response?.data)) throw new Error("MALFORMED_DETECTION_HISTORY");
-    return response.data;
+    const sessions = normalizeDetectionHistory(response?.data);
+    if (!sessions) throw new Error("MALFORMED_DETECTION_HISTORY");
+    return sessions;
   }, []);
   const {
     data: sessions,
@@ -229,7 +231,19 @@ const DiagnosisListTemplate = () => {
           <>
             <SessionList>
               {sessions.slice(offset, offset + sessionsPerPage).map(session => (
-                <SessionItem key={session.session_id} onClick={() => handleSessionClick(session.session_id)} tabIndex="0" aria-label={`${session.pest_name || "정보 없음"} 진단 결과 보기`}>
+                <SessionItem
+                  key={session.session_id}
+                  onClick={() => handleSessionClick(session.session_id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleSessionClick(session.session_id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex="0"
+                  aria-label={`${session.pest_name || "정보 없음"} 진단 결과 보기`}
+                >
                   {normalizeMediaUrl(session.user_image_url) && (
                     <SessionImage
                       src={normalizeMediaUrl(session.user_image_url)}
@@ -240,7 +254,7 @@ const DiagnosisListTemplate = () => {
                   <SessionInfo>
                     <div><strong>질병명:</strong> {session.pest_name && session.pest_name !== "0" ? session.pest_name : "정보 없음"}</div>
                     <div><strong>진단 날짜:</strong> {session.detection_date || "정보 없음"}</div>
-                    <div><strong>신뢰도:</strong> {formatDetectionConfidence(session.confidence)}</div>
+                    <div><strong>탐지 신뢰도:</strong> {formatDetectionConfidencePercent(session.confidence)}</div>
                   </SessionInfo>
                   <DeleteButton onClick={(e) => {
                     e.stopPropagation();

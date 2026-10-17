@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import tempfile
 import warnings
@@ -7,6 +8,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
 from django.utils import timezone
@@ -30,6 +32,7 @@ CONFIDENCE_THRESHOLD = 0.6
 REFERENCE_IMAGE_LICENSE = '공공누리 제2유형: 출처표시 + 상업적 이용금지'
 MAPPING_UNAVAILABLE_MESSAGE = '병해 탐지 모델의 상세정보 매핑이 준비되지 않았습니다.'
 MODEL_CONTRACT_MISMATCH_MESSAGE = '병해 탐지 모델의 클래스 계약이 일치하지 않습니다.'
+MODEL_OUTPUT_INVALID_MESSAGE = '병해 탐지 모델이 유효하지 않은 결과를 반환했습니다.'
 EXPECTED_MODEL_CLASS_NAMES = {
     0: '고추 탄저병',
     1: '고추 흰가루병',
@@ -163,6 +166,34 @@ def image_url_or_none(image_field):
         return None
 
 
+def delete_detection_image(image_field):
+    """Best-effort cleanup for storage that is not covered by DB transactions."""
+    if not image_field or not image_field.name:
+        return
+    try:
+        image_field.delete(save=False)
+    except Exception as exc:
+        logger.warning('Failed to delete a detection image from storage: %s', exc)
+
+
+def get_owned_detection(user, session_id):
+    """Resolve an owned session and keep malformed identifiers on the 404 boundary."""
+    try:
+        normalized_session_id = int(session_id)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise NotFoundError('Detection session not found') from exc
+    if normalized_session_id <= 0:
+        raise NotFoundError('Detection session not found')
+
+    try:
+        return PestDetection.objects.select_related('pest').get(
+            id=normalized_session_id,
+            user=user,
+        )
+    except PestDetection.DoesNotExist as exc:
+        raise NotFoundError('Detection session not found') from exc
+
+
 def reference_image_url(pest):
     """Resolve a fixture-owned static asset without hard-coding the static host."""
     if not pest.image_url:
@@ -170,6 +201,45 @@ def reference_image_url(pest):
     if pest.image_url.startswith(('http://', 'https://')):
         return pest.image_url
     return static(pest.image_url.lstrip('/'))
+
+
+def extract_box_prediction(box):
+    """Validate one YOLO box and return its class index and 0..1 confidence."""
+    try:
+        confidence = float(box.conf.item())
+        raw_class_id = float(box.cls.item())
+    except (AttributeError, TypeError, ValueError, OverflowError) as exc:
+        raise ServiceUnavailableError(MODEL_OUTPUT_INVALID_MESSAGE) from exc
+
+    if (
+        not math.isfinite(confidence)
+        or not 0.0 <= confidence <= 1.0
+        or not math.isfinite(raw_class_id)
+        or not raw_class_id.is_integer()
+        or raw_class_id < 0
+    ):
+        raise ServiceUnavailableError(MODEL_OUTPUT_INVALID_MESSAGE)
+    return int(raw_class_id), confidence
+
+
+def serialize_detection(detection):
+    """Build the shared successful upload/detail response contract."""
+    pest = detection.pest
+    return {
+        'session_id': detection.id,
+        'pest_name': pest.pest_name,
+        'occurrence_environment': pest.occurrence_environment,
+        'symptom_description': pest.symptom_description,
+        'prevention_methods': pest.prevention_methods,
+        'pesticide_name': pest.pesticide_name,
+        'information_source': pest.information_source,
+        'information_source_url': pest.information_source_url,
+        'confidence': detection.confidence,
+        'user_image_url': image_url_or_none(detection.image),
+        'db_image_url': reference_image_url(pest),
+        'reference_image_license': REFERENCE_IMAGE_LICENSE,
+        'detection_date': timezone.localtime(detection.detection_date).strftime('%Y-%m-%d %H:%M'),
+    }
 
 
 def process_image(image_path):
@@ -190,14 +260,17 @@ def process_image(image_path):
         if results and len(results) > 0:
             best_result = results[0]
             if best_result.boxes and len(best_result.boxes) > 0:
-                eligible_boxes = [
-                    box
-                    for box in best_result.boxes
-                    if float(box.conf.item()) >= CONFIDENCE_THRESHOLD
+                predictions = [extract_box_prediction(box) for box in best_result.boxes]
+                eligible_predictions = [
+                    prediction
+                    for prediction in predictions
+                    if prediction[1] >= CONFIDENCE_THRESHOLD
                 ]
-                if eligible_boxes:
-                    box = max(eligible_boxes, key=lambda item: float(item.conf.item()))
-                    confidence = float(box.conf.item()) * 100
+                if eligible_predictions:
+                    class_id, raw_confidence = max(
+                        eligible_predictions, key=lambda prediction: prediction[1]
+                    )
+                    confidence = raw_confidence * 100
                     annotated_image = best_result.plot()
                     try:
                         cv2 = import_module('cv2')
@@ -213,7 +286,7 @@ def process_image(image_path):
                     result_image_content = ContentFile(
                         buffer.tobytes(), name=os.path.basename(image_path)
                     )
-                    pest_id = map_model_class_to_pest_id(box.cls.item())
+                    pest_id = map_model_class_to_pest_id(class_id)
 
         if result_image_content is None:
             result_image_content = get_original_image_content(image_path)
@@ -253,27 +326,14 @@ def upload_image_for_detection(request):
             detection_date=timezone.now(),
             confidence=confidence,
         )
-        detection.save()
+        try:
+            with transaction.atomic():
+                detection.save()
+        except Exception:
+            delete_detection_image(detection.image)
+            raise
 
-        detection_payload = {
-            'session_id': detection.id,
-            'pest_name': pest_info.pest_name,
-            'occurrence_environment': pest_info.occurrence_environment,
-            'symptom_description': pest_info.symptom_description,
-            'prevention_methods': pest_info.prevention_methods,
-            'pesticide_name': pest_info.pesticide_name,
-            'information_source': pest_info.information_source,
-            'information_source_url': pest_info.information_source_url,
-            'confidence': confidence,
-            'user_image_url': image_url_or_none(detection.image),
-            'db_image_url': reference_image_url(detection.pest),
-            'reference_image_license': REFERENCE_IMAGE_LICENSE,
-            'detection_date': timezone.localtime(detection.detection_date).strftime(
-                '%Y-%m-%d %H:%M'
-            ),
-        }
-
-        return JsonResponse(detection_payload, status=200)
+        return JsonResponse(serialize_detection(detection), status=200)
 
     except (ServiceUnavailableError, ValidationError):
         raise
@@ -288,7 +348,11 @@ def upload_image_for_detection(request):
 @login_required
 def list_detection_sessions(request):
     try:
-        sessions = PestDetection.objects.filter(user=request.user).order_by('-detection_date')
+        sessions = (
+            PestDetection.objects.select_related('pest')
+            .filter(user=request.user)
+            .order_by('-detection_date')
+        )
         session_list = [
             {
                 'session_id': session.id,
@@ -312,25 +376,10 @@ def list_detection_sessions(request):
 @login_required
 def detection_session_details(request, session_id):
     try:
-        session = PestDetection.objects.get(id=session_id, user=request.user)
-        details = {
-            'session_id': session.id,
-            'pest_name': session.pest.pest_name,
-            'occurrence_environment': session.pest.occurrence_environment,
-            'symptom_description': session.pest.symptom_description,
-            'prevention_methods': session.pest.prevention_methods,
-            'pesticide_name': session.pest.pesticide_name,
-            'information_source': session.pest.information_source,
-            'information_source_url': session.pest.information_source_url,
-            'detection_date': timezone.localtime(session.detection_date).strftime('%Y-%m-%d %H:%M'),
-            'confidence': session.confidence,
-            'user_image_url': image_url_or_none(session.image),
-            'db_image_url': reference_image_url(session.pest),
-            'reference_image_license': REFERENCE_IMAGE_LICENSE,
-        }
-        return JsonResponse(details)
-    except PestDetection.DoesNotExist:
-        raise NotFoundError('Detection session not found')
+        session = get_owned_detection(request.user, session_id)
+        return JsonResponse(serialize_detection(session))
+    except NotFoundError:
+        raise
     except Exception as exc:
         logger.exception('Unhandled exception in session details: %s', exc)
         raise InternalServerError('An unexpected error occurred while fetching session details.')
@@ -340,11 +389,14 @@ def detection_session_details(request, session_id):
 @require_http_methods(['DELETE'])
 def delete_detection_session(request, session_id):
     try:
-        session = PestDetection.objects.get(id=session_id, user=request.user)
-        session.delete()
+        session = get_owned_detection(request.user, session_id)
+        image = session.image
+        with transaction.atomic():
+            session.delete()
+            transaction.on_commit(lambda: delete_detection_image(image))
         return JsonResponse({'success': 'Detection session deleted successfully'}, status=200)
-    except PestDetection.DoesNotExist:
-        raise NotFoundError('Detection session not found')
+    except NotFoundError:
+        raise
     except Exception as exc:
         logger.exception('Error deleting detection session: %s', exc)
         raise InternalServerError(

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { fetchSessionDetails } from "../../../apis/predict";
-import { formatDetectionConfidence, normalizeDetectionResult } from "./detectFlow";
+import { formatDetectionConfidencePercent, normalizeDetectionResult } from "./detectFlow";
 
 const PageContainer = styled.div`
   display: flex;
@@ -380,7 +380,7 @@ const InfoTemplate = () => {
           <SummaryCard $primary>
             <SummaryMeta>
               <SummaryMetaItem><SummaryMetaLabel>진단일</SummaryMetaLabel><SummaryMetaValue>{detection_date}</SummaryMetaValue></SummaryMetaItem>
-              <SummaryMetaItem><SummaryMetaLabel>신뢰도</SummaryMetaLabel><SummaryMetaValue>{formatDetectionConfidence(confidence)}%</SummaryMetaValue></SummaryMetaItem>
+              <SummaryMetaItem><SummaryMetaLabel>탐지 신뢰도</SummaryMetaLabel><SummaryMetaValue>{formatDetectionConfidencePercent(confidence)}</SummaryMetaValue></SummaryMetaItem>
             </SummaryMeta>
             <SummaryLabel $primary>질병명</SummaryLabel>
             <SummaryValue>{pest_name}</SummaryValue>
