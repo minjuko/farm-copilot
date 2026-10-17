@@ -65,6 +65,11 @@ Thumbs.db
 # Local historical refactoring reference
 farm-copilot_reference/
 
+# Local working documents (not for the public repository)
+refactoring.md
+_workspace/
+.model-analysis/
+
 # 개인 기여 검토 기록 (비공개 보관)
 docs/contribution-audit-2026.md
 .local-notes/
