@@ -14,18 +14,42 @@ export const validateDetectionFile = (file) => {
 };
 
 export const getDetectionErrorMessage = (error) => {
-  const status = error?.response?.status;
-  const backendMessage = error?.response?.data?.message || "";
+  const outcome = classifyDetectionError(error);
 
-  if (status === 503 && backendMessage.includes("상세정보 매핑")) {
+  if (outcome.status === "invalid_response") {
+    return "진단 결과 응답 형식이 올바르지 않습니다. 잠시 후 다시 시도해주세요.";
+  }
+  if (outcome.status === "service_unavailable" && outcome.isMappingUnavailable) {
     return "병해충 상세정보 연결이 준비되지 않아 현재 진단 결과를 제공할 수 없습니다.";
   }
-  if (status === 503) return "진단 모델을 현재 사용할 수 없습니다. 잠시 후 다시 시도해주세요.";
-  if (status === 400 && backendMessage.includes("No pest was detected")) {
+  if (outcome.status === "service_unavailable") return "진단 모델을 현재 사용할 수 없습니다. 잠시 후 다시 시도해주세요.";
+  if (outcome.status === "no_detection") {
     return "이미지에서 병해충이 탐지되지 않았습니다.";
   }
-  if (status === 400) return "지원되는 이미지 파일을 선택해주세요.";
+  if (outcome.status === "invalid_request") return "지원되는 이미지 파일을 선택해주세요.";
+  if (outcome.status === "request_failed") return "서버에 연결할 수 없습니다. 연결을 확인한 뒤 다시 시도해주세요.";
   return "이미지 진단 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+};
+
+export const classifyDetectionError = (error) => {
+  if (error?.code === "MALFORMED_DETECTION_RESPONSE") {
+    return { status: "invalid_response" };
+  }
+
+  const httpStatus = error?.response?.status;
+  const backendMessage = error?.response?.data?.message || "";
+  if (httpStatus === 400 && backendMessage.includes("No pest was detected")) {
+    return { status: "no_detection" };
+  }
+  if (httpStatus === 503) {
+    return {
+      status: "service_unavailable",
+      isMappingUnavailable: backendMessage.includes("상세정보 매핑"),
+    };
+  }
+  if (httpStatus === 400) return { status: "invalid_request" };
+  if (!error?.response) return { status: "request_failed" };
+  return { status: "error" };
 };
 
 export const normalizeMediaUrl = (value, baseUrl = DETECT_API_BASE_URL) => {
@@ -39,9 +63,16 @@ export const normalizeMediaUrl = (value, baseUrl = DETECT_API_BASE_URL) => {
 };
 
 export const normalizeDetectionResult = (detectionPayload) => {
-  const confidence = Number(detectionPayload?.confidence);
+  const rawConfidence = detectionPayload?.confidence;
+  const acceptsConfidenceType = typeof rawConfidence === "number"
+    || (typeof rawConfidence === "string" && rawConfidence.trim() !== "");
+  const confidence = acceptsConfidenceType ? Number(rawConfidence) : Number.NaN;
+  const sessionId = detectionPayload?.session_id;
+  const hasSessionId = (typeof sessionId === "number" && Number.isInteger(sessionId) && sessionId > 0)
+    || (typeof sessionId === "string" && sessionId.trim() !== "");
   if (!detectionPayload || typeof detectionPayload.pest_name !== "string" || !detectionPayload.pest_name.trim()
-      || detectionPayload.pest_name === "0" || !Number.isFinite(confidence)) {
+      || detectionPayload.pest_name === "0" || !hasSessionId || !Number.isFinite(confidence)
+      || confidence < 0 || confidence > 100) {
     return null;
   }
 
@@ -64,7 +95,22 @@ export const normalizeDetectionResult = (detectionPayload) => {
   };
 };
 
+export const normalizeDetectionHistory = (payload) => {
+  if (!Array.isArray(payload)) return null;
+  const sessions = payload.map(normalizeDetectionResult);
+  return sessions.every(Boolean) ? sessions : null;
+};
+
 export const formatDetectionConfidence = (value) => {
-  const confidence = Number(value);
-  return Number.isFinite(confidence) ? confidence.toFixed(2) : "정보 없음";
+  const acceptsType = typeof value === "number"
+    || (typeof value === "string" && value.trim() !== "");
+  const confidence = acceptsType ? Number(value) : Number.NaN;
+  return Number.isFinite(confidence) && confidence >= 0 && confidence <= 100
+    ? confidence.toFixed(2)
+    : "정보 없음";
+};
+
+export const formatDetectionConfidencePercent = (value) => {
+  const formatted = formatDetectionConfidence(value);
+  return formatted === "정보 없음" ? formatted : `${formatted}%`;
 };
