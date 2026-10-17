@@ -59,3 +59,10 @@ test("keeps the legacy state-only result route compatible", async () => {
   expect(screen.getByText("pepper disease")).toBeInTheDocument();
   await waitFor(() => expect(fetchSessionDetails).not.toHaveBeenCalled());
 });
+
+test("renders confidence using the API 0..100 percentage contract", () => {
+  renderDetail("/info", { diagnosisResult: result });
+
+  expect(screen.getByText("탐지 신뢰도")).toBeInTheDocument();
+  expect(screen.getByText("91.25%")).toBeInTheDocument();
+});
