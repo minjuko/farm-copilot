@@ -256,7 +256,7 @@ SQLITE_DATABASE_PATH=db.sqlite3
 >
 > 2026-09-03 검증 당시 기존 Local SQLite DB에는 `soil.0006_rename_crop_data_cropdata` Migration이 적용되지 않은 상태였습니다. 기존 DB를 변경하지 않는 Audit 원칙에 따라 해당 Migration은 적용하지 않았습니다.
 >
-> Backend Test DB에서는 전체 Migration 적용 후 114개 Test가 정상 통과했습니다.
+> Backend Test DB에서는 전체 Migration 적용 후 138개 Test가 정상 통과했습니다.
 
 ### PostgreSQL
 
@@ -572,6 +572,25 @@ YOLO_AUGMENTED_INFERENCE=true
 
 `*.pt` 파일은 `.gitignore` 대상이므로 공개 Clone에는 Model이 포함되지 않습니다.
 
+### 진단 API 계약
+
+`POST /detect/upload/`은 인증과 CSRF Token이 필요하며 `multipart/form-data`의 `image` 필드로 JPEG, PNG 또는 WebP 파일을 받습니다.
+
+| 결과 | HTTP | 처리 |
+| --- | ---: | --- |
+| 유효 탐지 | 200 | 진단 세션을 저장하고 상세 payload 반환 |
+| 박스 없음·0.60 미만 | 400 | `No pest was detected...`, 세션 미생성 |
+| 잘못된 이미지 | 400 | 이미지 형식 검증 오류 |
+| Checkpoint·Runtime·Model Contract·Class Mapping 사용 불가 | 503 | 제어된 서비스 오류 |
+
+성공 payload의 핵심 필드는 `session_id`, `pest_name`, `confidence`, `detection_date`, `user_image_url`, `db_image_url`이며 병해 상세정보와 출처가 함께 반환됩니다. `GET /detect/detection_session_details/<session_id>/`도 같은 상세 구조를 반환하고, 목록 API는 `session_id`, `pest_name`, `detection_date`, `confidence`, `user_image_url` 요약을 반환합니다.
+
+YOLO box confidence는 Runtime에서 `0~1`입니다. 백엔드는 `0.60` 이상인 박스 중 confidence가 가장 높은 항목을 선택하고 `100`을 곱해 `0~100` 단위로 저장·응답합니다. 프론트엔드는 숫자 또는 숫자 문자열만 받아 범위를 다시 검증하고, 표시할 때만 소수점 둘째 자리와 `%`를 붙입니다. 이 값은 모델 정확도나 질병 확진 확률이 아니라 해당 탐지 결과에 대한 모델의 confidence입니다.
+
+과거 UI의 `pest_name === "0"` 분기는 2024년 미탐지 fallback과 연결된 호환 흔적입니다. 현재 백엔드는 이 값을 성공 응답으로 보내지 않고 미탐지를 400으로 처리하므로, 프론트엔드는 `"0"`을 유효한 진단 결과로 인정하지 않습니다.
+
+상세·삭제 API의 숫자가 아니거나 0 이하인 세션 ID는 내부 ORM 오류로 노출하지 않고 404로 처리합니다. 세션 저장이 실패하면 생성 중이던 진단 이미지를 정리하고, 세션 삭제가 Commit되면 연결된 이미지도 Best-effort로 삭제합니다. 외부 Storage 삭제 실패는 서버 로그에 남으며 DB 삭제 결과를 되돌리지는 않습니다.
+
 ---
 
 ### Model Class Contract
@@ -625,6 +644,8 @@ CUDA 미사용
 
 다만 이번 최종 Audit에서는 실제 이미지를 사용한 YOLO 추론을 다시 실행하지 않았습니다.
 
+팀 프로젝트에서 사용한 데이터셋은 **AI Hub 「시설 작물 질병 진단 이미지」**입니다. 공개 저장소에는 원본 학습 데이터, Checkpoint와 완전한 학습환경이 포함되지 않아 데이터 전처리·학습 설정·성능 지표는 이 문서에서 단정하지 않습니다.
+
 병해충 진단에는 별도의 Feature Flag가 없습니다.
 
 `/api/capabilities/`는 Checkpoint 파일 존재 여부를 중심으로 상태를 판단하며 실제 요청에는 다음 조건이 모두 필요합니다.
@@ -633,6 +654,14 @@ CUDA 미사용
 - YOLO Checkpoint
 - 정확한 Model Class Contract
 - `model_classes.json` Fixture Mapping
+
+### 자동화 검증과 후속 작업
+
+Checkpoint 없이도 mock 결과를 사용해 0.60 경계, 0~100 변환, 잘못된 모델 출력 차단, 미탐지 400, 모델 미탑재 503, 클래스 매핑, 성공·상세·이력 응답 정규화를 검증합니다. 실제 모델 재현은 다음 후속 작업으로 분리합니다.
+
+1. 학습 데이터 취득 조건과 전처리 코드 복원
+2. 학습 환경·하이퍼파라미터·Checkpoint provenance 정리
+3. 고정 평가셋에서 실제 추론과 성능 지표 재검증
 
 ---
 
@@ -820,7 +849,7 @@ Location을 사용합니다.
 | Python | 3.11.9 |
 | `pip check` | Broken Requirement 없음 |
 | Django System Check | Issue 0건 |
-| Backend Tests | **114 PASS** |
+| Backend Tests | **138 PASS** |
 | 외부 서비스 설정 검사 | PASS |
 | Chatbot Source 검증 | 8개 유효 행 PASS |
 | YOLO Checkpoint Load | PASS |
@@ -848,7 +877,7 @@ soil.0006_rename_crop_data_cropdata
 
 Audit에서는 기존 DB를 변경하지 않았습니다.
 
-Backend Test DB에서는 전체 Migration 적용 후 **114개 Test가 정상 통과**했습니다.
+Backend Test DB에서는 전체 Migration 적용 후 **138개 Test가 정상 통과**했습니다.
 
 ---
 
@@ -871,8 +900,8 @@ npm run build
 | Node.js | v22.20.0 |
 | npm | 10.9.3 |
 | Frontend Lint | PASS |
-| Test Suites | **28 / 28 PASS** |
-| Tests | **140 / 140 PASS** |
+| Test Suites | **31 / 31 PASS** |
+| Tests | **183 / 183 PASS** |
 | Production Build | **PASS** |
 
 Production Build는 `Compiled successfully`로 완료됐습니다.
