@@ -151,11 +151,11 @@ flowchart LR
 
 ## 검증 결과
 
-아래 테스트 수치는 이번 로컬 검증 결과이며, GitHub Actions는 기존 CI #18의 통과 상태를 함께 기록했습니다.
+아래 테스트 수치는 2026-10-18 로컬 검증 결과입니다.
 
 | 검증 항목 | 결과 |
 | --- | ---: |
-| 프론트엔드 Test Suites | **31 / 31 passed** |
+| 프론트엔드 Test Suites | **32 / 32 passed** |
 | 프론트엔드 Tests | **183 / 183 passed** |
 | 백엔드 Tests | **138 / 138 passed** |
 | 프론트엔드 ESLint | **passed** |
@@ -163,6 +163,7 @@ flowchart LR
 | Ruff lint·format | **passed** |
 | Django System Check | **0 issues** |
 | GitHub Actions CI | **passed** |
+| 프론트엔드 운영 의존성 감사 | critical 0 · high 63 · moderate 35 · low 3 (CRA 도구 체인 잔존) |
 
 CI는 Node.js 22.20.0과 Python 3.11.9에서 프론트엔드와 백엔드를 독립적으로 검증합니다. SQLite와 테스트 전용 설정을 사용하므로 외부 Credential, AI Dependency와 Model Artifact 없이 실행할 수 있습니다.
 
