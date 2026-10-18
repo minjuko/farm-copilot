@@ -225,6 +225,7 @@ python -m pip check
 | --- | --- |
 | [Local Setup Guide](./docs/SETUP.md) | Local 실행 · 환경변수 · Database · AI Artifact · 외부 API · Storage |
 | [병해충 진단 모델 문서](./docs/DETECTION_MODEL.md) | 확인된 YOLO 계약 · AI Hub 출처 · 클래스 매핑 한계와 후속 작업 |
+| [2026-09-15 README 보존본](./docs/archive/README-2026-09-15-snapshot.md) | 작업 시점 문서 스냅샷 |
 | [상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) | 요구사항 · 설계 · 핵심 구현 · 문제 해결 · 개인 기여 |
 
 ## 현재 운영 상태
