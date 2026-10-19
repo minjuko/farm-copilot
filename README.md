@@ -8,7 +8,7 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 
 저는 프론트엔드 개발자로 참여해 공통 UI와 인증·커뮤니티를 구현했으며, 백엔드·AI·공공데이터 기능을 사용자가 이용할 수 있는 화면 흐름으로 연결했습니다.
 
-> 이 저장소는 원본 팀 저장소를 바탕으로 실행환경, 프론트엔드 구조, 테스트와 문서를 정리한 개인 Fork입니다. AI 모델과 백엔드 전체 구현은 각 담당 팀원이 맡았습니다.
+> 원본 팀 프로젝트를 바탕으로 프론트엔드·테스트·실행환경을 정리한 저장소입니다.
 
 ## 프로젝트 정보
 
@@ -86,16 +86,6 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 
 프론트엔드에서는 처리 방식이 다른 기능도 **입력 → 검증 → 요청 → Loading/Error/Empty → 결과**의 공통 흐름으로 구성했습니다. AI 모델 개발과 백엔드 전체 구현은 담당 범위에 포함하지 않습니다.
 
-### 개선 작업
-
-- Django Session을 인증 상태의 기준으로 사용하고 Route Guard 정리
-- 화면과 HTTP 통신 책임을 기능별 API Module과 공통 Axios Instance로 분리
-- 반복되는 비동기 상태와 외부 데이터의 Error·Empty State 구분
-- 환경변수, Credential, Local·Production 설정 분리
-- YOLO Model Artifact·Class Mapping과 RAG 활성화 조건 점검
-- 병해충 미탐지·잘못된 응답·서비스 제한 상태 분리와 Confidence 계약 검증
-- 프론트엔드·백엔드 회귀 테스트와 GitHub Actions CI 구성
-
 ## 핵심 설계
 
 ### 프론트엔드 API 구조
@@ -147,11 +137,11 @@ flowchart LR
 - 잘못된 세션 ID는 404로 처리하고, 세션 저장 실패·삭제 시 진단 이미지 정리를 시도해 DB와 파일 저장소의 불일치를 줄입니다.
 - `/api/capabilities/`의 진단 상태는 Checkpoint 파일 존재 여부만 확인하며 실제 추론 가능 여부 전체를 보장하지 않습니다.
 
-2024년 팀 프로젝트에서 YOLO 기반 추론 API와 진단 화면·이력 흐름을 구현했습니다. 당시 데이터셋은 **AI Hub 「시설 작물 질병 진단 이미지」**를 사용했지만, 공개 저장소에는 학습 데이터·Checkpoint·완전한 학습환경이 없으므로 전처리, 학습 설정, 성능 수치는 재현하거나 검증하지 않았습니다. 2026년 개인 개선에서는 선택적 AI Runtime, 명시적 클래스 매핑, 미탐지 fallback 제거, 입력·모델 출력·응답 계약 검증과 회귀 테스트를 보강했습니다. Checkpoint에서 확인한 Metadata, 중복 Class ID의 미해결 근거와 매핑 복원 순서는 [병해충 진단 모델 현황과 클래스 매핑 후속 작업](./docs/DETECTION_MODEL.md)에 정리했습니다.
+병해충 진단의 모델 계약과 검증 범위는 [모델 기술문서](./docs/DETECTION_MODEL.md)에 정리했습니다.
 
 ## 검증 결과
 
-아래 테스트 수치는 2026-10-18 로컬 검증 결과입니다.
+아래는 로컬 테스트와 CI 검증 결과입니다.
 
 | 검증 항목 | 결과 |
 | --- | ---: |
@@ -225,7 +215,6 @@ python -m pip check
 | --- | --- |
 | [Local Setup Guide](./docs/SETUP.md) | Local 실행 · 환경변수 · Database · AI Artifact · 외부 API · Storage |
 | [병해충 진단 모델 문서](./docs/DETECTION_MODEL.md) | 확인된 YOLO 계약 · AI Hub 출처 · 클래스 매핑 한계와 후속 작업 |
-| [2026-09-15 README 보존본](./docs/archive/README-2026-09-15-snapshot.md) | 작업 시점 문서 스냅샷 |
 | [상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) | 요구사항 · 설계 · 핵심 구현 · 문제 해결 · 개인 기여 |
 
 ## 현재 운영 상태
