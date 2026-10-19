@@ -8,9 +8,7 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 
 저는 프론트엔드 개발자로 참여해 공통 UI와 인증·커뮤니티를 구현했으며, 백엔드·AI·공공데이터 기능을 사용자가 이용할 수 있는 화면 흐름으로 연결했습니다.
 
-> 원본 팀 프로젝트를 바탕으로 프론트엔드·테스트·실행환경을 정리한 저장소입니다.
-
-## 프로젝트 정보
+## 프로젝트 개요
 
 | 항목 | 내용 |
 | --- | --- |
@@ -21,18 +19,7 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 | 원본 저장소 | [프론트엔드](https://github.com/kt-bigproject28/kunkunnongsakun) · [백엔드](https://github.com/kt-bigproject28/bigproject28) |
 | 상세 문서 | [농업코파일럿 상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) |
 
-## 주요 기능
-
-| 기능 | 사용자 흐름 |
-| --- | --- |
-| 농작물 수익 분석 | 재배 조건 입력 → 예상 소득·시장가격 분석 → 차트 확인 |
-| AI 병해충 진단 | 작물 이미지 업로드 → YOLO 분석 → 병해충 정보·진단 이력 확인 |
-| 토양검정·비료 처방 | 농지 주소 입력 → 토양 시료 선택 → 작물별 처방 확인 |
-| 농업 AI 챗봇 | 대화 세션 생성 → 질문 전송 → RAG 기반 답변·이력 확인 |
-| 농업 커뮤니티 | 판매·구매 게시글과 댓글 작성·조회·수정·삭제 |
-| 회원·마이페이지 | 회원가입·로그인, 회원정보·사용자 활동 관리 |
-
-## 화면
+## 주요 기능 및 화면
 
 <table>
   <tr>
@@ -55,6 +42,17 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 
 > 화면 이미지는 팀 프로젝트 최종 시연 자료를 바탕으로 구성했습니다.
 
+### 주요 기능
+
+| 기능 | 사용자 흐름 |
+| --- | --- |
+| 농작물 수익 분석 | 재배 조건 입력 → 예상 소득·시장가격 분석 → 차트 확인 |
+| AI 병해충 진단 | 작물 이미지 업로드 → YOLO 분석 → 병해충 정보·진단 이력 확인 |
+| 토양검정·비료 처방 | 농지 주소 입력 → 토양 시료 선택 → 작물별 처방 확인 |
+| 농업 AI 챗봇 | 대화 세션 생성 → 질문 전송 → RAG 기반 답변·이력 확인 |
+| 농업 커뮤니티 | 판매·구매 게시글과 댓글 작성·조회·수정·삭제 |
+| 회원·마이페이지 | 회원가입·로그인, 회원정보·사용자 활동 관리 |
+
 ## 기술 스택
 
 > 아래 기술은 프로젝트 전체 구성 기준입니다. 개인 구현 범위는 **본인 담당 및 기여** 섹션을 따릅니다.
@@ -68,98 +66,16 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 | RAG | LangChain · Chroma · OpenAI |
 | External Data | Kakao 주소 검색 · aT 가격정보 · 기상청 ASOS · 농촌진흥청 토양검정·비료사용처방 V2 |
 
-## 개인 기여
+## 담당 역할 및 핵심 구현
 
-### 팀 프로젝트 당시
+- **공통 UI·인증:** 주요 내비게이션과 사용자 인증·마이페이지 흐름을 구현했습니다.
+- **서비스 기능 연동:** 수익 분석 입력·결과, 병해충 이미지 업로드·진단 이력, 주소 기반 토양검정·비료 처방을 Django API와 연결했습니다.
+- **커뮤니티·챗봇:** 게시글·댓글·페이지네이션과 챗봇의 대화·이력 화면을 구성했습니다.
+- **API 구조·상태 관리:** 기능별 Axios API 모듈을 구분하고 입력·로딩·오류·빈 결과·재시도 상태를 일관되게 처리했습니다.
 
-| 영역 | 담당 내용 |
-| --- | --- |
-| 공통 UI | MainLayout · TopBar · GNB · 주요 Route와 Navigation |
-| 회원·인증 | 회원가입·로그인 · Django Session 연동 · 인증 상태 기반 UI |
-| 마이페이지 | 회원정보 · 비밀번호 · 회원 탈퇴 · 사용자 활동 화면 |
-| 커뮤니티 | 게시글·댓글 CRUD · Pagination · 작성자 기반 UI |
-| 수익 분석 | 입력 Form · API 연동 · 결과 및 Chart 화면 |
-| 병해충 진단 | 이미지 Upload · 분석 요청 · 결과 및 진단 이력 화면 |
-| 토양검정 | 주소·작물 입력 · 토양 조회 · 시료 선택 · 비료 처방 연동 |
-| AI 챗봇 | 대화 Session · Message UI · Chat API · 대화 이력 |
-| 협업 | 화면 요구 데이터 확인 · 백엔드 담당자와 API Contract 조율 |
+AI 모델과 백엔드 핵심 기능은 팀원과 역할을 분담했습니다. API 계약과 병해충 진단 응답 구조의 상세 내용은 [기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) 및 [모델 문서](docs/DETECTION_MODEL.md)에 정리했습니다.
 
-프론트엔드에서는 처리 방식이 다른 기능도 **입력 → 검증 → 요청 → Loading/Error/Empty → 결과**의 공통 흐름으로 구성했습니다. AI 모델 개발과 백엔드 전체 구현은 담당 범위에 포함하지 않습니다.
-
-## 핵심 설계
-
-### 프론트엔드 API 구조
-
-```text
-Page · Component
-       ↓
-기능별 API Module
-       ↓
-공통 Axios Instance
-       ↓
-Django API
-       ↓
-Loading · Error · Empty · Result
-```
-
-Axios에 Session Cookie와 CSRF Token 전달을 공통 적용하고, Component는 사용자 입력과 화면 상태에 집중하도록 역할을 나눴습니다.
-
-### 외부 기능을 Django API 경계로 통합
-
-AI·공공데이터 Provider를 프론트엔드에서 직접 호출하지 않고 Django API를 경유했습니다. 외부 서비스별 요청 형식과 인증 정보를 화면에서 분리해, 프론트엔드는 사용자 입력·표시 상태에 집중하고 기능별 API Module이 응답을 일관된 화면 흐름으로 연결하도록 했습니다.
-
-이 구조는 외부 Provider의 Credential을 브라우저에 노출하지 않는 대신, 실제 Provider 호출·YOLO 추론·RAG 질의는 Credential·Model Artifact·운영 환경이 있어야 검증할 수 있습니다. 따라서 해당 통합 결과는 자동화 테스트 범위와 구분해 문서화했습니다.
-
-### AI·외부 데이터 연동
-
-```mermaid
-flowchart LR
-    U["사용자"] --> F["React 프론트엔드"]
-    F --> D["Django API"]
-    D --> DB[("PostgreSQL")]
-    D --> AI["AI · RAG"]
-    D --> EXT["농업 데이터 API"]
-    D --> S["AWS S3"]
-```
-
-- 병해충 이미지는 `multipart/form-data`, 일반 요청은 JSON으로 전달합니다.
-- AI와 외부 Provider는 프론트엔드에서 직접 호출하지 않고 Django API를 경유합니다.
-- Local 기본 환경은 재현성을 위해 SQLite와 `FileSystemStorage`를 사용합니다.
-
-### 병해충 진단 계약과 검증 범위
-
-병해충 진단은 React가 이미지를 `multipart/form-data`의 `image` 필드로 보내고, Django가 이미지 검증 → YOLO 추론 → 클래스/상세정보 매핑 → 세션 저장 순서로 처리합니다. 성공 응답과 세션 상세 응답은 `session_id`, `pest_name`, `confidence`, 상세정보와 이미지 URL을 같은 구조로 전달하며, 목록 응답은 그중 요약 필드만 제공합니다.
-
-- 백엔드는 원시 YOLO confidence `0~1`에 `0.60` 임계값을 적용한 뒤, 통과한 최상위 탐지값을 `0~100`으로 변환해 API와 DB에 저장합니다.
-- 화면의 `탐지 신뢰도`는 이 값을 소수점 둘째 자리와 `%`로 표시합니다. 모델 정확도나 질병 확진 확률을 뜻하지 않습니다.
-- 임계값 미만 또는 박스 없음은 정상 작물 판정이 아니라 **미탐지**이며 HTTP 400으로 처리하고 세션을 만들지 않습니다.
-- Checkpoint·Runtime·Class Mapping을 사용할 수 없으면 HTTP 503, 성공 응답의 필수 필드나 Confidence가 계약과 다르면 프론트엔드에서 잘못된 응답으로 차단합니다.
-- 잘못된 세션 ID는 404로 처리하고, 세션 저장 실패·삭제 시 진단 이미지 정리를 시도해 DB와 파일 저장소의 불일치를 줄입니다.
-- `/api/capabilities/`의 진단 상태는 Checkpoint 파일 존재 여부만 확인하며 실제 추론 가능 여부 전체를 보장하지 않습니다.
-
-병해충 진단의 모델 계약과 검증 범위는 [모델 기술문서](./docs/DETECTION_MODEL.md)에 정리했습니다.
-
-## 검증 결과
-
-아래는 로컬 테스트와 CI 검증 결과입니다.
-
-| 검증 항목 | 결과 |
-| --- | ---: |
-| 프론트엔드 Test Suites | **32 / 32 passed** |
-| 프론트엔드 Tests | **183 / 183 passed** |
-| 백엔드 Tests | **138 / 138 passed** |
-| 프론트엔드 ESLint | **passed** |
-| 프론트엔드 Production Build | **passed** |
-| Ruff lint·format | **passed** |
-| Django System Check | **0 issues** |
-| GitHub Actions CI | **passed** |
-| 프론트엔드 운영 의존성 감사 | critical 0 · high 63 · moderate 35 · low 3 (CRA 도구 체인 잔존) |
-
-CI는 Node.js 22.20.0과 Python 3.11.9에서 프론트엔드와 백엔드를 독립적으로 검증합니다. SQLite와 테스트 전용 설정을 사용하므로 외부 Credential, AI Dependency와 Model Artifact 없이 실행할 수 있습니다.
-
-실제 외부 Provider 호출, YOLO 추론, RAG 질의, Production 인프라 통합은 각각 Credential·Artifact·운영 환경이 필요하므로 CI 결과에 포함하지 않습니다.
-
-## 로컬 실행
+## 실행 방법
 
 ### 백엔드
 
@@ -185,31 +101,26 @@ npm start
 REACT_APP_API_BASE_URL=http://localhost:8000
 ```
 
-`frontend/.env.example`의 `REACT_APP_API_BASE_URL`은 Create React App 빌드에 포함되는 공개 주소입니다. `VITE_*` 변수는 이 프로젝트에서 사용하지 않습니다. `backend/.env.example`의 `DJANGO_SECRET_KEY`, `DATABASE_PASSWORD`, `OPENAI_API_KEY`, `KAKAO_REST_API_KEY`, 공공데이터 API 키, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` 등은 서버 전용 비밀값이므로 프론트엔드 변수에 넣지 않습니다. 두 예시 파일의 비밀값 항목은 비어 있으며, 실제 `.env`는 Git에서 제외합니다.
+환경변수·데이터베이스·외부 API·AI 모델 설정은 [Local Setup Guide](docs/SETUP.md)를 참고해 주세요.
 
-환경변수, 운영 Database·Storage, AI Artifact, 외부 API 설정은 [Local Setup Guide](./docs/SETUP.md)를 참고해 주세요.
+## 테스트 및 검증
 
-## 검증 명령
+아래는 로컬 테스트와 CI 검증 결과입니다.
 
-```bash
-# 프론트엔드
-cd frontend
-npm ci
-npm run lint
-npm test -- --runInBand
-npm run build
+| 검증 항목 | 결과 |
+| --- | ---: |
+| 프론트엔드 Test Suites | **32 / 32 passed** |
+| 프론트엔드 Tests | **183 / 183 passed** |
+| 백엔드 Tests | **138 / 138 passed** |
+| 프론트엔드 ESLint | **passed** |
+| 프론트엔드 Production Build | **passed** |
+| Ruff lint·format | **passed** |
+| Django System Check | **0 issues** |
+| GitHub Actions CI | **passed** |
 
-# 백엔드
-cd backend
-python -m pip install -r requirements-dev.txt
-ruff check .
-ruff format --check .
-python manage.py check
-python manage.py test
-python -m pip check
-```
+테스트와 CI는 외부 AI 모델·유료 API를 호출하지 않는 구성으로 수행했습니다. 실제 외부 서비스 연동은 별도 환경 설정이 필요합니다.
 
-## 문서
+## 관련 문서
 
 | 문서 | 내용 |
 | --- | --- |
@@ -217,7 +128,4 @@ python -m pip check
 | [병해충 진단 모델 문서](./docs/DETECTION_MODEL.md) | 확인된 YOLO 계약 · AI Hub 출처 · 클래스 매핑 한계와 후속 작업 |
 | [상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) | 요구사항 · 설계 · 핵심 구현 · 문제 해결 · 개인 기여 |
 
-## 현재 운영 상태
-
-이 저장소는 Local 실행과 자동화 검증을 위한 공개 코드입니다. 공개 배포가 완료된 상태는 아니며, 외부 서비스와 Production 환경은 별도 검증이 필요합니다.
 
