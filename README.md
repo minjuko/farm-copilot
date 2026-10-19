@@ -75,14 +75,25 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 
 AI 모델과 백엔드 핵심 기능은 팀원과 역할을 분담했습니다. API 계약과 병해충 진단 응답 구조의 상세 내용은 [기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) 및 [모델 문서](docs/DETECTION_MODEL.md)에 정리했습니다.
 
-## 실행 방법
+## 트러블슈팅
+
+### 기능별 API 응답 상태에 따른 화면 처리 일관성
+
+- **문제:** 수익 분석·병해충 진단·토양검정은 요청 방식과 응답 형태가 달라 로딩 중·빈 결과·오류 상황을 화면마다 별도로 처리해야 했습니다.
+- **원인:** 이미지 업로드, 단계별 조회, 분석 결과 요청의 데이터 흐름과 실패 조건이 서로 달랐습니다.
+- **해결:** 기능별 API 모듈을 구분하고 입력 → 요청 → 로딩·오류·빈 결과 → 결과 흐름을 화면에서 일관되게 구성했습니다.
+- **검증:** 프론트엔드 테스트와 CI로 주요 상태 처리를 검증했습니다. 외부 AI 모델 및 유료 API의 실연동 검증과는 구분합니다.
+
+[상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c)
+
+## 시작하기 (Getting Started)
 
 ### 백엔드
 
 ```bash
 cd backend
 python -m venv .venv
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
@@ -103,7 +114,7 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 
 환경변수·데이터베이스·외부 API·AI 모델 설정은 [Local Setup Guide](docs/SETUP.md)를 참고해 주세요.
 
-## 테스트 및 검증
+## 테스트 및 코드 품질
 
 아래는 로컬 테스트와 CI 검증 결과입니다.
 
@@ -120,7 +131,7 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 
 테스트와 CI는 외부 AI 모델·유료 API를 호출하지 않는 구성으로 수행했습니다. 실제 외부 서비스 연동은 별도 환경 설정이 필요합니다.
 
-## 관련 문서
+## 산출물 및 관련 문서
 
 | 문서 | 내용 |
 | --- | --- |
