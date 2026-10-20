@@ -940,17 +940,21 @@ Production Build는 `Compiled successfully`로 완료됐습니다.
 | Runtime versions | Python 3.11.9, Django 5.0.6, PyTorch 2.3.1+cpu, torchvision 0.18.1+cpu, Ultralytics 8.3.169, Pillow 10.3.0 |
 | Node / npm / React | Node v22.20.0, npm 10.9.3, React 18.3.1 |
 | `pip check`, Django check, `migrate --check` | 모두 PASS |
-| Backend 전체 테스트 | **223 PASS**, opt-in 실제 모델 테스트 1건은 기본 실행에서 skip |
+| Backend 전체 테스트 | **227 PASS**, opt-in 실제 모델 테스트 1건은 기본 실행에서 skip |
 | Frontend 전체 테스트 | **32 suites, 185 PASS** |
 | Frontend lint / production build | 모두 PASS |
 | 실제 모델 CPU preflight | Artifact hash·클래스 계약·합성 이미지 추론 PASS |
 | 실제 모델 Django 통합 | **1 PASS**; Django in-memory test DB와 임시 media 폴더 사용 |
+| 실제 브라우저 진단 E2E | **PASS**; 전용 SQLite/Media, Chrome, 로그인·실제 YOLO·이력·권한·오류 흐름 확인 |
+| 모바일 / 키보드 | 390×844 viewport에서 수평 overflow 없음; 업로드 버튼 키보드 Enter 작동 |
 | Ruff `detect`, `common` | PASS |
 | 전체 Ruff | 변경과 무관한 `data_preparation` 기존 지적 3건 |
 
 실제 모델 통합 테스트는 저장소의 출처 참고 이미지로 로그인 업로드, 결과 저장, 이력 목록·상세 조회, 타 사용자 상세 접근 차단, capabilities의 모델 미준비/복구를 확인합니다. 이 테스트는 정확도 평가가 아닙니다. 실행법은 [AI detection operations](./AI_DETECTION_OPERATIONS.md#실제-모델-격리-통합-테스트)에 있습니다.
 
 Fresh Clone도 별도 scratch 경로에 생성해 manifest와 lockfile이 존재하고 `backend/best.pt`, `.env`, `frontend/node_modules`가 clone에 포함되지 않는 것을 확인했습니다. 별도 clone에서 의존성을 다시 설치하거나 서버를 띄우지는 않았으므로 Fresh Clone 전체 환경 설치 성공으로 해석하지 않습니다.
+
+20차에는 별도 Chrome 탭에서 React와 Django를 연결해 실제 브라우저 흐름을 확인했습니다. 격리 설정과 실행 절차는 [AI detection operations](./AI_DETECTION_OPERATIONS.md#격리된-실제-브라우저-e2e)을 참고하세요. 검증 결과는 모델 정확도 또는 일반화 성능 평가가 아닙니다.
 
 ---
 

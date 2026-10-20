@@ -60,3 +60,53 @@ RUN_LIVE_DETECTION_INTEGRATION=1 ./.venv/bin/python manage.py test detect.tests.
 ```
 
 이 opt-in 테스트는 capabilities에서 artifact를 사용할 수 있는 상태, 테스트 전용 경로로 모델을 바꿨을 때의 `model_missing`, 정상 경로 복구, 로그인 업로드, DB 저장, 이력 목록·상세 조회 및 다른 사용자의 상세 접근 차단을 검사한다. Django test runner의 test database에만 catalog seed를 실행한다. 실제 Checkpoint를 변경하지 않고, 출처 참고 이미지 한 건의 결과를 모델 성능 점수로 해석하지 않는다. 실행하지 않은 환경에서 이 항목은 `NOT RUN`이며 기본 전체 테스트에서는 skip된다.
+
+## 격리된 실제 브라우저 E2E
+
+`config.e2e_settings`는 별도 환경변수와 고유한 임시 디렉터리가 없으면 시작을 거부한다. Repository 외부에 이번 실행 전용 root를 만들고, 개발 DB 경로와 Media 경로가 겹치지 않게 구성한다. 기존 Media나 DB를 비우거나 이동하지 않는다.
+
+PowerShell에서 임시 root와 marker를 한 번 만든다.
+
+```powershell
+$e2eRoot = Join-Path $env:TEMP ("farm-copilot-e2e-" + [guid]::NewGuid().ToString("N"))
+[System.IO.Directory]::CreateDirectory($e2eRoot) | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $e2eRoot "db"), (Join-Path $e2eRoot "media") | Out-Null
+[System.IO.File]::WriteAllText((Join-Path $e2eRoot ".farm-copilot-e2e-root"), "isolated-local-e2e`n", [System.Text.UTF8Encoding]::new($false))
+$env:FARM_COPILOT_E2E_MODE = "1"
+$env:FARM_COPILOT_E2E_ROOT = $e2eRoot
+$env:DJANGO_SETTINGS_MODULE = "config.e2e_settings"
+$env:DJANGO_ALLOWED_HOSTS = "127.0.0.1,localhost"
+```
+
+`backend` 디렉터리에서 먼저 검사·마이그레이션·seed·artifact preflight를 실행한 다음에만 서버를 시작한다.
+
+```powershell
+.\.venv\Scripts\python.exe manage.py test common.tests.test_e2e_settings_guard --settings=config.settings
+.\.venv\Scripts\python.exe manage.py check --settings=config.e2e_settings
+.\.venv\Scripts\python.exe manage.py migrate --noinput --settings=config.e2e_settings
+.\.venv\Scripts\python.exe manage.py seed_detection_catalog --settings=config.e2e_settings
+.\.venv\Scripts\python.exe manage.py check_detection_model --settings=config.e2e_settings
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --settings=config.e2e_settings --noreload
+```
+
+진단 이력의 소유권 차단까지 확인하려면 이 서버를 시작하기 전에 테스트 사용자 두 명을 각각 대화형으로 생성한다. 비밀번호는 프롬프트에서만 입력하고 문서나 로그에 기록하지 않는다.
+
+```powershell
+.\.venv\Scripts\python.exe manage.py createsuperuser --settings=config.e2e_settings
+.\.venv\Scripts\python.exe manage.py createsuperuser --settings=config.e2e_settings
+```
+
+Backend 서버를 실행한 채 별도 PowerShell에서 Frontend를 실행한다.
+
+```powershell
+cd ..\frontend
+$env:HOST = "127.0.0.1"
+$env:PORT = "3000"
+$env:BROWSER = "none"
+$env:REACT_APP_API_BASE_URL = "http://127.0.0.1:8000"
+npm.cmd start
+```
+
+설정 검사 전에 각 명령을 별도로 실행한다. `config.e2e_settings`는 Root가 시스템 임시 디렉터리 바로 아래의 새 고유 경로인지, marker가 유효한지, Root 안에 marker와 비어 있는 실제 `db`/`media` 디렉터리만 있는지 검사한다. 기존 Root를 재사용하지 않는다. 검사가 실패하면 원인을 고친 뒤 새 Root로 다시 시작한다. test account와 uploads는 임시 DB/Media에만 만든다. 종료 후 이번 실행에서 만든 서버 프로세스가 멈췄는지 확인하고, 다른 자료가 섞이지 않은 해당 고유 E2E root만 정리한다.
+
+2026-10-20 검증은 저장소에 재실행 가능한 브라우저 테스트 코드가 남아 있지 않은 **도구를 이용한 일회성 Chrome 브라우저 검증(B)** 이다. Chrome에서 로그인, 실제 YOLO 업로드·추론, 결과와 이력 목록/상세, 로그아웃, 타 사용자 접근 차단, 미지원 파일·무탐지·네트워크/모델 미준비 안내를 확인했다. Chrome 모바일 viewport도 확인했으며 실제 모바일 기기나 다른 브라우저는 검증하지 않았다. 검증 결과는 정확도 평가가 아니다.
