@@ -1,0 +1,4 @@
+# Private AI Hub source data and generated reports must stay outside Git.
+data/
+reports/
+local/
