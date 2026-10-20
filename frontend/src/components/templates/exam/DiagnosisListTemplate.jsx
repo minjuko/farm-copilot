@@ -15,6 +15,7 @@ import {
   normalizeDetectionHistory,
   normalizeMediaUrl,
 } from "./detectFlow";
+import DetectionCaution from "./DetectionCaution";
 
 const Content = styled.div`
   display: flex;
@@ -144,9 +145,11 @@ const AddButtonText = styled.span`
   font-weight: 600;
 `;
 
-const getDiagnosisHistoryError = () => (
-  "진단 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
-);
+const getDiagnosisHistoryError = (error) => {
+  if (error?.response?.status === 401) return "로그인이 필요합니다. 로그인한 뒤 다시 확인해 주세요.";
+  if (error?.response?.status === 403) return "진단 이력을 조회할 권한이 없습니다.";
+  return "진단 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+};
 
 const DiagnosisListTemplate = () => {
   const { setIsLoading } = useLoading();
@@ -190,7 +193,11 @@ const DiagnosisListTemplate = () => {
       setSessions((current) => current.filter(session => session.session_id !== sessionIdToDelete));
       setIsModalOpen(false);
     } catch (error) {
-      setActionError("세션 삭제에 실패했습니다. 다시 시도해주세요.");
+      setActionError(error?.response?.status === 403
+        ? "이 진단 이력을 삭제할 권한이 없습니다."
+        : error?.response?.status === 401
+          ? "로그인이 필요합니다. 로그인한 뒤 다시 시도해 주세요."
+          : "세션 삭제에 실패했습니다. 다시 시도해주세요.");
     } finally {
       setIsLoading(false);
       setIsDeleting(false);
@@ -223,6 +230,7 @@ const DiagnosisListTemplate = () => {
       </AddButtonContainer>
 
       <Content>
+        <DetectionCaution />
         {(loadError || actionError) ? (
           <EmptyState $error={Boolean(loadError || actionError)} role="alert">{loadError || actionError}</EmptyState>
         ) : sessions.length === 0 ? (
@@ -254,7 +262,7 @@ const DiagnosisListTemplate = () => {
                   <SessionInfo>
                     <div><strong>질병명:</strong> {session.pest_name && session.pest_name !== "0" ? session.pest_name : "정보 없음"}</div>
                     <div><strong>진단 날짜:</strong> {session.detection_date || "정보 없음"}</div>
-                    <div><strong>탐지 신뢰도:</strong> {formatDetectionConfidencePercent(session.confidence)}</div>
+                    <div><strong>모델 예측 점수:</strong> {formatDetectionConfidencePercent(session.confidence)}</div>
                   </SessionInfo>
                   <DeleteButton onClick={(e) => {
                     e.stopPropagation();

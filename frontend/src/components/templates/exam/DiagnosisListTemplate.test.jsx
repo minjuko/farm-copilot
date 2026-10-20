@@ -49,6 +49,8 @@ test("renders a valid history item with the shared confidence format", async () 
   render(<DiagnosisListTemplate />);
 
   expect(await screen.findByText("91.25%")).toBeInTheDocument();
+  expect(screen.getByText("모델 예측 점수:")).toBeInTheDocument();
+  expect(screen.getByText(/AI 예측 결과는 참고용입니다/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /고추 탄저병 진단 결과 보기/ }));
   expect(mockNavigate).toHaveBeenCalledWith("/info/42");
 });
@@ -61,6 +63,13 @@ test("rejects a malformed history payload", async () => {
 
   expect(await screen.findByRole("alert")).toHaveTextContent("진단 내역을 불러오지 못했습니다");
   expect(screen.queryByText("고추 탄저병")).not.toBeInTheDocument();
+});
+
+test("shows a clear authorization message when history is forbidden", async () => {
+  fetchDetectionSessions.mockRejectedValue({ response: { status: 403 } });
+  render(<DiagnosisListTemplate />);
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("진단 이력을 조회할 권한이 없습니다");
 });
 
 test("removes a session from the list after a successful delete", async () => {

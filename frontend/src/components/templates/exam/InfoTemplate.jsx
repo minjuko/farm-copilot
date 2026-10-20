@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { fetchSessionDetails } from "../../../apis/predict";
 import { formatDetectionConfidencePercent, normalizeDetectionResult } from "./detectFlow";
+import DetectionCaution from "./DetectionCaution";
 
 const PageContainer = styled.div`
   display: flex;
@@ -314,9 +315,14 @@ const InfoTemplate = () => {
       } catch (error) {
         if (!isActive) return;
         setDiagnosisResult(null);
-        setLoadError(error?.response?.status === 404
+        const status = error?.response?.status;
+        setLoadError(status === 404
           ? "진단 결과를 찾을 수 없습니다."
-          : "진단 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+          : status === 401
+            ? "로그인이 필요합니다. 로그인한 뒤 다시 확인해 주세요."
+            : status === 403
+              ? "이 진단 정보에 접근할 권한이 없습니다."
+              : "진단 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
       } finally {
         if (isActive) setIsLoading(false);
       }
@@ -380,12 +386,13 @@ const InfoTemplate = () => {
           <SummaryCard $primary>
             <SummaryMeta>
               <SummaryMetaItem><SummaryMetaLabel>진단일</SummaryMetaLabel><SummaryMetaValue>{detection_date}</SummaryMetaValue></SummaryMetaItem>
-              <SummaryMetaItem><SummaryMetaLabel>탐지 신뢰도</SummaryMetaLabel><SummaryMetaValue>{formatDetectionConfidencePercent(confidence)}</SummaryMetaValue></SummaryMetaItem>
+              <SummaryMetaItem><SummaryMetaLabel>모델 예측 점수</SummaryMetaLabel><SummaryMetaValue>{formatDetectionConfidencePercent(confidence)}</SummaryMetaValue></SummaryMetaItem>
             </SummaryMeta>
             <SummaryLabel $primary>질병명</SummaryLabel>
             <SummaryValue>{pest_name}</SummaryValue>
           </SummaryCard>
         </SummaryGrid>
+        <DetectionCaution />
             <Divider />
             <SectionTitle>{pest_name} 정보</SectionTitle>
             <InfoContainer>

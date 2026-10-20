@@ -62,7 +62,7 @@ const ButtonWrapper = styled.div`
   }
 `;
 
-const UploadButton = styled.div`
+const UploadButton = styled.button`
   display: flex;
   align-items: center;
   background-color: white;
@@ -76,6 +76,7 @@ const UploadButton = styled.div`
   margin: 0 0.25rem;
 
   transition: background-color 0.3s, border-color 0.3s;
+  font: inherit;
 
   &:hover {
     background-color: ${color("primarySoft")};
@@ -87,7 +88,7 @@ const UploadButton = styled.div`
   }
 `;
 
-const CameraButton = styled.div`
+const CameraButton = styled.button`
   display: flex;
   align-items: center;
   background-color: white;
@@ -101,6 +102,7 @@ const CameraButton = styled.div`
   margin: 0 0.25rem;
 
   transition: background-color 0.3s, border-color 0.3s;
+  font: inherit;
 
   &:hover {
     background-color: ${color("primarySoft")};
@@ -260,7 +262,7 @@ const DiagnosisTemplate = () => {
 
   const handleDiagnose = async () => {
     if (!serviceCapability.available) {
-      setModalContent("LIMITED · 진단 모델이 준비된 환경에서만 실행할 수 있습니다.");
+      setModalContent("AI 진단 기능을 현재 사용할 수 없습니다. 잠시 후 다시 확인해 주세요.");
       setIsModalOpen(true);
       return;
     }
@@ -339,19 +341,19 @@ const DiagnosisTemplate = () => {
           </div>
         )}
         <UploadText>병해충 진단을 위한 사진을 업로드해주세요</UploadText>
-        <ExplanationText>
-          &#60;탐지 가능 병해충 목록&#62;<br/>
+        <ExplanationText aria-label="지원 작물과 질병">
+          지원 대상 질병<br/>
           고추: 탄저병, 흰가루병<br/>
           오이: 노균병, 흰가루병<br/>
           토마토: 흰가루병<br/>
-          <small>현재 모델은 6개 출력 인덱스를 5개 고유 병해 정보로 연결합니다.</small>
+          <small>정상 여부나 목록에 없는 작물·질병은 판별을 보장하지 않습니다. 선명한 병징 사진을 사용해 주세요.</small>
         </ExplanationText>
         <ButtonWrapper>
-          <UploadButton onClick={handleOpenFileDialog}>
+          <UploadButton type="button" onClick={handleOpenFileDialog} aria-label="이미지 파일 업로드">
             <FaFile />
             파일 업로드
           </UploadButton>
-          <CameraButton onClick={handleOpenCamera}>
+          <CameraButton type="button" onClick={handleOpenCamera} aria-label="카메라로 이미지 촬영">
             <FaCamera />
             촬영
           </CameraButton>
@@ -359,7 +361,7 @@ const DiagnosisTemplate = () => {
         <UploadContainer {...getRootProps()}>
           <input {...getInputProps()} ref={fileInputRef} onChange={handleFileInputChange} />
           {image ? (
-            <ImagePreview src={image} alt="Uploaded" />
+            <ImagePreview src={image} alt="선택한 진단 이미지 미리보기" />
           ) : (
             <>
               <PlaceholderIcon>
