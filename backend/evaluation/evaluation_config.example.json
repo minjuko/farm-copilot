@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "mode": "image",
+  "split": "validation",
+  "confidence_threshold": 0.6,
+  "prediction_confidence_floor": 0.25,
+  "nms_iou": 0.7,
+  "max_det": 300,
+  "imgsz": 640,
+  "tta": true,
+  "device": "cpu",
+  "seed": 2024,
+  "deterministic": true,
+  "class_semantics": "unresolved",
+  "class_contract": [
+    {"id": 0, "name": "고추 탄저병", "service_label": "PEPPER_ANTHRACNOSE"},
+    {"id": 1, "name": "고추 흰가루병", "service_label": "PEPPER_POWDERY_MILDEW"},
+    {"id": 2, "name": "오이 노균병", "service_label": "CUCUMBER_DOWNY_MILDEW"},
+    {"id": 3, "name": "토마토 흰가루병", "service_label": "TOMATO_POWDERY_MILDEW"},
+    {"id": 4, "name": "오이 노균병", "service_label": "CUCUMBER_DOWNY_MILDEW"},
+    {"id": 5, "name": "오이 흰가루병", "service_label": "CUCUMBER_POWDERY_MILDEW"}
+  ]
+}

@@ -1,0 +1,13 @@
+# Keep private data, configuration and generated reports out of Git.
+*
+!.gitignore
+!*.py
+!README.md
+!PROVENANCE.md
+!DATASET_DESIGN.md
+!VALIDATION.md
+!evaluation_config.example.json
+!dataset_manifest.example.csv
+!tests/
+tests/*
+!tests/*.py
