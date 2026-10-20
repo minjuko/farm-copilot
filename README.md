@@ -17,7 +17,6 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 | 본인 역할 | 프론트엔드 — 공통 UI · 주요 기능 연동 |
 | 성과 | KT AIVLE School 5기 Big Project Collaboration상 |
 | 원본 저장소 | [프론트엔드](https://github.com/kt-bigproject28/kunkunnongsakun) · [백엔드](https://github.com/kt-bigproject28/bigproject28) |
-| 상세 문서 | [농업코파일럿 상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) |
 
 ## 주요 기능 및 화면
 
@@ -55,13 +54,13 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 
 ## 기술 스택
 
-> 아래 기술은 프로젝트 전체 구성 기준입니다. 개인 구현 범위는 **본인 담당 및 기여** 섹션을 따릅니다.
+> 아래 기술은 프로젝트 전체 구성 기준입니다. 개인 역할 요약은 **담당 역할 및 핵심 구현** 섹션에 적었습니다.
 
 | 영역 | 기술 |
 | --- | --- |
 | 프론트엔드 | React 18 · JavaScript · React Router · Axios · styled-components · Chart.js · Create React App |
-| 백엔드 | Python · Django 5 · Django REST Framework |
-| Database·Storage | PostgreSQL · AWS S3 |
+| 백엔드 | Python · Django 5 (현재 API는 Django View와 JsonResponse로 구현) |
+| Database·Storage | SQLite·FilesystemStorage (기본 로컬 설정) · PostgreSQL·AWS S3 (설정 지원, 운영 연결 미검증) |
 | AI·Data | ElasticNet · YOLOv8 · PyTorch · pandas · NumPy · scikit-learn |
 | RAG | LangChain · Chroma · OpenAI |
 | External Data | Kakao 주소 검색 · aT 가격정보 · 기상청 ASOS · 농촌진흥청 토양검정·비료사용처방 V2 |
@@ -71,9 +70,9 @@ KT AIVLE School 5기 Big Project에서 6명이 함께 만든 서비스입니다.
 - **공통 UI·인증:** 주요 내비게이션과 사용자 인증·마이페이지 흐름을 구현했습니다.
 - **서비스 기능 연동:** 수익 분석 입력·결과, 병해충 이미지 업로드·진단 이력, 주소 기반 토양검정·비료 처방을 Django API와 연결했습니다.
 - **커뮤니티·챗봇:** 게시글·댓글·페이지네이션과 챗봇의 대화·이력 화면을 구성했습니다.
-- **API 구조·상태 관리:** 기능별 Axios API 모듈을 구분하고 입력·로딩·오류·빈 결과·재시도 상태를 일관되게 처리했습니다.
+- **API 구조·상태 관리:** Axios API 호출을 모듈로 구성하고 입력·로딩·오류·빈 결과 상태를 화면 흐름에 연결했습니다. 일부 도메인 호출은 같은 모듈에 함께 있습니다.
 
-AI 모델과 백엔드 핵심 기능은 팀원과 역할을 분담했습니다. API 계약과 병해충 진단 응답 구조의 상세 내용은 [기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) 및 [모델 문서](docs/DETECTION_MODEL.md)에 정리했습니다.
+AI 모델과 백엔드 핵심 기능은 팀원과 역할을 분담했습니다. 화면 및 API 흐름은 [아키텍처](docs/ARCHITECTURE.md), 진단 동작은 [AI 진단 운영 문서](docs/AI_DETECTION_OPERATIONS.md)와 [진단 모델 문서](docs/DETECTION_MODEL.md)를 참고하세요.
 
 ## 트러블슈팅
 
@@ -84,35 +83,11 @@ AI 모델과 백엔드 핵심 기능은 팀원과 역할을 분담했습니다. 
 - **해결:** 기능별 API 모듈을 구분하고 입력 → 요청 → 로딩·오류·빈 결과 → 결과 흐름을 화면에서 일관되게 구성했습니다.
 - **검증:** 프론트엔드 테스트와 CI로 주요 상태 처리를 검증했습니다. 외부 AI 모델 및 유료 API의 실연동 검증과는 구분합니다.
 
-[상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c)
+상세 동작은 [아키텍처](docs/ARCHITECTURE.md)와 [AI 진단 운영 문서](docs/AI_DETECTION_OPERATIONS.md)를 참고하세요.
 
 ## 시작하기 (Getting Started)
 
-### 백엔드
-
-```bash
-cd backend
-python -m venv .venv
-python -m pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-```
-
-### 프론트엔드
-
-```bash
-cd frontend
-npm ci
-npm start
-```
-
-기본 백엔드 주소는 `http://127.0.0.1:8000`, 프론트엔드 주소는 `http://localhost:3000`입니다.
-
-```dotenv
-REACT_APP_API_BASE_URL=http://localhost:8000
-```
-
-환경변수·데이터베이스·외부 API·AI 모델 설정은 [Local Setup Guide](docs/SETUP.md)를 참고해 주세요.
+처음 실행할 때는 비밀키, 로컬 SQLite 선택, 의존성, 데이터베이스 설정을 포함한 [Local Setup Guide](docs/SETUP.md)를 따라 주세요. 위 설정을 생략한 짧은 명령만으로는 새 Clone의 백엔드가 준비되지 않습니다.
 
 ## 테스트 및 코드 품질
 
@@ -124,7 +99,7 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 | 프론트엔드 Tests | **185 / 185 passed** |
 | 백엔드 Tests | **227 passed, 1 opt-in test skipped** |
 | 실제 YOLO 통합 테스트 | **1 / 1 passed** (CPU · 격리 테스트 DB) |
-| 실제 브라우저 AI 진단 E2E | **PASS** (격리 SQLite/Media · Chrome · 모바일 390px 확인) |
+| 실제 브라우저 AI 진단 E2E | **PASS** (격리 SQLite/Media · 도구 이용 일회성 Chrome · 390px viewport 확인) |
 | 프론트엔드 ESLint | **passed** |
 | 프론트엔드 Production Build | **passed** |
 | Ruff (`detect`, `common`) | **passed** |
@@ -132,7 +107,7 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 | Backend `pip check` | **passed** |
 | Django System Check | **0 issues** |
 
-기본 backend 테스트는 mock 기반이며 실제 모델 통합 테스트는 별도 opt-in으로 실행했습니다. 브라우저 E2E는 전용 임시 DB/Media에서 로그인부터 실제 YOLO 진단과 이력 확인까지 검증했습니다. 외부 유료 API 호출은 포함되지 않습니다. 실행 범위와 재현 절차는 [AI detection operations](./docs/AI_DETECTION_OPERATIONS.md#격리된-실제-브라우저-e2e)을 참고하세요.
+위 수치는 2026-10-20에 기록된 이전 검증 결과이며 이번 문서 정리에서 재실행한 결과가 아닙니다. 기본 backend 테스트는 mock 기반이고 실제 모델 통합 테스트는 별도 opt-in으로 실행했습니다. Chrome 브라우저 E2E는 전용 임시 DB/Media를 사용한 도구 이용 일회성 검증으로, 반복 실행 자동화 테스트 스위트가 아닙니다. 외부 유료 API 호출은 포함되지 않습니다. 실행 범위와 재현 절차는 [AI detection operations](./docs/AI_DETECTION_OPERATIONS.md#격리된-실제-브라우저-e2e)을 참고하세요.
 
 ## 산출물 및 관련 문서
 
@@ -140,6 +115,7 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 | --- | --- |
 | [Local Setup Guide](./docs/SETUP.md) | Local 실행 · 환경변수 · Database · AI Artifact · 외부 API · Storage |
 | [병해충 진단 모델 문서](./docs/DETECTION_MODEL.md) | 확인된 YOLO 계약 · AI Hub 출처 · 클래스 매핑 한계와 후속 작업 |
-| [상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) | 요구사항 · 설계 · 핵심 구현 · 문제 해결 · 개인 기여 |
+| [아키텍처](./docs/ARCHITECTURE.md) | 현재 코드의 화면·API·인증·AI 데이터 흐름 |
+| [AI 진단 운영](./docs/AI_DETECTION_OPERATIONS.md) | YOLO 설정 · readiness · 검증 절차와 한계 |
 
 
