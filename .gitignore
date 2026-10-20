@@ -74,3 +74,10 @@ New_Sample/
 # 개인 기여 검토 기록 (비공개 보관)
 docs/contribution-audit-2026.md
 .local-notes/
+
+# Internal portfolio and work-session records (keep local; do not publish)
+docs/PROJECT_IMPROVEMENT_REVIEW.md
+docs/PORTFOLIO_EVIDENCE.md
+docs/AI_HUB_525_*
+request/
+response/
