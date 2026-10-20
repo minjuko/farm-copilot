@@ -12,7 +12,7 @@
 
 현재 Repository에는 Node `engines`나 Python `requires-python` 제약이 선언되어 있지 않습니다.
 
-아래 버전은 **2026-09-03에 실제 검증한 환경**이며 최소 지원 버전을 의미하지 않습니다.
+아래 버전은 **2026-10-20에 실제 확인한 환경**이며 최소 지원 버전을 의미하지 않습니다.
 
 | 항목 | 검증 환경 |
 | --- | --- |
@@ -21,6 +21,10 @@
 | Node.js | v22.20.0 |
 | npm | 10.9.3 |
 | React | 18.3.1 |
+| PyTorch | 2.3.1+cpu |
+| torchvision | 0.18.1+cpu |
+| Ultralytics | 8.3.169 |
+| Pillow | 10.3.0 |
 | Local Database | SQLite |
 | Production Database | PostgreSQL (`psycopg2-binary==2.9.9`) |
 
@@ -345,7 +349,7 @@ http://127.0.0.1:8000
 GET http://127.0.0.1:8000/api/capabilities/
 ```
 
-Capability는 기능별 설정 상태를 확인하기 위한 정보입니다. 특히 병해충 진단은 Checkpoint 존재 여부를 기준으로 상태를 보고하므로 **실제 추론 가능 여부 전체를 보장하지 않습니다.**
+Capability는 기능별 사용 가능 상태를 확인하기 위한 정보입니다. 병해충 진단은 artifact·runtime·class 계약·DB mapping·smoke inference까지 확인하지만 **실제 작물 이미지의 진단 정확도나 일반화 성능을 보장하지 않습니다.**
 
 ---
 
@@ -523,7 +527,7 @@ Credential, 호출량, 비용 조건을 확인한 경우에만 필요한 Provide
 python manage.py check_external_services --live kakao soil fertilizer weather market
 ```
 
-> 외부 서비스별 마지막 실제 호출 검증 결과와 검증 시점은 [`reference/API_STATUS.md`](./reference/API_STATUS.md)에 별도로 기록합니다.
+> 외부 API의 실제 Provider 호출은 이번 통합 검증에서 수행하지 않았습니다. Provider 계약과 credential은 공급자 공식 문서에서 별도로 확인해야 합니다.
 
 ---
 
@@ -642,13 +646,13 @@ CUDA 미사용
 
 따라서 **GPU는 필수가 아닙니다.**
 
-다만 이번 최종 Audit에서는 실제 이미지를 사용한 YOLO 추론을 다시 실행하지 않았습니다.
+2026-10-20에는 실제 Checkpoint와 출처 참고 이미지를 사용한 격리 Django 통합 테스트를 추가 실행했습니다. 이 테스트는 서비스 연결과 데이터 흐름을 확인하며 모델 정확도를 평가하지 않습니다.
 
 팀 프로젝트에서 사용한 데이터셋은 **AI Hub 「시설 작물 질병 진단 이미지」**입니다. 공개 저장소에는 원본 학습 데이터, Checkpoint와 완전한 학습환경이 포함되지 않아 데이터 전처리·학습 설정·성능 지표는 이 문서에서 단정하지 않습니다.
 
 병해충 진단에는 별도의 Feature Flag가 없습니다.
 
-`/api/capabilities/`는 Checkpoint 파일 존재 여부를 중심으로 상태를 판단하며 실제 요청에는 다음 조건이 모두 필요합니다.
+현재 `/api/capabilities/`의 detection 상태는 Checkpoint 무결성, AI runtime import, 모델 로딩 및 class contract, CPU smoke inference, DB의 여섯 class mapping과 필수 상세 필드를 함께 확인합니다.
 
 - AI Dependency
 - YOLO Checkpoint
@@ -657,7 +661,7 @@ CUDA 미사용
 
 ### 자동화 검증과 후속 작업
 
-Checkpoint 없이도 mock 결과를 사용해 0.60 경계, 0~100 변환, 잘못된 모델 출력 차단, 미탐지 400, 모델 미탑재 503, 클래스 매핑, 성공·상세·이력 응답 정규화를 검증합니다. 실제 모델 재현은 다음 후속 작업으로 분리합니다.
+기본 자동화 테스트는 mock 결과를 사용해 0.60 경계, 0~100 변환, 잘못된 모델 출력 차단, 미탐지 400, 모델 미탑재 503, 클래스 매핑, 성공·상세·이력 응답 정규화를 검증합니다. 실제 Checkpoint로 업로드·이력 API를 확인하는 opt-in 격리 통합 테스트는 [AI detection operations](./AI_DETECTION_OPERATIONS.md#실제-모델-격리-통합-테스트)에 안내되어 있습니다.
 
 1. 학습 데이터 취득 조건과 전처리 코드 복원
 2. 학습 환경·하이퍼파라미터·Checkpoint provenance 정리
@@ -883,6 +887,8 @@ Backend Test DB에서는 전체 Migration 적용 후 **138개 Test가 정상 통
 
 ## 9.2 Frontend
 
+아래 수치는 2026-09-03 당시 검증 결과이며 현재 결과는 9.4절에 기록합니다.
+
 `frontend` 디렉터리에서 실행합니다.
 
 ```bash
@@ -908,9 +914,9 @@ Production Build는 `Compiled successfully`로 완료됐습니다.
 
 ---
 
-## 9.3 이번 최종 Audit에서 실행하지 않은 검증
+## 9.3 2026-09-03 Audit에서 실행하지 않은 검증 (당시 기록)
 
-다음 작업은 Credential, 비용, 외부 서비스 상태 또는 기존 환경 변경 방지를 위해 이번 Audit에서 다시 실행하지 않았습니다.
+다음은 2026-09-03 Audit 당시 실행하지 않은 항목입니다. 이후 실행 여부는 9.4절 기록을 기준으로 합니다.
 
 - Dependency 재설치 검증 (`pip install`, `npm ci`)
 - 기존 Local SQLite DB Migration 적용
@@ -925,7 +931,26 @@ Production Build는 `Compiled successfully`로 완료됐습니다.
 - AWS S3 연결 · Upload
 - Production 배포
 
-외부 API의 과거 실제 호출 검증 결과와 검증 시점은 [`reference/API_STATUS.md`](./reference/API_STATUS.md)를 참고합니다.
+외부 API의 실제 Provider 호출은 2026-10-20 통합 검증에서 수행하지 않았습니다. Provider 계약과 credential은 공급자 공식 문서에서 별도로 확인해야 합니다.
+
+## 9.4 2026-10-20 통합 검증 업데이트
+
+| 검증 | 결과 |
+| --- | --- |
+| Runtime versions | Python 3.11.9, Django 5.0.6, PyTorch 2.3.1+cpu, torchvision 0.18.1+cpu, Ultralytics 8.3.169, Pillow 10.3.0 |
+| Node / npm / React | Node v22.20.0, npm 10.9.3, React 18.3.1 |
+| `pip check`, Django check, `migrate --check` | 모두 PASS |
+| Backend 전체 테스트 | **223 PASS**, opt-in 실제 모델 테스트 1건은 기본 실행에서 skip |
+| Frontend 전체 테스트 | **32 suites, 185 PASS** |
+| Frontend lint / production build | 모두 PASS |
+| 실제 모델 CPU preflight | Artifact hash·클래스 계약·합성 이미지 추론 PASS |
+| 실제 모델 Django 통합 | **1 PASS**; Django in-memory test DB와 임시 media 폴더 사용 |
+| Ruff `detect`, `common` | PASS |
+| 전체 Ruff | 변경과 무관한 `data_preparation` 기존 지적 3건 |
+
+실제 모델 통합 테스트는 저장소의 출처 참고 이미지로 로그인 업로드, 결과 저장, 이력 목록·상세 조회, 타 사용자 상세 접근 차단, capabilities의 모델 미준비/복구를 확인합니다. 이 테스트는 정확도 평가가 아닙니다. 실행법은 [AI detection operations](./AI_DETECTION_OPERATIONS.md#실제-모델-격리-통합-테스트)에 있습니다.
+
+Fresh Clone도 별도 scratch 경로에 생성해 manifest와 lockfile이 존재하고 `backend/best.pt`, `.env`, `frontend/node_modules`가 clone에 포함되지 않는 것을 확인했습니다. 별도 clone에서 의존성을 다시 설치하거나 서버를 띄우지는 않았으므로 Fresh Clone 전체 환경 설치 성공으로 해석하지 않습니다.
 
 ---
 

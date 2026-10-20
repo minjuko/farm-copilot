@@ -41,3 +41,22 @@ Class ID 0..5는 모두 유지한다. ID 2와 4는 서로 다른 모델 출력 I
 모델 해시·로드·smoke 검사는 프로세스에서 파일의 절대 경로, 크기, 수정 시각 조합별 한 번 실행하고 그 결과를 메모리에 캐시한다. 다른 fingerprint가 관찰되면 다음 검사에서 다시 확인한다. 카탈로그는 매 capabilities 조회마다 읽으므로 seed 또는 DB 복구가 다음 요청에 반영된다. 같은 크기와 수정 시각을 유지한 채 파일 내용을 교체하는 특수한 경우는 실행 중 자동 탐지하지 못할 수 있으므로 artifact 교체 후에는 앱 프로세스를 재시작하고 preflight를 수행한다.
 
 장애 확인 순서: `YOLO_MODEL_PATH`와 파일 배치 확인 → `check_detection_model` 실행 → `seed_detection_catalog`은 먼저 분리된 DB에서 충돌 여부 확인 → DB 연결 및 상세 행 확인 → 서비스 프로세스 재시작 후 capabilities 재조회. CI와 운영 DB에는 자동 seed를 연결하지 않는다.
+
+## 실제 모델 격리 통합 테스트
+
+기본 backend 테스트는 YOLO를 mock 처리해 모델이 없는 CI에서도 실행할 수 있다. 승인 artifact가 `backend/best.pt`에 있고 AI runtime이 설치된 개발 환경에서는 실제 이미지 업로드와 사용자별 이력 API 흐름을 별도의 Django test database로 확인할 수 있다. 테스트 결과 이미지는 OS 임시 디렉터리에 저장하고 테스트 종료 시 제거한다.
+
+Windows PowerShell (`backend` 디렉터리):
+
+```powershell
+$env:RUN_LIVE_DETECTION_INTEGRATION = '1'
+.\.venv\Scripts\python.exe manage.py test detect.tests.test_live_model_integration
+```
+
+POSIX (`backend` 디렉터리):
+
+```bash
+RUN_LIVE_DETECTION_INTEGRATION=1 ./.venv/bin/python manage.py test detect.tests.test_live_model_integration
+```
+
+이 opt-in 테스트는 capabilities에서 artifact를 사용할 수 있는 상태, 테스트 전용 경로로 모델을 바꿨을 때의 `model_missing`, 정상 경로 복구, 로그인 업로드, DB 저장, 이력 목록·상세 조회 및 다른 사용자의 상세 접근 차단을 검사한다. Django test runner의 test database에만 catalog seed를 실행한다. 실제 Checkpoint를 변경하지 않고, 출처 참고 이미지 한 건의 결과를 모델 성능 점수로 해석하지 않는다. 실행하지 않은 환경에서 이 항목은 `NOT RUN`이며 기본 전체 테스트에서는 skip된다.

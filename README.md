@@ -116,20 +116,22 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 
 ## 테스트 및 코드 품질
 
-아래는 로컬 테스트와 CI 검증 결과입니다.
+아래는 2026-10-20 로컬 검증 결과입니다. CI 상태는 문서 상단의 GitHub Actions 배지를 확인해 주세요.
 
 | 검증 항목 | 결과 |
 | --- | ---: |
 | 프론트엔드 Test Suites | **32 / 32 passed** |
-| 프론트엔드 Tests | **183 / 183 passed** |
-| 백엔드 Tests | **138 / 138 passed** |
+| 프론트엔드 Tests | **185 / 185 passed** |
+| 백엔드 Tests | **223 passed, 1 opt-in test skipped** |
+| 실제 YOLO 통합 테스트 | **1 / 1 passed** (CPU · 격리 테스트 DB) |
 | 프론트엔드 ESLint | **passed** |
 | 프론트엔드 Production Build | **passed** |
-| Ruff lint·format | **passed** |
+| Ruff (`detect`, `common`) | **passed** |
+| 전체 Ruff | `data_preparation`의 기존 지적 3건 확인 |
+| Backend `pip check` | **passed** |
 | Django System Check | **0 issues** |
-| GitHub Actions CI | **passed** |
 
-테스트와 CI는 외부 AI 모델·유료 API를 호출하지 않는 구성으로 수행했습니다. 실제 외부 서비스 연동은 별도 환경 설정이 필요합니다.
+기본 backend 테스트는 mock 기반이며 실제 모델 통합 테스트는 별도 opt-in으로 실행했습니다. 브라우저 E2E와 외부 유료 API 호출은 이 검증에 포함되지 않습니다. 실제 외부 서비스 연동은 별도 환경 설정이 필요합니다.
 
 ## 산출물 및 관련 문서
 
