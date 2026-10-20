@@ -122,8 +122,9 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 | --- | ---: |
 | 프론트엔드 Test Suites | **32 / 32 passed** |
 | 프론트엔드 Tests | **185 / 185 passed** |
-| 백엔드 Tests | **223 passed, 1 opt-in test skipped** |
+| 백엔드 Tests | **227 passed, 1 opt-in test skipped** |
 | 실제 YOLO 통합 테스트 | **1 / 1 passed** (CPU · 격리 테스트 DB) |
+| 실제 브라우저 AI 진단 E2E | **PASS** (격리 SQLite/Media · Chrome · 모바일 390px 확인) |
 | 프론트엔드 ESLint | **passed** |
 | 프론트엔드 Production Build | **passed** |
 | Ruff (`detect`, `common`) | **passed** |
@@ -131,7 +132,7 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 | Backend `pip check` | **passed** |
 | Django System Check | **0 issues** |
 
-기본 backend 테스트는 mock 기반이며 실제 모델 통합 테스트는 별도 opt-in으로 실행했습니다. 브라우저 E2E와 외부 유료 API 호출은 이 검증에 포함되지 않습니다. 실제 외부 서비스 연동은 별도 환경 설정이 필요합니다.
+기본 backend 테스트는 mock 기반이며 실제 모델 통합 테스트는 별도 opt-in으로 실행했습니다. 브라우저 E2E는 전용 임시 DB/Media에서 로그인부터 실제 YOLO 진단과 이력 확인까지 검증했습니다. 외부 유료 API 호출은 포함되지 않습니다. 실행 범위와 재현 절차는 [AI detection operations](./docs/AI_DETECTION_OPERATIONS.md#격리된-실제-브라우저-e2e)을 참고하세요.
 
 ## 산출물 및 관련 문서
 
