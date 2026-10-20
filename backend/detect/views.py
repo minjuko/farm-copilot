@@ -23,6 +23,7 @@ from common.exceptions import (
     ValidationError,
 )
 
+from .artifact import EXPECTED_CLASSES
 from .models import Pest, PestDetection, PestModelClass
 
 logger = logging.getLogger(__name__)
@@ -33,14 +34,7 @@ REFERENCE_IMAGE_LICENSE = '공공누리 제2유형: 출처표시 + 상업적 이
 MAPPING_UNAVAILABLE_MESSAGE = '병해 탐지 모델의 상세정보 매핑이 준비되지 않았습니다.'
 MODEL_CONTRACT_MISMATCH_MESSAGE = '병해 탐지 모델의 클래스 계약이 일치하지 않습니다.'
 MODEL_OUTPUT_INVALID_MESSAGE = '병해 탐지 모델이 유효하지 않은 결과를 반환했습니다.'
-EXPECTED_MODEL_CLASS_NAMES = {
-    0: '고추 탄저병',
-    1: '고추 흰가루병',
-    2: '오이 노균병',
-    3: '토마토 흰가루병',
-    4: '오이 노균병',
-    5: '오이 흰가루병',
-}
+EXPECTED_MODEL_CLASS_NAMES = EXPECTED_CLASSES
 MODEL_PATH = DEFAULT_MODEL_PATH
 _yolo_model = None
 

@@ -1,0 +1,24 @@
+{
+  "artifact_name": "Farm Copilot YOLO detection checkpoint",
+  "model_type": "Ultralytics YOLOv8l object detection",
+  "filename": "best.pt",
+  "relative_path_default": "backend/best.pt",
+  "size_bytes": 87631411,
+  "sha256": "b4e90d9feef9c9e35923c4e5fbf386d6e37ae6b2a3df687edfb14173bd7c10f4",
+  "task": "detect",
+  "class_count": 6,
+  "classes": {
+    "0": "고추 탄저병",
+    "1": "고추 흰가루병",
+    "2": "오이 노균병",
+    "3": "토마토 흰가루병",
+    "4": "오이 노균병",
+    "5": "오이 흰가루병"
+  },
+  "verified_runtime": {
+    "ultralytics": "8.3.169",
+    "pytorch": "2.3.1+cpu",
+    "torchvision": "0.18.1+cpu"
+  },
+  "distribution": "Store the approved artifact outside Git and copy it to backend/best.pt, or set YOLO_MODEL_PATH to its deployment path."
+}
