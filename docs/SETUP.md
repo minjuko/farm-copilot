@@ -290,30 +290,9 @@ Repository에는 PostgreSQL Database 생성 Script가 없으므로 특정 생성
 
 ---
 
-## 3.4 Fixture
+## 3.4 진단 Catalog
 
-일반 Local 실행에 필수인 Fixture는 없습니다.
-
-AI 병해충 진단을 사용할 때만 Migration 이후 다음 Fixture를 Load합니다.
-
-### Windows PowerShell
-
-```powershell
-.\.venv\Scripts\python.exe manage.py loaddata detect/fixtures/model_classes.json
-```
-
-### POSIX
-
-```bash
-./.venv/bin/python manage.py loaddata detect/fixtures/model_classes.json
-```
-
-이 Fixture에는:
-
-- 병해 상세 5건
-- YOLO Class ID 0~5 Mapping 6건
-
-이 포함되어 있습니다.
+일반 Local 실행에 필수인 Fixture는 없습니다. 병해충 진단 Catalog를 준비할 때는 Fixture를 직접 적재하지 말고, 충돌을 검사하며 누락된 표준 항목만 만드는 `seed_detection_catalog` 관리 명령을 사용합니다. 상세 절차는 [AI 진단 운영 문서](./AI_DETECTION_OPERATIONS.md#데이터베이스-카탈로그-준비)를 참고하세요.
 
 Admin을 사용하지 않는다면 Superuser는 필요하지 않습니다. 일반 사용자는 Frontend 회원가입을 통해 생성할 수 있습니다.
 
@@ -576,47 +555,9 @@ YOLO_AUGMENTED_INFERENCE=true
 
 `*.pt` 파일은 `.gitignore` 대상이므로 공개 Clone에는 Model이 포함되지 않습니다.
 
-### 진단 API 계약
+### 계약·Mapping·검증 안내
 
-`POST /detect/upload/`은 인증과 CSRF Token이 필요하며 `multipart/form-data`의 `image` 필드로 JPEG, PNG 또는 WebP 파일을 받습니다.
-
-| 결과 | HTTP | 처리 |
-| --- | ---: | --- |
-| 유효 탐지 | 200 | 진단 세션을 저장하고 상세 payload 반환 |
-| 박스 없음·0.60 미만 | 400 | `No pest was detected...`, 세션 미생성 |
-| 잘못된 이미지 | 400 | 이미지 형식 검증 오류 |
-| Checkpoint·Runtime·Model Contract·Class Mapping 사용 불가 | 503 | 제어된 서비스 오류 |
-
-성공 payload의 핵심 필드는 `session_id`, `pest_name`, `confidence`, `detection_date`, `user_image_url`, `db_image_url`이며 병해 상세정보와 출처가 함께 반환됩니다. `GET /detect/detection_session_details/<session_id>/`도 같은 상세 구조를 반환하고, 목록 API는 `session_id`, `pest_name`, `detection_date`, `confidence`, `user_image_url` 요약을 반환합니다.
-
-YOLO box confidence는 Runtime에서 `0~1`입니다. 백엔드는 `0.60` 이상인 박스 중 confidence가 가장 높은 항목을 선택하고 `100`을 곱해 `0~100` 단위로 저장·응답합니다. 프론트엔드는 숫자 또는 숫자 문자열만 받아 범위를 다시 검증하고, 표시할 때만 소수점 둘째 자리와 `%`를 붙입니다. 이 값은 모델 정확도나 질병 확진 확률이 아니라 해당 탐지 결과에 대한 모델의 confidence입니다.
-
-과거 UI의 `pest_name === "0"` 분기는 2024년 미탐지 fallback과 연결된 호환 흔적입니다. 현재 백엔드는 이 값을 성공 응답으로 보내지 않고 미탐지를 400으로 처리하므로, 프론트엔드는 `"0"`을 유효한 진단 결과로 인정하지 않습니다.
-
-상세·삭제 API의 숫자가 아니거나 0 이하인 세션 ID는 내부 ORM 오류로 노출하지 않고 404로 처리합니다. 세션 저장이 실패하면 생성 중이던 진단 이미지를 정리하고, 세션 삭제가 Commit되면 연결된 이미지도 Best-effort로 삭제합니다. 외부 Storage 삭제 실패는 서버 로그에 남으며 DB 삭제 결과를 되돌리지는 않습니다.
-
----
-
-### Model Class Contract
-
-사용하는 Checkpoint는 다음 Class Metadata와 **정확히 일치해야 합니다.**
-
-| class_id | Model Label | 연결되는 병해 |
-| ---: | --- | --- |
-| 0 | 고추 탄저병 | 고추 탄저병 |
-| 1 | 고추 흰가루병 | 고추 흰가루병 |
-| 2 | 오이 노균병 | 오이 노균병 |
-| 3 | 토마토 흰가루병 | 토마토 흰가루병 |
-| 4 | 오이 노균병 | 오이 노균병 |
-| 5 | 오이 흰가루병 | 오이 흰가루병 |
-
-Runtime은 Model Metadata 전체가 위 Mapping과 일치하지 않으면 추론을 거부합니다.
-
-Database Mapping은 다음 Fixture로 준비합니다.
-
-```bash
-python manage.py loaddata detect/fixtures/model_classes.json
-```
+API 응답, threshold, confidence의 의미, 클래스 매핑, 소유권 검사 및 오류 처리는 [AI 진단 운영 문서](./AI_DETECTION_OPERATIONS.md)를 기준으로 확인합니다. 모델 artifact와 클래스 계약의 상세 목록은 [진단 모델 문서](./DETECTION_MODEL.md)에 있습니다. 이 설정 안내에서는 계약 내용을 중복해서 관리하지 않습니다.
 
 ---
 
@@ -954,7 +895,7 @@ Production Build는 `Compiled successfully`로 완료됐습니다.
 
 Fresh Clone도 별도 scratch 경로에 생성해 manifest와 lockfile이 존재하고 `backend/best.pt`, `.env`, `frontend/node_modules`가 clone에 포함되지 않는 것을 확인했습니다. 별도 clone에서 의존성을 다시 설치하거나 서버를 띄우지는 않았으므로 Fresh Clone 전체 환경 설치 성공으로 해석하지 않습니다.
 
-20차에는 별도 Chrome 탭에서 React와 Django를 연결해 실제 브라우저 흐름을 확인했습니다. 격리 설정과 실행 절차는 [AI detection operations](./AI_DETECTION_OPERATIONS.md#격리된-실제-브라우저-e2e)을 참고하세요. 검증 결과는 모델 정확도 또는 일반화 성능 평가가 아닙니다.
+2026-10-20에는 별도 Chrome 탭에서 React와 Django를 연결해 도구 이용 일회성 브라우저 흐름을 확인했습니다. 반복 실행 자동화 스위트는 아니며, 격리 설정과 재현 절차는 [AI detection operations](./AI_DETECTION_OPERATIONS.md#격리된-실제-브라우저-e2e)을 참고하세요. 검증 결과는 모델 정확도 또는 일반화 성능 평가가 아닙니다.
 
 ---
 
@@ -970,7 +911,7 @@ Production 환경에서는 코드 기준으로 다음 설정을 검토해야 합
 - Production Origin에 맞는 CORS · CSRF 설정
 - Production용 Cookie 보안 설정
 
-상세 배포 Checklist는 [`reference/backend/DEPLOYMENT.md`](./reference/backend/DEPLOYMENT.md)를 참고할 수 있습니다.
+운영 배포 전에는 이 문서의 Production 설정 항목과 `check_deployment_config` 명령을 확인하세요. 저장소에 별도 `DEPLOYMENT.md`는 없습니다.
 
 > **현재 코드 기준 WSGI Module은 `config.wsgi:application`입니다.**
 >
