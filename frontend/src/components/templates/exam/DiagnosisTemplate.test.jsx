@@ -47,6 +47,9 @@ test("navigates only after a valid detected response", async () => {
     data: { session_id: 42, pest_name: "탄저병", confidence: 91.25 },
   });
   render(<DiagnosisTemplate />);
+  expect(screen.getByText(/고추: 탄저병, 흰가루병/)).toBeInTheDocument();
+  expect(screen.getByText(/정상 여부나 목록에 없는 작물·질병은 판별을 보장하지 않습니다/)).toBeInTheDocument();
+  expect(screen.queryByText(/6개 출력 인덱스/)).not.toBeInTheDocument();
   selectValidImage();
 
   const button = await screen.findByRole("button", { name: /진단하기/ });
@@ -60,7 +63,7 @@ test("navigates only after a valid detected response", async () => {
 });
 
 test.each([
-  [400, "No pest was detected in the uploaded image.", "탐지되지 않았습니다"],
+  [400, "No pest was detected in the uploaded image.", "지원 대상 질병을 확인하지 못했습니다"],
   [503, "Image detection model is not available.", "진단 모델"],
 ])("keeps HTTP %s diagnosis failures out of the success route", async (status, message, expected) => {
   uploadImage.mockRejectedValue({ response: { status, data: { message } } });

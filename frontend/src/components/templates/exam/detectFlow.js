@@ -24,9 +24,11 @@ export const getDetectionErrorMessage = (error) => {
   }
   if (outcome.status === "service_unavailable") return "진단 모델을 현재 사용할 수 없습니다. 잠시 후 다시 시도해주세요.";
   if (outcome.status === "no_detection") {
-    return "이미지에서 병해충이 탐지되지 않았습니다.";
+    return "이미지에서 지원 대상 질병을 확인하지 못했습니다. 선명한 잎과 병징이 보이도록 촬영해 다른 이미지로 다시 시도해 주세요. 이 결과만으로 정상 여부를 판단할 수는 없습니다.";
   }
   if (outcome.status === "invalid_request") return "지원되는 이미지 파일을 선택해주세요.";
+  if (outcome.status === "unauthorized") return "로그인이 필요합니다. 로그인한 뒤 다시 시도해 주세요.";
+  if (outcome.status === "forbidden") return "이 진단 정보에 접근할 권한이 없습니다.";
   if (outcome.status === "request_failed") return "서버에 연결할 수 없습니다. 연결을 확인한 뒤 다시 시도해주세요.";
   return "이미지 진단 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 };
@@ -47,6 +49,8 @@ export const classifyDetectionError = (error) => {
       isMappingUnavailable: backendMessage.includes("상세정보 매핑"),
     };
   }
+  if (httpStatus === 401) return { status: "unauthorized" };
+  if (httpStatus === 403) return { status: "forbidden" };
   if (httpStatus === 400) return { status: "invalid_request" };
   if (!error?.response) return { status: "request_failed" };
   return { status: "error" };

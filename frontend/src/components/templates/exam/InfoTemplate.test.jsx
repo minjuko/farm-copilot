@@ -53,6 +53,14 @@ test("shows a not-found state when the URL session no longer exists", async () =
   expect(await screen.findByText("진단 결과를 찾을 수 없습니다.")).toBeInTheDocument();
 });
 
+test("explains when the current user cannot access a history detail", async () => {
+  fetchSessionDetails.mockRejectedValue({ response: { status: 403 } });
+
+  renderDetail();
+
+  expect(await screen.findByText("이 진단 정보에 접근할 권한이 없습니다.")).toBeInTheDocument();
+});
+
 test("keeps the legacy state-only result route compatible", async () => {
   renderDetail("/info", { diagnosisResult: result });
 
@@ -63,6 +71,7 @@ test("keeps the legacy state-only result route compatible", async () => {
 test("renders confidence using the API 0..100 percentage contract", () => {
   renderDetail("/info", { diagnosisResult: result });
 
-  expect(screen.getByText("탐지 신뢰도")).toBeInTheDocument();
+  expect(screen.getByText("모델 예측 점수")).toBeInTheDocument();
   expect(screen.getByText("91.25%")).toBeInTheDocument();
+  expect(screen.getByText(/AI 예측 결과는 참고용입니다/)).toBeInTheDocument();
 });

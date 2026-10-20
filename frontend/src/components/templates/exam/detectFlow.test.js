@@ -20,7 +20,7 @@ test("requires an image and accepts only the backend JPEG/PNG/WebP contract", ()
 
 test.each([
   [400, "Uploaded file is not a valid image.", "지원되는 이미지"],
-  [400, "No pest was detected in the uploaded image.", "탐지되지 않았습니다"],
+  [400, "No pest was detected in the uploaded image.", "지원 대상 질병을 확인하지 못했습니다"],
   [503, "Image detection model is not available.", "진단 모델"],
   [503, "병해 탐지 모델의 상세정보 매핑이 준비되지 않았습니다.", "상세정보 연결"],
 ])("maps Detect %s failures to a controlled message", (status, message, expected) => {
@@ -82,4 +82,6 @@ test("classifies existing HTTP and client-side failure contracts", () => {
   expect(classifyDetectionError({ code: "MALFORMED_DETECTION_RESPONSE" }).status)
     .toBe("invalid_response");
   expect(classifyDetectionError(new Error("offline")).status).toBe("request_failed");
+  expect(getDetectionErrorMessage({ response: { status: 401 } })).toContain("로그인이 필요합니다");
+  expect(getDetectionErrorMessage({ response: { status: 403 } })).toContain("접근할 권한");
 });
