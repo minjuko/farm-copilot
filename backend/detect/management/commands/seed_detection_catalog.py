@@ -31,7 +31,7 @@ def load_catalog():
         if row['model'] == 'detect.pest':
             record = {field: fields.get(field) for field in PEST_FIELDS}
             if any(not record[field] for field in PEST_FIELDS):
-                raise CommandError(f"Catalog Pest fixture {row['pk']} has incomplete details.")
+                raise CommandError(f'Catalog Pest fixture {row["pk"]} has incomplete details.')
             pests_by_fixture_pk[row['pk']] = record
         elif row['model'] == 'detect.pestmodelclass':
             mappings.append(
@@ -50,8 +50,7 @@ def load_catalog():
         5: 'CUCUMBER_POWDERY_MILDEW',
     }
     actual = {
-        row['class_id']: pests_by_fixture_pk[row['pest_fixture_pk']]['code']
-        for row in mappings
+        row['class_id']: pests_by_fixture_pk[row['pest_fixture_pk']]['code'] for row in mappings
     }
     if actual != expected or len(pests_by_fixture_pk) != 5:
         raise CommandError('Catalog fixture does not match the six-class service contract.')
@@ -67,7 +66,10 @@ class Command(BaseCommand):
         created_mappings = 0
         with transaction.atomic():
             existing_pests = {
-                pest.code: pest for pest in Pest.objects.filter(code__in=[p['code'] for p in pests_by_fixture_pk.values()])
+                pest.code: pest
+                for pest in Pest.objects.filter(
+                    code__in=[p['code'] for p in pests_by_fixture_pk.values()]
+                )
             }
             planned_pests = {}
             conflicts = []
@@ -77,7 +79,9 @@ class Command(BaseCommand):
                     planned_pests[record['code']] = None
                     continue
                 if any(getattr(pest, field) != record[field] for field in PEST_FIELDS):
-                    conflicts.append(f"Pest code {record['code']} already exists with different details")
+                    conflicts.append(
+                        f'Pest code {record["code"]} already exists with different details'
+                    )
                 else:
                     planned_pests[record['code']] = pest
 
@@ -91,12 +95,15 @@ class Command(BaseCommand):
                 record = pests_by_fixture_pk[row['pest_fixture_pk']]
                 mapping = existing_mappings.get(row['class_id'])
                 if mapping and (
-                    mapping.model_label != row['model_label']
-                    or mapping.pest.code != record['code']
+                    mapping.model_label != row['model_label'] or mapping.pest.code != record['code']
                 ):
-                    conflicts.append(f"Model class ID {row['class_id']} is already mapped differently")
+                    conflicts.append(
+                        f'Model class ID {row["class_id"]} is already mapped differently'
+                    )
             if conflicts:
-                raise CommandError('Catalog conflicts found; no changes were made. ' + '; '.join(conflicts))
+                raise CommandError(
+                    'Catalog conflicts found; no changes were made. ' + '; '.join(conflicts)
+                )
 
             pests_by_code = dict(existing_pests)
             for record in pests_by_fixture_pk.values():

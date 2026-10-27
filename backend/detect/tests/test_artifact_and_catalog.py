@@ -24,8 +24,12 @@ class ModelPreflightCommandTests(SimpleTestCase):
 
     def test_hash_mismatch_is_rejected_without_loading_model(self):
         with tempfile.NamedTemporaryFile() as artifact:
-            with patch('detect.management.commands.check_detection_model.sha256_file', return_value='bad'):
-                with patch('detect.management.commands.check_detection_model.load_validated_model') as load:
+            with patch(
+                'detect.management.commands.check_detection_model.sha256_file', return_value='bad'
+            ):
+                with patch(
+                    'detect.management.commands.check_detection_model.load_validated_model'
+                ) as load:
                     with self.assertRaisesMessage(CommandError, 'integrity mismatch'):
                         call_command('check_detection_model', model_path=artifact.name)
             load.assert_not_called()
@@ -37,9 +41,18 @@ class ModelPreflightCommandTests(SimpleTestCase):
 
         model = FakeModel()
         with tempfile.NamedTemporaryFile() as artifact:
-            with patch('detect.management.commands.check_detection_model.sha256_file', return_value=EXPECTED_SHA256):
-                with patch('detect.management.commands.check_detection_model.load_validated_model', return_value=model):
-                    with patch('detect.management.commands.check_detection_model.EXPECTED_SIZE', Path(artifact.name).stat().st_size):
+            with patch(
+                'detect.management.commands.check_detection_model.sha256_file',
+                return_value=EXPECTED_SHA256,
+            ):
+                with patch(
+                    'detect.management.commands.check_detection_model.load_validated_model',
+                    return_value=model,
+                ):
+                    with patch(
+                        'detect.management.commands.check_detection_model.EXPECTED_SIZE',
+                        Path(artifact.name).stat().st_size,
+                    ):
                         call_command('check_detection_model', model_path=artifact.name)
         self.assertEqual(model.kwargs['device'], 'cpu')
 
@@ -79,7 +92,9 @@ class ArtifactReadinessCacheTests(SimpleTestCase):
                 ):
                     _ARTIFACT_CHECK_CACHE.clear()
                     with patch('detect.artifact.load_validated_model', side_effect=error):
-                        self.assertEqual(check_artifact_readiness(path), {'ready': False, 'reason': reason})
+                        self.assertEqual(
+                            check_artifact_readiness(path), {'ready': False, 'reason': reason}
+                        )
 
     def test_cpu_inference_failure_is_limited(self):
         path = self.make_artifact()
@@ -121,7 +136,9 @@ class DetectionCatalogSeedTests(TestCase):
         from accounts.models import User
 
         user = User.objects.create_user(
-            username='catalog-preserve', email='catalog-preserve@example.com', password='test-password'
+            username='catalog-preserve',
+            email='catalog-preserve@example.com',
+            password='test-password',
         )
         unrelated = Pest.objects.create(code='UNRELATED', pest_name='Unrelated')
         PestDetection.objects.create(user=user, pest=unrelated, confidence=71.0)
@@ -140,7 +157,10 @@ class DetectionCatalogSeedTests(TestCase):
         self.assertEqual(PestModelClass.objects.count(), 1)
 
     def test_transaction_rolls_back_partial_seed(self):
-        with patch('detect.management.commands.seed_detection_catalog.PestModelClass.objects.create', side_effect=RuntimeError('test failure')):
+        with patch(
+            'detect.management.commands.seed_detection_catalog.PestModelClass.objects.create',
+            side_effect=RuntimeError('test failure'),
+        ):
             with self.assertRaises(RuntimeError):
                 call_command('seed_detection_catalog', verbosity=0)
         self.assertEqual(Pest.objects.count(), 0)
@@ -148,7 +168,10 @@ class DetectionCatalogSeedTests(TestCase):
 
 
 class DetectionReadinessTests(TestCase):
-    @patch('common.views.check_artifact_readiness', return_value={'ready': False, 'reason': 'runtime_unavailable'})
+    @patch(
+        'common.views.check_artifact_readiness',
+        return_value={'ready': False, 'reason': 'runtime_unavailable'},
+    )
     def test_artifact_failure_is_unavailable_without_database_lookup(self, _artifact):
         from common.views import _detection_readiness
 
@@ -174,5 +197,7 @@ class DetectionReadinessTests(TestCase):
     def test_database_error_is_distinguished(self, _artifact):
         from common.views import _detection_readiness
 
-        with patch('common.views.PestModelClass.objects.select_related', side_effect=DatabaseError('no db')):
+        with patch(
+            'common.views.PestModelClass.objects.select_related', side_effect=DatabaseError('no db')
+        ):
             self.assertEqual(_detection_readiness(), (False, 'database_unavailable'))

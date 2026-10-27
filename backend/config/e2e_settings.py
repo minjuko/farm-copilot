@@ -14,8 +14,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .settings import *  # noqa: F403
 
-_MARKER_NAME = ".farm-copilot-e2e-root"
-_ORIGIN = "http://127.0.0.1:3000"
+_MARKER_NAME = '.farm-copilot-e2e-root'
+_ORIGIN = 'http://127.0.0.1:3000'
 
 
 def _resolved(path):
@@ -36,86 +36,98 @@ def _is_within(path, parent):
 def _is_link_or_junction(path):
     if path.is_symlink():
         return True
-    if hasattr(os.path, "isjunction") and os.path.isjunction(path):
+    if hasattr(os.path, 'isjunction') and os.path.isjunction(path):
         return True
-    reparse_point = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    reparse_point = getattr(stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0)
     return bool(reparse_point and path.exists() and path.stat().st_file_attributes & reparse_point)
 
 
-if os.getenv("FARM_COPILOT_E2E_MODE") != "1":
-    raise ImproperlyConfigured("FARM_COPILOT_E2E_MODE=1 is required for E2E settings.")
+if os.getenv('FARM_COPILOT_E2E_MODE') != '1':
+    raise ImproperlyConfigured('FARM_COPILOT_E2E_MODE=1 is required for E2E settings.')
 
-_root_value = os.getenv("FARM_COPILOT_E2E_ROOT")
+_root_value = os.getenv('FARM_COPILOT_E2E_ROOT')
 if not _root_value:
-    raise ImproperlyConfigured("FARM_COPILOT_E2E_ROOT must point to a dedicated temporary directory.")
+    raise ImproperlyConfigured(
+        'FARM_COPILOT_E2E_ROOT must point to a dedicated temporary directory.'
+    )
 _root_input = Path(_root_value)
 if not _root_input.is_absolute() or _is_link_or_junction(_root_input):
-    raise ImproperlyConfigured("The E2E root must be an absolute, non-symlink path.")
+    raise ImproperlyConfigured('The E2E root must be an absolute, non-symlink path.')
 E2E_ROOT = _root_input.resolve()
 _project_root = BASE_DIR.parent.resolve()  # noqa: F405
 _system_temp_root = Path(tempfile.gettempdir()).resolve()
 if _is_within(E2E_ROOT, _project_root) or _is_within(_project_root, E2E_ROOT):
-    raise ImproperlyConfigured("The E2E root must be outside the repository.")
+    raise ImproperlyConfigured('The E2E root must be outside the repository.')
 if E2E_ROOT.parent != _system_temp_root:
-    raise ImproperlyConfigured("The E2E root must be a dedicated child of the system temporary directory.")
+    raise ImproperlyConfigured(
+        'The E2E root must be a dedicated child of the system temporary directory.'
+    )
 
-if not E2E_ROOT.name.startswith("farm-copilot-e2e-"):
-    raise ImproperlyConfigured("The E2E root must use the farm-copilot-e2e-* name.")
+if not E2E_ROOT.name.startswith('farm-copilot-e2e-'):
+    raise ImproperlyConfigured('The E2E root must use the farm-copilot-e2e-* name.')
 
 _marker = E2E_ROOT / _MARKER_NAME
 if not E2E_ROOT.is_dir() or _is_link_or_junction(_marker) or not _marker.is_file():
-    raise ImproperlyConfigured("The E2E root or its marker is missing or unsafe; refusing to start.")
-if _marker.read_text(encoding="utf-8") != "isolated-local-e2e\n":
-    raise ImproperlyConfigured("The E2E root marker is missing or invalid; refusing to start.")
+    raise ImproperlyConfigured(
+        'The E2E root or its marker is missing or unsafe; refusing to start.'
+    )
+if _marker.read_text(encoding='utf-8') != 'isolated-local-e2e\n':
+    raise ImproperlyConfigured('The E2E root marker is missing or invalid; refusing to start.')
 
 # A valid marker alone must not authorize reuse of an old or populated directory.
-_expected_root_entries = {_MARKER_NAME, "db", "media"}
+_expected_root_entries = {_MARKER_NAME, 'db', 'media'}
 if {entry.name for entry in E2E_ROOT.iterdir()} != _expected_root_entries:
-    raise ImproperlyConfigured("The E2E root must contain only its marker and fresh db/media directories.")
-for _directory_name in ("db", "media"):
+    raise ImproperlyConfigured(
+        'The E2E root must contain only its marker and fresh db/media directories.'
+    )
+for _directory_name in ('db', 'media'):
     _directory = E2E_ROOT / _directory_name
     if _is_link_or_junction(_directory) or not _directory.is_dir() or any(_directory.iterdir()):
-        raise ImproperlyConfigured("The E2E db/media directories must be real, empty directories.")
+        raise ImproperlyConfigured('The E2E db/media directories must be real, empty directories.')
 
-_database_path = (E2E_ROOT / "db" / "e2e.sqlite3").resolve()
-_media_path = (E2E_ROOT / "media").resolve()
+_database_path = (E2E_ROOT / 'db' / 'e2e.sqlite3').resolve()
+_media_path = (E2E_ROOT / 'media').resolve()
 if not _is_within(_database_path, E2E_ROOT) or not _is_within(_media_path, E2E_ROOT):
-    raise ImproperlyConfigured("E2E database and media paths must remain inside the E2E root.")
+    raise ImproperlyConfigured('E2E database and media paths must remain inside the E2E root.')
 
 _existing_media_path = Path(MEDIA_ROOT).resolve()  # noqa: F405
-if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":  # noqa: F405
-    _existing_database_path = _resolved(DATABASES["default"]["NAME"])  # noqa: F405
+if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':  # noqa: F405
+    _existing_database_path = _resolved(DATABASES['default']['NAME'])  # noqa: F405
     if _database_path == _existing_database_path:
         raise ImproperlyConfigured(
-            "E2E database path must differ from the configured development database."
+            'E2E database path must differ from the configured development database.'
         )
 if _media_path == _existing_media_path:
-    raise ImproperlyConfigured("E2E media path must differ from the configured development media root.")
+    raise ImproperlyConfigured(
+        'E2E media path must differ from the configured development media root.'
+    )
 if _is_within(_media_path, _existing_media_path) or _is_within(_existing_media_path, _media_path):
-    raise ImproperlyConfigured("E2E media path must not overlap the configured development media root.")
+    raise ImproperlyConfigured(
+        'E2E media path must not overlap the configured development media root.'
+    )
 
 DATABASES = {  # noqa: F405
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": _database_path,
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': _database_path,
     }
 }
 MEDIA_ROOT = _media_path
 DEBUG = True
 USE_S3 = False
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 }
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 CORS_ALLOWED_ORIGINS = [_ORIGIN]
 CSRF_TRUSTED_ORIGINS = [_ORIGIN]
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CHATBOT_ENABLED = False

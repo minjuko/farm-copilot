@@ -66,10 +66,8 @@ def _measure_training_step(
         'mean_step_seconds': mean_seconds,
         'median_step_seconds': statistics.median(elapsed_steps),
         'images_per_second': batch_size / mean_seconds,
-        'estimated_seconds_per_epoch_for_40_images': math.ceil(40 / batch_size)
-        * mean_seconds,
-        'estimated_seconds_per_epoch_for_900_images': math.ceil(900 / batch_size)
-        * mean_seconds,
+        'estimated_seconds_per_epoch_for_40_images': math.ceil(40 / batch_size) * mean_seconds,
+        'estimated_seconds_per_epoch_for_900_images': math.ceil(900 / batch_size) * mean_seconds,
         'peak_cuda_memory_bytes': torch.cuda.max_memory_allocated(device)
         if device.type == 'cuda'
         else None,
