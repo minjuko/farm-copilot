@@ -84,6 +84,14 @@ class LiveModelDetectionIntegrationTests(TestCase):
         self.assertLessEqual(result['confidence'], 100)
         self.assertEqual(PestDetection.objects.filter(user=self.user).count(), 1)
 
+        private_image = self.client.get(result['user_image_url'])
+        self.assertEqual(private_image.status_code, 200)
+        self.assertTrue(private_image['Content-Type'].startswith('image/'))
+        self.assertEqual(private_image['Cache-Control'], 'private, no-store, max-age=0')
+        self.assertEqual(private_image['X-Content-Type-Options'], 'nosniff')
+        self.assertTrue(b''.join(private_image.streaming_content))
+        private_image.close()
+
         history = self.client.get('/detect/list_detection_sessions/')
         self.assertEqual(history.status_code, 200)
         self.assertEqual(history.json()[0]['session_id'], result['session_id'])
@@ -101,4 +109,6 @@ class LiveModelDetectionIntegrationTests(TestCase):
         self.client.force_login(other_user)
         other_detail = self.client.get(f'/detect/detection_session_details/{result["session_id"]}/')
         self.assertEqual(other_detail.status_code, 404)
+        self.assertEqual(self.client.get('/detect/list_detection_sessions/').json(), [])
+        self.assertEqual(self.client.get(result['user_image_url']).status_code, 404)
         self.assertTrue(PestDetection.objects.filter(id=result['session_id']).exists())

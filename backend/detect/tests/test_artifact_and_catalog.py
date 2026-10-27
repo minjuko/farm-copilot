@@ -1,5 +1,7 @@
+import json
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.core.management import CommandError, call_command
@@ -8,13 +10,31 @@ from django.test import SimpleTestCase, TestCase
 
 from detect.artifact import (
     _ARTIFACT_CHECK_CACHE,
+    EXPECTED_CLASSES,
     EXPECTED_SHA256,
+    EXPECTED_SIZE,
     ModelContractMismatchError,
     ModelLoadFailedError,
     RuntimeUnavailableError,
     check_artifact_readiness,
 )
 from detect.models import Pest, PestDetection, PestModelClass
+
+
+class ModelManifestTests(SimpleTestCase):
+    def test_manifest_matches_runtime_artifact_contract(self):
+        manifest_path = Path(__file__).resolve().parents[1] / 'model_manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+
+        self.assertEqual(manifest['size_bytes'], EXPECTED_SIZE)
+        self.assertEqual(manifest['sha256'], EXPECTED_SHA256)
+        self.assertEqual(manifest['task'], 'detect')
+        self.assertEqual(manifest['class_count'], len(EXPECTED_CLASSES))
+        self.assertEqual(
+            {int(class_id): name for class_id, name in manifest['classes'].items()},
+            EXPECTED_CLASSES,
+        )
+        self.assertEqual(manifest['filename'], 'best.pt')
 
 
 class ModelPreflightCommandTests(SimpleTestCase):
@@ -110,6 +130,46 @@ class ArtifactReadinessCacheTests(SimpleTestCase):
                         check_artifact_readiness(path),
                         {'ready': False, 'reason': 'inference_unavailable'},
                     )
+
+    def test_changed_artifact_fingerprint_reloads_cached_model(self):
+        from detect import views
+
+        temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(temp_dir.cleanup)
+        path = Path(temp_dir.name) / 'model.pt'
+        path.write_bytes(b'initial')
+
+        class FakeModel:
+            names = EXPECTED_CLASSES
+            task = 'detect'
+            model = SimpleNamespace(yaml={'nc': len(EXPECTED_CLASSES)})
+
+            def __call__(self, *_args, **_kwargs):
+                return []
+
+        first_model = FakeModel()
+        replacement_model = FakeModel()
+        with patch('detect.artifact.EXPECTED_SIZE', path.stat().st_size):
+            with patch('detect.artifact.sha256_file', return_value=EXPECTED_SHA256):
+                with patch(
+                    'detect.artifact.load_validated_model',
+                    side_effect=[first_model, replacement_model],
+                ) as load_model:
+                    self.assertEqual(
+                        check_artifact_readiness(path), {'ready': True, 'reason': None}
+                    )
+                    self.assertIs(views._yolo_model, first_model)
+
+                    path.write_bytes(b'replaced artifact')
+                    import detect.artifact as artifact
+
+                    artifact.EXPECTED_SIZE = path.stat().st_size
+                    self.assertEqual(
+                        check_artifact_readiness(path), {'ready': True, 'reason': None}
+                    )
+
+        self.assertIs(views._yolo_model, replacement_model)
+        self.assertEqual(load_model.call_count, 2)
 
 
 class DetectionCatalogSeedTests(TestCase):

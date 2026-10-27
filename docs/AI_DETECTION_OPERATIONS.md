@@ -2,9 +2,11 @@
 
 ## 모델 파일 준비
 
-`best.pt`는 용량이 크고 별도 관리가 필요해 Git에 포함되지 않는다 (`*.pt` ignore). 승인된 체크포인트를 `backend/best.pt`에 배치하거나 `YOLO_MODEL_PATH`에 절대 경로 또는 `backend/` 기준 상대 경로를 설정한다. 모델 계약과 고정 SHA-256은 `backend/detect/model_manifest.json`에 기록돼 있다.
+새 체크포인트는 `*.pt` ignore 규칙에 따라 Git의 현재 tree에 포함되지 않는다. 단, 기존 공개 Git 이력에는 같은 승인 artifact가 남아 있으므로 현재 ignore 상태를 비공개 보장으로 오해하면 안 된다(아래 기록 참고). 승인된 체크포인트를 `backend/best.pt`에 배치하거나 `YOLO_MODEL_PATH`에 절대 경로 또는 `backend/` 기준 상대 경로를 설정한다. 모델 계약과 고정 SHA-256은 `backend/detect/model_manifest.json`에 기록돼 있다.
 
-현재 승인 artifact는 87,631,411 bytes, SHA-256 `b4e90d9feef9c9e35923c4e5fbf386d6e37ae6b2a3df687edfb14173bd7c10f4`다. 검증 오류가 나면 신뢰된 원본 보관소에서 같은 버전의 파일을 다시 받아 배치하고 사전검사를 재실행한다. 애플리케이션은 자동 다운로드나 대체를 하지 않는다.
+현재 승인 artifact는 87,631,411 bytes, SHA-256 `b4e90d9feef9c9e35923c4e5fbf386d6e37ae6b2a3df687edfb14173bd7c10f4`다. 검증 오류가 나면 신뢰된 원본 보관소에서 같은 버전의 파일을 다시 받아 배치하고 사전검사를 재실행한다. 애플리케이션은 Checkpoint를 자동 다운로드하거나 대체하지 않는다. 단, Ultralytics의 결과 이미지 annotation은 비 ASCII 클래스명을 그릴 글꼴이 없으면 `Arial.Unicode.ttf`를 별도로 다운로드할 수 있다. FC07 로컬 실행에서 이 동작을 확인했으며, 네트워크 차단 환경의 annotation에는 글꼴을 별도로 준비해야 한다.
+
+주의: 현재 tree에서는 `backend/best.pt`가 추적되지 않지만, 과거 Git commit `deb17cc`의 `best.pt` blob은 현재 승인 artifact와 같은 SHA-256으로 저장소 이력에 남아 있다. 따라서 공개 이력에서 모델 파일을 받을 수 있다. 후속 삭제 commit은 과거 blob을 지우지 않으며, 이력 제거는 별도 검토와 coordinated history rewrite가 필요하다.
 
 AI 런타임은 `backend/requirements-ai.txt`의 OpenCV, PyTorch, torchvision, Ultralytics 항목을 설치한다. 사전검사:
 
@@ -36,7 +38,7 @@ Class ID 0..5는 모두 유지한다. ID 2와 4는 서로 다른 모델 출력 I
 {"status":"available","available":true,"reason":null}
 ```
 
-`available`은 artifact 무결성, PyTorch/Ultralytics import, 체크포인트 로딩과 클래스 계약, CPU smoke inference, 여섯 DB 매핑 및 상세 진단 필드가 준비된 경우에만 true다. 미준비 시 `status`는 `limited`, `available`은 false이며 `reason`은 `model_missing`, `model_integrity_mismatch`, `runtime_unavailable`, `model_load_failed`, `model_contract_mismatch`, `inference_unavailable`, `catalog_incomplete`, `database_unavailable` 중 하나다. 내부 절대 경로와 예외 스택은 API 응답에 포함하지 않는다.
+`available`은 artifact 무결성, PyTorch/Ultralytics import, 체크포인트 로딩과 클래스 계약, CPU smoke inference, 여섯 DB 매핑 및 상세 진단 필드가 준비된 경우에만 true다. 업로드 요청도 capabilities 선행 호출에 의존하지 않고 같은 artifact readiness 검사를 통과해야 캐시된 모델을 사용할 수 있다. 파일의 크기나 수정 시각 fingerprint가 바뀌면 새 SHA를 검증하고 캐시 모델을 다시 로드한다. 미준비 시 `status`는 `limited`, `available`은 false이며 `reason`은 `model_missing`, `model_integrity_mismatch`, `runtime_unavailable`, `model_load_failed`, `model_contract_mismatch`, `inference_unavailable`, `catalog_incomplete`, `database_unavailable` 중 하나다. 내부 절대 경로와 예외 스택은 API 응답에 포함하지 않는다.
 
 모델 해시·로드·smoke 검사는 프로세스에서 파일의 절대 경로, 크기, 수정 시각 조합별 한 번 실행하고 그 결과를 메모리에 캐시한다. 다른 fingerprint가 관찰되면 다음 검사에서 다시 확인한다. 카탈로그는 매 capabilities 조회마다 읽으므로 seed 또는 DB 복구가 다음 요청에 반영된다. 같은 크기와 수정 시각을 유지한 채 파일 내용을 교체하는 특수한 경우는 실행 중 자동 탐지하지 못할 수 있으므로 artifact 교체 후에는 앱 프로세스를 재시작하고 preflight를 수행한다.
 
@@ -59,7 +61,9 @@ POSIX (`backend` 디렉터리):
 RUN_LIVE_DETECTION_INTEGRATION=1 ./.venv/bin/python manage.py test detect.tests.test_live_model_integration
 ```
 
-이 opt-in 테스트는 capabilities에서 artifact를 사용할 수 있는 상태, 테스트 전용 경로로 모델을 바꿨을 때의 `model_missing`, 정상 경로 복구, 로그인 업로드, DB 저장, 이력 목록·상세 조회 및 다른 사용자의 상세 접근 차단을 검사한다. Django test runner의 test database에만 catalog seed를 실행한다. 실제 Checkpoint를 변경하지 않고, 출처 참고 이미지 한 건의 결과를 모델 성능 점수로 해석하지 않는다. 실행하지 않은 환경에서 이 항목은 `NOT RUN`이며 기본 전체 테스트에서는 skip된다.
+이 opt-in 테스트는 capabilities에서 artifact를 사용할 수 있는 상태, 테스트 전용 경로로 모델을 바꿨을 때의 `model_missing`, 정상 경로 복구, 로그인 업로드, DB 저장, 이력 목록·상세 조회 및 다른 사용자의 상세 접근 차단을 검사한다. 본인만 인증된 `/detect/detection_image/<id>/` 경로로 이미지를 읽을 수 있는지와 private/no-store 응답 헤더도 확인한다. 다른 사용자의 이력에는 해당 진단이 없고 이미지 endpoint는 404를 반환해야 한다. Django test runner의 test database에만 catalog seed를 실행한다. 실제 Checkpoint를 변경하지 않고, 출처 참고 이미지 한 건의 결과를 모델 성능 점수로 해석하지 않는다. 기본 전체 테스트에서는 opt-in 조건이 없으면 skip된다.
+
+FC07 로컬 검증(2026-10-27): 승인 체크포인트 사전검사와 CPU smoke inference 통과, `RUN_LIVE_DETECTION_INTEGRATION=1`의 실제 이미지 업로드·저장·소유자별 이력 및 private image endpoint 통합 테스트 1개 통과. 테스트 전용 DB와 임시 저장소를 사용했다. 실행시간과 환경 정보, 정확도 검증 범위는 [모델 현황 문서](DETECTION_MODEL.md#fc07-로컬-검증-기록-2026-10-27)에 기록했다. 이 결과는 로컬 증거이며 모델 없는 공개 clone의 기본 CI에는 체크포인트를 포함하지 않는다.
 
 ## 격리된 실제 브라우저 E2E
 

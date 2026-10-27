@@ -60,8 +60,9 @@ class DetectionRuntimeTests(SimpleTestCase):
         )
 
     @patch.object(views, 'MODEL_PATH')
-    def test_missing_model_is_isolated_to_detection_feature(self, model_path):
-        model_path.exists.return_value = False
+    @patch.object(views, 'check_artifact_readiness')
+    def test_missing_model_is_isolated_to_detection_feature(self, readiness, model_path):
+        readiness.return_value = {'ready': False, 'reason': 'model_missing'}
 
         with self.assertRaises(ServiceUnavailableError) as context:
             views.get_yolo_model()
@@ -69,17 +70,31 @@ class DetectionRuntimeTests(SimpleTestCase):
         self.assertEqual(context.exception.status_code, 503)
 
     @patch.object(views, 'MODEL_PATH')
-    @patch.object(views, 'import_module')
-    def test_model_initialization_failure_is_controlled(self, import_module, model_path):
-        model_path.exists.return_value = True
-        import_module.return_value.YOLO.side_effect = ValueError('corrupt model')
-
-        with self.assertLogs('detect.views', level='WARNING'):
-            with self.assertRaises(ServiceUnavailableError) as context:
-                views.get_yolo_model()
+    @patch.object(views, 'check_artifact_readiness')
+    def test_model_initialization_failure_is_controlled(self, readiness, _model_path):
+        readiness.return_value = {'ready': False, 'reason': 'model_load_failed'}
+        with self.assertRaises(ServiceUnavailableError) as context:
+            views.get_yolo_model()
 
         self.assertEqual(context.exception.status_code, 503)
-        self.assertNotIn('corrupt model', context.exception.message)
+        self.assertNotIn('model_load_failed', context.exception.message)
+
+    @patch.object(views, 'check_artifact_readiness')
+    def test_cached_model_is_used_only_after_integrity_readiness(self, readiness):
+        model = SimpleNamespace(names=views.EXPECTED_MODEL_CLASS_NAMES.copy())
+        views._yolo_model = model
+        readiness.return_value = {'ready': True, 'reason': None}
+
+        self.assertIs(views.get_yolo_model(), model)
+        readiness.assert_called_once_with(views.MODEL_PATH)
+
+    @patch.object(views, 'check_artifact_readiness')
+    def test_cached_model_is_rejected_when_artifact_fingerprint_fails(self, readiness):
+        views._yolo_model = SimpleNamespace(names=views.EXPECTED_MODEL_CLASS_NAMES.copy())
+        readiness.return_value = {'ready': False, 'reason': 'model_integrity_mismatch'}
+
+        with self.assertRaises(ServiceUnavailableError):
+            views.get_yolo_model()
 
     def test_model_class_contract_accepts_expected_metadata(self):
         model = SimpleNamespace(names=views.EXPECTED_MODEL_CLASS_NAMES.copy())
@@ -401,8 +416,10 @@ class DetectionUnavailableEndpointTests(TestCase):
 
     @patch.object(views, 'MODEL_PATH')
     @patch.object(views, 'save_temp_image', return_value='unused-test-path')
-    def test_missing_model_returns_controlled_503(self, _save_image, model_path):
-        model_path.exists.return_value = False
+    @patch.object(
+        views, 'check_artifact_readiness', return_value={'ready': False, 'reason': 'model_missing'}
+    )
+    def test_missing_model_returns_controlled_503(self, _readiness, _save_image, _model_path):
         buffer = BytesIO()
         Image.new('RGB', (8, 8), color='green').save(buffer, format='PNG')
         image = SimpleUploadedFile('crop.png', buffer.getvalue(), content_type='image/png')
