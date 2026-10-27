@@ -34,7 +34,7 @@ export const MainLayout = () => {
   return (
     <Container>
       <Header>{isMainPage ? <MainTopBar /> : <PageTopBar />}</Header>
-      <Outlet />
+      <main style={{ flex: 1, width: "100%" }}><Outlet /></main>
       {!isStartPage && (
         <Footer>
           <GNB />

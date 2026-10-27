@@ -172,10 +172,10 @@ const PageTopBar = () => {
 
   return (
     <>
-      <TopBars>
+      <TopBars aria-label="페이지 상단">
         <LeftSection>
           {showBackButton && (
-            <BackButton onClick={handleBackClick}>
+            <BackButton aria-label="이전 페이지로" onClick={handleBackClick}>
               <FaArrowLeft />
             </BackButton>
           )}
@@ -192,10 +192,10 @@ const PageTopBar = () => {
               <TopBarLoader color="#4aaa87" />
             ) : (
               <>
-                <IconButton onClick={() => navigate("/my-page")}>
+                <IconButton aria-label="내 정보" onClick={() => navigate("/my-page")}>
                   <FaUser title={`${user?.username || ""}님`} />
                 </IconButton>
-                <IconButton onClick={handleLogout}>
+                <IconButton aria-label="로그아웃" onClick={handleLogout}>
                   <FaSignOutAlt title="로그아웃" />
                 </IconButton>
               </>
@@ -204,7 +204,7 @@ const PageTopBar = () => {
             isLoading ? (
               <TopBarLoader color="#4aaa87" />
             ) : (
-              <IconButton onClick={() => navigate("/login")}>
+              <IconButton aria-label="로그인" onClick={() => navigate("/login")}>
                 <FaSignInAlt title="로그인" />
               </IconButton>
             )
