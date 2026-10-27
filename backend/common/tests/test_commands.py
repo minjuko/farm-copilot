@@ -1,3 +1,4 @@
+import secrets
 from io import StringIO
 from unittest.mock import patch
 
@@ -30,7 +31,7 @@ class ExternalServiceCheckCommandTests(SimpleTestCase):
 class DeploymentConfigCommandTests(SimpleTestCase):
     production_settings = {
         'DEBUG': False,
-        'SECRET_KEY': 'abcde' * 10,
+        'SECRET_KEY': secrets.token_urlsafe(48),
         'ALLOWED_HOSTS': ['api.example.com'],
         'CORS_ALLOWED_ORIGINS': ['https://www.example.com'],
         'CSRF_TRUSTED_ORIGINS': ['https://www.example.com'],
@@ -86,3 +87,41 @@ class DeploymentConfigCommandTests(SimpleTestCase):
                 '--allow-local-storage',
                 stderr=stderr,
             )
+
+    @override_settings(
+        **{
+            **production_settings,
+            'CORS_ALLOWED_ORIGINS': [],
+            'CSRF_TRUSTED_ORIGINS': [],
+            'DATABASES': {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': '/var/lib/farm-copilot/app.sqlite3',
+                }
+            },
+            'EMAIL_BACKEND': 'django.core.mail.backends.console.EmailBackend',
+            'SECURE_HSTS_SECONDS': 86400,
+            'SESSION_COOKIE_SAMESITE': 'Lax',
+            'CSRF_COOKIE_SAMESITE': 'Lax',
+        }
+    )
+    def test_same_origin_sqlite_and_non_smtp_deployment_is_supported(self):
+        stdout = StringIO()
+        call_command('check_deployment_config', '--allow-local-storage', stdout=stdout)
+
+        self.assertIn('SQLite, HTTPS', stdout.getvalue())
+
+    @override_settings(
+        **{
+            **production_settings,
+            'USE_S3': True,
+            'AWS_STORAGE_BUCKET_NAME': 'private-test-bucket',
+            'AWS_ACCESS_KEY_ID': None,
+            'AWS_SECRET_ACCESS_KEY': None,
+        }
+    )
+    def test_s3_deployment_does_not_require_static_access_keys(self):
+        stdout = StringIO()
+        call_command('check_deployment_config', stdout=stdout)
+
+        self.assertIn('PostgreSQL, HTTPS, S3', stdout.getvalue())

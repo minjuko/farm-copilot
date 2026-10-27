@@ -482,7 +482,10 @@ class DetectionSessionEndpointTests(TestCase):
         url = f'/detect/detection_image/{self.detection.id}/'
 
         self.client.logout()
-        self.assertEqual(self.client.get(url).status_code, 401)
+        unauthorized_response = self.client.get(url)
+        self.assertEqual(unauthorized_response.status_code, 401)
+        self.assertNotEqual(unauthorized_response['Content-Type'], 'image/png')
+        self.assertNotIn(b'owned.png', unauthorized_response.content)
 
         other_user = self.user.__class__.objects.create_user(
             email='other-detect-session@example.com',
@@ -508,6 +511,28 @@ class DetectionSessionEndpointTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'image/png')
+        self.assertEqual(response['Cache-Control'], 'private, no-store, max-age=0')
+        self.assertEqual(response['X-Content-Type-Options'], 'nosniff')
+        self.assertTrue(b''.join(response.streaming_content))
+        response.close()
+
+    @override_settings(
+        CORS_ALLOWED_ORIGINS=['http://localhost:3000'],
+        CORS_ALLOW_CREDENTIALS=True,
+    )
+    def test_authenticated_image_get_uses_session_without_csrf_and_allows_credentials_cors(self):
+        self.store_owned_image()
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+
+        response = client.get(
+            f'/detect/detection_image/{self.detection.id}/',
+            HTTP_ORIGIN='http://localhost:3000',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Access-Control-Allow-Origin'], 'http://localhost:3000')
+        self.assertEqual(response['Access-Control-Allow-Credentials'], 'true')
         self.assertEqual(response['Cache-Control'], 'private, no-store, max-age=0')
         self.assertEqual(response['X-Content-Type-Options'], 'nosniff')
         self.assertTrue(b''.join(response.streaming_content))
