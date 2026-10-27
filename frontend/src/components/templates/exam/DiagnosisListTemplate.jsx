@@ -255,6 +255,7 @@ const DiagnosisListTemplate = () => {
                   {normalizeMediaUrl(session.user_image_url) && (
                     <SessionImage
                       src={normalizeMediaUrl(session.user_image_url)}
+                      crossOrigin="use-credentials"
                       alt={session.pest_name || "진단 이미지"}
                       onError={(event) => { event.currentTarget.style.display = "none"; }}
                     />

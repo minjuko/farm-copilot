@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone";
 import { uploadImage } from "../../../apis/predict";
 import {
   getDetectionErrorMessage,
+  MAX_DETECTION_UPLOAD_BYTES,
   normalizeDetectionResult,
   validateDetectionFile,
 } from "./detectFlow";
@@ -245,10 +246,13 @@ const DiagnosisTemplate = () => {
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
-    onDropRejected: () => {
+    onDropRejected: (fileRejections) => {
       setImage(null);
       setSelectedFile(null);
-      setModalContent("JPEG, PNG, WebP 이미지 파일만 선택할 수 있습니다.");
+      const isTooLarge = fileRejections.some(({ errors }) => errors.some(({ code }) => code === "file-too-large"));
+      setModalContent(isTooLarge
+        ? "\uc774\ubbf8\uc9c0 \ud30c\uc77c\uc740 10 MiB \uc774\ud558\ub85c \uc120\ud0dd\ud574\uc8fc\uc138\uc694."
+        : "JPEG, PNG, WebP \uc774\ubbf8\uc9c0 \ud30c\uc77c\ub9cc \uc120\ud0dd\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.");
       setIsModalOpen(true);
     },
     accept: {
@@ -257,6 +261,7 @@ const DiagnosisTemplate = () => {
       "image/webp": [".webp"],
     },
     multiple: false,
+    maxSize: MAX_DETECTION_UPLOAD_BYTES,
     noClick: true,
   });
 
@@ -348,6 +353,7 @@ const DiagnosisTemplate = () => {
           토마토: 흰가루병<br/>
           <small>정상 여부나 목록에 없는 작물·질병은 판별을 보장하지 않습니다. 선명한 병징 사진을 사용해 주세요.</small>
         </ExplanationText>
+        <ExplanationText>{"JPEG, PNG, WebP - \ucd5c\ub300 10 MiB"}</ExplanationText>
         <ButtonWrapper>
           <UploadButton type="button" onClick={handleOpenFileDialog} aria-label="이미지 파일 업로드">
             <FaFile />

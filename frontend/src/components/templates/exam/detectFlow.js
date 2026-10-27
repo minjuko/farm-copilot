@@ -1,13 +1,20 @@
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const ALLOWED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
+const ALLOWED_IMAGE_TYPES_BY_EXTENSION = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+export const MAX_DETECTION_UPLOAD_BYTES = 10 * 1024 * 1024;
 const DETECT_API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
 export const validateDetectionFile = (file) => {
   if (!file) return "진단할 이미지를 선택해주세요.";
   if (!file.size) return "지원되는 이미지 파일을 선택해주세요.";
 
+  if (file.size > MAX_DETECTION_UPLOAD_BYTES) return "\uc774\ubbf8\uc9c0 \ud30c\uc77c\uc740 10 MiB \uc774\ud558\ub85c \uc120\ud0dd\ud574\uc8fc\uc138\uc694.";
+
   const extension = file.name?.split(".").pop()?.toLowerCase();
-  if (!ALLOWED_IMAGE_TYPES.has(file.type) || !ALLOWED_IMAGE_EXTENSIONS.has(extension)) {
+  if (ALLOWED_IMAGE_TYPES_BY_EXTENSION[extension] !== file.type) {
     return "JPEG, PNG, WebP 이미지 파일만 선택할 수 있습니다.";
   }
   return null;
@@ -26,6 +33,7 @@ export const getDetectionErrorMessage = (error) => {
   if (outcome.status === "no_detection") {
     return "이미지에서 지원 대상 질병을 확인하지 못했습니다. 선명한 잎과 병징이 보이도록 촬영해 다른 이미지로 다시 시도해 주세요. 이 결과만으로 정상 여부를 판단할 수는 없습니다.";
   }
+  if (outcome.status === "invalid_image") return "JPEG, PNG, WebP 형식의 손상되지 않은 10 MiB 이하 이미지를 선택해주세요. 이미지 해상도는 2천만 픽셀 이하여야 합니다.";
   if (outcome.status === "invalid_request") return "지원되는 이미지 파일을 선택해주세요.";
   if (outcome.status === "unauthorized") return "로그인이 필요합니다. 로그인한 뒤 다시 시도해 주세요.";
   if (outcome.status === "forbidden") return "이 진단 정보에 접근할 권한이 없습니다.";
@@ -42,6 +50,15 @@ export const classifyDetectionError = (error) => {
   const backendMessage = error?.response?.data?.message || "";
   if (httpStatus === 400 && backendMessage.includes("No pest was detected")) {
     return { status: "no_detection" };
+  }
+  if (httpStatus === 400 && [
+    "Uploaded file is not a valid image.",
+    "Only JPEG, PNG, and WebP images are allowed.",
+    "Uploaded image is empty.",
+    "Image file must be 10 MiB or smaller.",
+    "Image dimensions must not exceed 20 megapixels.",
+  ].some((message) => backendMessage.includes(message))) {
+    return { status: "invalid_image" };
   }
   if (httpStatus === 503) {
     return {
