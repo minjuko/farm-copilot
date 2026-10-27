@@ -123,14 +123,14 @@ class OptionalChatbotRuntimeTests(SimpleTestCase):
     @patch.object(views, 'vector_index_available', return_value=True)
     def test_chain_applies_cost_and_prompt_safety_bounds(self, _index_available):
         with (
-            patch.object(views, 'OpenAIEmbeddings') as embeddings_class,
-            patch.object(views, 'Chroma') as chroma_class,
-            patch.object(views, 'ChatOpenAI') as llm_class,
-            patch.object(views, 'ChatPromptTemplate'),
-            patch.object(views, 'MessagesPlaceholder'),
-            patch.object(views, 'create_history_aware_retriever'),
-            patch.object(views, 'create_stuff_documents_chain'),
-            patch.object(views, 'create_retrieval_chain', return_value=Mock()),
+            patch.object(views, 'OpenAIEmbeddings', create=True) as embeddings_class,
+            patch.object(views, 'Chroma', create=True) as chroma_class,
+            patch.object(views, 'ChatOpenAI', create=True) as llm_class,
+            patch.object(views, 'ChatPromptTemplate', create=True),
+            patch.object(views, 'MessagesPlaceholder', create=True),
+            patch.object(views, 'create_history_aware_retriever', create=True),
+            patch.object(views, 'create_stuff_documents_chain', create=True),
+            patch.object(views, 'create_retrieval_chain', create=True, return_value=Mock()),
         ):
             chroma_class.return_value.as_retriever.return_value = Mock()
             views._rag_chain = None
