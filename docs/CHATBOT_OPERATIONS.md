@@ -16,6 +16,8 @@ Index 생성 입력은 `backend/chatbot/chatbot_source.csv`이며 `python manage
 
 검색 문서는 untrusted reference data로 취급하라는 지시를 QA system prompt에 넣었습니다. 이는 prompt-level 방어이며 모델이 문서 안의 악의적 지시를 항상 무시한다는 보장은 아닙니다. 생성 응답은 HTML로 해석하지 않고 텍스트로 반환합니다. Source metadata는 현재 사용자 응답에 포함되지 않습니다.
 
+검색 결과가 비어 있으면 답변을 저장하지 않고 404를 반환하며, metadata에 출처명과 HTTPS URL이 없는 검색 문서는 503으로 처리합니다. 이 상황은 Frontend에서 출처 자료를 찾지 못했다는 안내로 표시합니다.
+
 ## 개인정보, 보존, 소유권
 
 질문과 답변은 `Chatbot` 행으로 저장되고 사용자 계정에 연결됩니다. 세션 목록·이력·삭제는 로그인 사용자의 행으로 제한됩니다. 계정 삭제 시 사용자 외래키 cascade가 적용됩니다. 세션 삭제와 사용자 전체 로그 삭제 endpoint가 있지만 자동 보존 기한이나 만료 작업은 없습니다. 따라서 삭제 요청이나 계정 삭제 전까지 대화 기록이 남을 수 있습니다.

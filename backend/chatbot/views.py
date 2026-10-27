@@ -84,6 +84,20 @@ def chatbot_is_configured():
     )
 
 
+def is_valid_retrieval_context(context):
+    if not isinstance(context, list) or not context:
+        return False
+    return all(
+        isinstance(getattr(document, 'page_content', None), str)
+        and bool(document.page_content.strip())
+        and isinstance(getattr(document, 'metadata', None), dict)
+        and bool(document.metadata.get('source_name'))
+        and isinstance(document.metadata.get('source_url'), str)
+        and document.metadata['source_url'].startswith('https://')
+        for document in context
+    )
+
+
 CONTEXTUALIZE_QUESTION_SYSTEM_PROMPT = (
     '대화 기록과 최신 사용자 질문을 기반으로, '
     '대화 기록 없이도 이해할 수 있는 독립형 질문을 작성하세요. '
@@ -218,6 +232,14 @@ def chatbot(request):
             logger.warning('Agriculture chatbot invocation failed (%s).', type(exc).__name__)
             raise ServiceUnavailableError('Agriculture chatbot is unavailable.') from None
         answer = rag_response.get('answer') if isinstance(rag_response, dict) else None
+        context = rag_response.get('context') if isinstance(rag_response, dict) else None
+        if isinstance(context, list) and not context:
+            return JsonResponse(
+                {'error': 'No relevant knowledge sources were found.'},
+                status=404,
+            )
+        if not is_valid_retrieval_context(context):
+            raise ServiceUnavailableError('Agriculture chatbot returned invalid sources.')
         if not isinstance(answer, str) or not answer.strip():
             raise ServiceUnavailableError('Agriculture chatbot returned an invalid response.')
         timestamp = timezone.now()
