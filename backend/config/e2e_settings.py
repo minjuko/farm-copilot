@@ -39,7 +39,8 @@ def _is_link_or_junction(path):
     if hasattr(os.path, 'isjunction') and os.path.isjunction(path):
         return True
     reparse_point = getattr(stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0)
-    return bool(reparse_point and path.exists() and path.stat().st_file_attributes & reparse_point)
+    file_attributes = getattr(path.stat(), 'st_file_attributes', 0) if path.exists() else 0
+    return bool(reparse_point and file_attributes & reparse_point)
 
 
 if os.getenv('FARM_COPILOT_E2E_MODE') != '1':
