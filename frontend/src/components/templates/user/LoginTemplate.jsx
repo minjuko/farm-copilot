@@ -60,9 +60,9 @@ const Input = styled.input`
   border: 1px solid ${color("border")};
   border-radius: ${radius("sm")};
   &:focus {
-    outline: 3px solid ${color("primary")};
+    outline: 3px solid #267457;
     outline-offset: 2px;
-    border-color: ${color("primary")};
+    border-color: #267457;
   }
 `;
 
