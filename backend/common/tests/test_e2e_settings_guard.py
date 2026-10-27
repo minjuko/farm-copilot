@@ -17,6 +17,7 @@ class E2ESettingsGuardTests(SimpleTestCase):
         )
         (self.e2e_root / 'db').mkdir()
         (self.e2e_root / 'media').mkdir()
+        (self.e2e_root / 'private_media').mkdir()
         self.environment = os.environ.copy()
         self.environment.update(
             {
@@ -41,6 +42,7 @@ class E2ESettingsGuardTests(SimpleTestCase):
                 'from django.conf import settings; '
                 "print(settings.DATABASES['default']['NAME']); "
                 'print(settings.MEDIA_ROOT); '
+                'print(settings.DETECTION_IMAGE_ROOT); '
                 'print(settings.DEBUG, settings.USE_S3, settings.CHATBOT_ENABLED, '
                 'settings.EMAIL_BACKEND, settings.SESSION_COOKIE_SECURE, '
                 'settings.CSRF_COOKIE_SECURE, settings.ALLOWED_HOSTS, '
@@ -57,19 +59,23 @@ class E2ESettingsGuardTests(SimpleTestCase):
             timeout=30,
         )
 
-    def test_valid_fresh_root_uses_only_isolated_database_and_media(self):
+    def test_valid_fresh_root_uses_isolated_database_and_both_media_roots(self):
         result = self._load_settings()
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
-            result.stdout.splitlines()[:2],
-            [str(self.e2e_root / 'db' / 'e2e.sqlite3'), str(self.e2e_root / 'media')],
+            result.stdout.splitlines()[:3],
+            [
+                str(self.e2e_root / 'db' / 'e2e.sqlite3'),
+                str(self.e2e_root / 'media'),
+                str(self.e2e_root / 'private_media'),
+            ],
         )
         self.assertEqual(
-            result.stdout.splitlines()[2],
+            result.stdout.splitlines()[3],
             'True False False django.core.mail.backends.console.EmailBackend False False '
-            "['127.0.0.1', 'localhost'] ['http://127.0.0.1:3000'] "
-            "['http://127.0.0.1:3000']",
+            "['127.0.0.1', 'localhost'] ['http://localhost:3000'] "
+            "['http://localhost:3000']",
         )
 
     def test_missing_mode_root_or_marker_fails_closed(self):
