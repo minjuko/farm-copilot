@@ -29,7 +29,7 @@ const session = {
   pest_name: "고추 탄저병",
   detection_date: "2026-10-17 10:00",
   confidence: 91.25,
-  user_image_url: "/media/pest_detections/example.jpg",
+  user_image_url: "/detect/detection_image/42/",
 };
 
 beforeEach(() => {
@@ -49,6 +49,7 @@ test("renders a valid history item with the shared confidence format", async () 
   render(<DiagnosisListTemplate />);
 
   expect(await screen.findByText("91.25%")).toBeInTheDocument();
+  expect(screen.getByRole("img")).toHaveAttribute("crossorigin", "use-credentials");
   expect(screen.getByText("모델 예측 점수:")).toBeInTheDocument();
   expect(screen.getByText(/AI 예측 결과는 참고용입니다/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /고추 탄저병 진단 결과 보기/ }));

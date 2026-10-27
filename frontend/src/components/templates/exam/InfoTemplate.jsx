@@ -369,7 +369,7 @@ const InfoTemplate = () => {
             <ImageLabel>사용자 이미지</ImageLabel>
             <ImageContainer>
               {user_image_url && !hasUserImageFailed
-                ? <Image $crop src={user_image_url} alt="사용자 진단 이미지" onError={() => setHasUserImageFailed(true)} />
+                ? <Image $crop src={user_image_url} crossOrigin="use-credentials" alt="사용자 진단 이미지" onError={() => setHasUserImageFailed(true)} />
                 : <p>이미지를 표시할 수 없습니다.</p>}
             </ImageContainer>
           </ImagePanel>

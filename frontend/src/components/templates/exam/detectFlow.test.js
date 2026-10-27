@@ -15,16 +15,29 @@ test("requires an image and accepts only the backend JPEG/PNG/WebP contract", ()
   expect(validateDetectionFile(null)).toMatch(/선택/);
   expect(validateDetectionFile(file("crop.gif", "image/gif"))).toMatch(/JPEG/);
   expect(validateDetectionFile(file("crop.jpg", "text/plain"))).toMatch(/JPEG/);
+  expect(validateDetectionFile(file("crop.jpg", "image/png"))).toMatch(/JPEG/);
   expect(validateDetectionFile(file("crop.webp", "image/webp"))).toBeNull();
 });
 
+test("enforces the server upload size limit in the browser", () => {
+  expect(validateDetectionFile(file("crop.jpg", "image/jpeg", 10 * 1024 * 1024))).toBeNull();
+  expect(validateDetectionFile(file("crop.jpg", "image/jpeg", 10 * 1024 * 1024 + 1)))
+    .toMatch(/10 MiB/);
+});
+
 test.each([
-  [400, "Uploaded file is not a valid image.", "지원되는 이미지"],
+  [400, "Uploaded file is not a valid image.", "10 MiB"],
   [400, "No pest was detected in the uploaded image.", "지원 대상 질병을 확인하지 못했습니다"],
   [503, "Image detection model is not available.", "진단 모델"],
   [503, "병해 탐지 모델의 상세정보 매핑이 준비되지 않았습니다.", "상세정보 연결"],
 ])("maps Detect %s failures to a controlled message", (status, message, expected) => {
   expect(getDetectionErrorMessage({ response: { status, data: { message } } })).toContain(expected);
+});
+
+test("explains server-side upload size and image decoding rejections", () => {
+  const error = { response: { status: 400, data: { message: "Image dimensions must not exceed 20 megapixels." } } };
+  expect(classifyDetectionError(error).status).toBe("invalid_image");
+  expect(getDetectionErrorMessage(error)).toContain("2천만 픽셀");
 });
 
 test("normalizes relative media URLs against the API origin", () => {
