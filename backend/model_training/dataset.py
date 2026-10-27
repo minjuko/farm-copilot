@@ -40,9 +40,13 @@ def load_class_map(config_path: Path | None = None) -> dict[int, dict[str, str]]
         if class_id in result or not all(contract.values()):
             raise ValueError('class ids must be unique and class fields non-empty')
         result[class_id] = contract
-    if sorted(result) != list(range(len(result))) or len({v['name'] for v in result.values()}) != len(result):
+    if sorted(result) != list(range(len(result))) or len(
+        {v['name'] for v in result.values()}
+    ) != len(result):
         raise ValueError('class ids must be contiguous and class names unique')
     return result
+
+
 REQUIRED_FIELDS = {
     'relative_path',
     'split',
@@ -71,7 +75,8 @@ def _sha256(path: Path) -> str:
 
 
 def load_manifest(
-    manifest_path: Path, data_root: Path,
+    manifest_path: Path,
+    data_root: Path,
     class_map: dict[int, dict[str, str]] | None = None,
 ) -> list[dict[str, Any]]:
     """Read and validate paths, official label codes, hashes, and leakage groups."""

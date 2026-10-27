@@ -80,9 +80,7 @@ class LiveModelDetectionIntegrationTests(TestCase):
         self.assertEqual(history.status_code, 200)
         self.assertEqual(history.json()[0]['session_id'], result['session_id'])
 
-        detail = self.client.get(
-            f"/detect/detection_session_details/{result['session_id']}/"
-        )
+        detail = self.client.get(f'/detect/detection_session_details/{result["session_id"]}/')
         self.assertEqual(detail.status_code, 200)
         self.assertEqual(detail.json()['pest_name'], result['pest_name'])
         self.assertEqual(detail.json()['confidence'], result['confidence'])
@@ -93,8 +91,6 @@ class LiveModelDetectionIntegrationTests(TestCase):
             password='test-password',
         )
         self.client.force_login(other_user)
-        other_detail = self.client.get(
-            f"/detect/detection_session_details/{result['session_id']}/"
-        )
+        other_detail = self.client.get(f'/detect/detection_session_details/{result["session_id"]}/')
         self.assertEqual(other_detail.status_code, 404)
         self.assertTrue(PestDetection.objects.filter(id=result['session_id']).exists())

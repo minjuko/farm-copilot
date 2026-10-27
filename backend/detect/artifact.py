@@ -21,6 +21,7 @@ class ModelContractMismatchError(Exception):
 class ModelLoadFailedError(Exception):
     pass
 
+
 EXPECTED_SHA256 = 'b4e90d9feef9c9e35923c4e5fbf386d6e37ae6b2a3df687edfb14173bd7c10f4'
 EXPECTED_SIZE = 87_631_411
 EXPECTED_CLASSES = {
@@ -59,7 +60,9 @@ def validate_loaded_model(model):
     except (AttributeError, TypeError, ValueError) as exc:
         raise ModelContractMismatchError('Model metadata is incomplete.') from exc
     if task != 'detect' or class_count != len(EXPECTED_CLASSES) or names != EXPECTED_CLASSES:
-        raise ModelContractMismatchError('Model task or class ID/name contract does not match the service.')
+        raise ModelContractMismatchError(
+            'Model task or class ID/name contract does not match the service.'
+        )
 
 
 def load_validated_model(path):

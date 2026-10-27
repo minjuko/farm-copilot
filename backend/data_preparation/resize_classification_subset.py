@@ -136,7 +136,9 @@ def main() -> int:
         result = create_variants(args.source_dir, args.output_dir, tuple(args.sizes), args.quality)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
-    print(json.dumps({k: v for k, v in result.items() if k != 'files'}, ensure_ascii=False, indent=2))
+    print(
+        json.dumps({k: v for k, v in result.items() if k != 'files'}, ensure_ascii=False, indent=2)
+    )
     return 0
 
 

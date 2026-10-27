@@ -149,7 +149,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--train-ratio', type=float, default=0.70)
     parser.add_argument('--val-ratio', type=float, default=0.15)
     parser.add_argument('--test-ratio', type=float, default=0.15)
-    parser.add_argument('--class-config', type=Path, help='JSON class contract; defaults to legacy 3-class')
+    parser.add_argument(
+        '--class-config', type=Path, help='JSON class contract; defaults to legacy 3-class'
+    )
     args = parser.parse_args(argv)
     try:
         report = split_manifest(

@@ -51,7 +51,9 @@ def create_model(pretrained: bool = True, class_count: int | None = None) -> nn.
 
 
 def _evaluate(
-    model: nn.Module, loader: DataLoader, device: torch.device,
+    model: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
     class_map: dict[int, dict[str, str]] | None = None,
 ) -> tuple[dict, list[float], float, list[int], list[int], list[float]]:
     class_map = class_map or CLASS_MAP
@@ -139,9 +141,11 @@ def train(
         )
         for split, dataset in datasets.items()
     }
-    model = (model_factory() if model_factory else create_model(
-        pretrained=pretrained, class_count=len(class_map)
-    )).to(device)
+    model = (
+        model_factory()
+        if model_factory
+        else create_model(pretrained=pretrained, class_count=len(class_map))
+    ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
     history: list[dict[str, float | int]] = []
@@ -283,7 +287,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--seed', type=int, default=2026)
     parser.add_argument('--device', choices=('auto', 'cpu', 'cuda'), default='auto')
     parser.add_argument('--no-pretrained', action='store_true')
-    parser.add_argument('--class-config', type=Path, help='JSON class contract; defaults to legacy 3-class')
+    parser.add_argument(
+        '--class-config', type=Path, help='JSON class contract; defaults to legacy 3-class'
+    )
     args = parser.parse_args(argv)
     try:
         result = train(
