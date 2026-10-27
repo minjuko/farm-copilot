@@ -26,6 +26,9 @@ yarn-error.log*
 coverage/
 build/
 dist/
+frontend/test-results/
+frontend/playwright-report/
+frontend/e2e/.farm-copilot-e2e-root-path
 
 # Runtime DB / media
 *.sqlite
