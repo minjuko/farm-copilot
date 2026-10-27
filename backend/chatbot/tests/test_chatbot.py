@@ -296,12 +296,12 @@ class ChatbotUnavailableEndpointTests(TestCase):
     def setUp(self):
         from accounts.models import User
 
-        user = User.objects.create_user(
+        self.user = User.objects.create_user(
             email='chatbot-unavailable@example.com',
             username='chatbot-unavailable',
             password='test-password',
         )
-        self.client.force_login(user)
+        self.client.force_login(self.user)
         views._rag_chain = None
 
     def tearDown(self):
@@ -341,7 +341,7 @@ class ChatbotUnavailableEndpointTests(TestCase):
     @patch.object(views, 'get_rag_chain')
     def test_provider_exception_details_are_not_returned_or_logged(self, get_chain):
         chain = Mock()
-        chain.invoke.side_effect = RuntimeError('sensitive prompt and api key marker')
+        chain.invoke.side_effect = TimeoutError('sensitive prompt and api key marker')
         get_chain.return_value = chain
         with self.assertLogs('chatbot.views', level='WARNING') as captured:
             response = self.client.post(
@@ -354,6 +354,44 @@ class ChatbotUnavailableEndpointTests(TestCase):
         self.assertNotIn('sensitive prompt', response.content.decode())
         self.assertNotIn('private question', '\n'.join(captured.output))
         self.assertNotIn('api key marker', '\n'.join(captured.output))
+
+    @patch.object(views, 'get_rag_chain')
+    def test_empty_retrieval_returns_not_found_without_persisting(self, get_chain):
+        chain = Mock()
+        chain.invoke.return_value = {'answer': 'unsupported answer', 'context': []}
+        get_chain.return_value = chain
+
+        response = self.client.post(
+            '/selfchatbot/chatbot/',
+            data=json.dumps({'question': 'question', 'session_id': 'empty-context'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()['error'], 'No relevant knowledge sources were found.')
+        self.assertFalse(
+            views.Chatbot.objects.filter(user=self.user, session_id='empty-context').exists()
+        )
+
+    @patch.object(views, 'get_rag_chain')
+    def test_malformed_retrieval_metadata_returns_service_unavailable(self, get_chain):
+        chain = Mock()
+        chain.invoke.return_value = {
+            'answer': 'answer',
+            'context': [Mock(page_content='document', metadata={'source_name': 'source'})],
+        }
+        get_chain.return_value = chain
+
+        response = self.client.post(
+            '/selfchatbot/chatbot/',
+            data=json.dumps({'question': 'question', 'session_id': 'bad-context'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertFalse(
+            views.Chatbot.objects.filter(user=self.user, session_id='bad-context').exists()
+        )
 
     @override_settings(CHATBOT_ENABLED=True)
     @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-only-key'}, clear=True)
@@ -389,7 +427,15 @@ class ChatbotPersistenceContractTests(TestCase):
         chain = Mock()
         chain.invoke.return_value = {
             'answer': '검증된 농업 답변입니다.',
-            'context': [],
+            'context': [
+                Mock(
+                    page_content='검증된 출처 문서',
+                    metadata={
+                        'source_name': '농촌진흥청',
+                        'source_url': 'https://www.rda.go.kr/',
+                    },
+                )
+            ],
         }
         get_chain.return_value = chain
 

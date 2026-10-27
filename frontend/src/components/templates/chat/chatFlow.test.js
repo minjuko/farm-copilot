@@ -29,6 +29,10 @@ test("maps archived backend 503 without exposing infrastructure detail", () => {
   expect(getChatErrorMessage(error)).not.toMatch(/OpenAI|Chroma|RAG/i);
 });
 
+test("explains when retrieval finds no source material", () => {
+  expect(getChatErrorMessage({ response: { status: 404 } })).toMatch(/출처 자료를 찾지 못했습니다/);
+});
+
 test("rejects malformed success without creating an assistant message", () => {
   expect(normalizeChatResponse({ answer: undefined })).toBeNull();
   expect(normalizeChatResponse({ answer: "   " })).toBeNull();

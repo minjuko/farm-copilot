@@ -38,6 +38,7 @@ export const normalizeChatHistory = (chatHistory) => {
 
 export const getChatErrorMessage = (error) => {
   if (error?.response?.status === 503) return CHATBOT_LIMITED_MESSAGE;
+  if (error?.response?.status === 404) return "관련 출처 자료를 찾지 못했습니다. 질문을 구체적으로 바꾸어 다시 시도해주세요.";
   if (error?.response?.status === 400) return "질문을 확인한 후 다시 입력해주세요.";
   return "챗봇 요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.";
 };
