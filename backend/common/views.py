@@ -90,16 +90,9 @@ def _detection_readiness():
 @require_GET
 def capabilities(request):
     """Expose support state without leaking credentials or provider details."""
-    from chatbot.views import (
-        CHATBOT_DEPENDENCIES_AVAILABLE,
-        vector_index_available,
-    )
+    from chatbot.views import chatbot_is_configured
 
-    chatbot_configured = (
-        _configured('OPENAI_API_KEY')
-        and CHATBOT_DEPENDENCIES_AVAILABLE
-        and vector_index_available()
-    )
+    chatbot_configured = chatbot_is_configured()
     detection_ready, detection_reason = _detection_readiness()
     return JsonResponse(
         {

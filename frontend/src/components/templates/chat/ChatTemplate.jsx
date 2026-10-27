@@ -298,6 +298,11 @@ const ChatTemplate = () => {
           )}
         </MessageList>
       </ChatBox>
+      {chatbotStatus === 'available' && (
+        <p role="note">
+          질문과 이전 대화는 답변 생성을 위해 OpenAI로 전송되며 계정 대화 이력에 저장됩니다. 개인정보나 민감한 정보는 입력하지 마세요.
+        </p>
+      )}
       <InputBox onSubmit={handleSubmit}>
         <Input
           type="text"
