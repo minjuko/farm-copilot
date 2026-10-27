@@ -33,6 +33,8 @@ beforeEach(() => {
 
 test("blocks whitespace-only questions", async () => {
   render(<ChatTemplate />);
+  expect(await screen.findByRole("note")).toHaveTextContent("OpenAI");
+  expect(screen.getByRole("note")).toHaveTextContent("대화 이력에 저장");
   await waitFor(() => expect(screen.getByRole("button", { name: "질문 보내기" })).toBeEnabled());
   submitQuestion("   ");
   expect(screen.getByRole("alert")).toHaveTextContent("질문을 입력해주세요");
