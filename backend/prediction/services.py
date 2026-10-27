@@ -69,13 +69,21 @@ def fetch_market_prices(crop_name, region, start_date, end_date, price_code, reg
         response_data = payload.get('response') if isinstance(payload, dict) else None
         if not isinstance(response_data, dict):
             raise ServiceUnavailableError('Market price service returned a malformed response.')
-        header = response_data.get('header') or {}
-        result_code = str(header.get('resultCode', '00'))
+        header = response_data.get('header')
+        body = response_data.get('body')
+        if not isinstance(header, dict) or not isinstance(body, dict):
+            raise ServiceUnavailableError('Market price service returned a malformed response.')
+        if 'totalCount' not in body:
+            raise ServiceUnavailableError(
+                'Market price service returned malformed pagination data.'
+            )
+        result_code = str(header.get('resultCode', ''))
         if result_code not in {'00', '0', '200'}:
             raise ServiceUnavailableError('Market price service returned an API error.')
-        body = response_data.get('body') or {}
-        items = body.get('items') or {}
-        page_items = items.get('item', []) if isinstance(items, dict) else []
+        items = body.get('items')
+        if not isinstance(items, dict) or 'item' not in items:
+            raise ServiceUnavailableError('Market price service returned malformed items.')
+        page_items = items['item']
         if isinstance(page_items, dict):
             page_items = [page_items]
         if not isinstance(page_items, list):
@@ -83,12 +91,18 @@ def fetch_market_prices(crop_name, region, start_date, end_date, price_code, reg
         rows.extend(page_items)
         try:
             total_count = int(body.get('totalCount', 0))
+            if total_count < 0:
+                raise ValueError
         except (TypeError, ValueError):
             raise ServiceUnavailableError(
                 'Market price service returned malformed pagination data.'
             )
         expected_pages = max(1, (total_count + MARKET_PAGE_SIZE - 1) // MARKET_PAGE_SIZE)
-        if not page_items or page_no >= expected_pages:
+        if not page_items and total_count > len(rows):
+            raise ServiceUnavailableError(
+                'Market price service returned incomplete paginated data.'
+            )
+        if page_no >= expected_pages:
             break
         page_no += 1
 
@@ -110,7 +124,11 @@ def fetch_market_prices(crop_name, region, start_date, end_date, price_code, reg
         errors='coerce',
     )
     frame['itemname'] = frame[item_name_column] if item_name_column else crop_name
-    frame = frame.dropna(subset=['tm', 'price'])
+    if frame[['tm', 'price']].isna().any().any():
+        raise ServiceUnavailableError('Market price service returned invalid date or price data.')
+    if not frame['price'].map(lambda value: value > 0 and value < float('inf')).all():
+        raise ServiceUnavailableError('Market price service returned invalid price data.')
+    frame = frame.drop_duplicates(subset=['tm', 'price', 'itemname'])
     if frame.empty:
         raise NotFoundError(f'No valid market price data was found for {crop_name}.')
     # Multiple varieties/grades can exist per date; retain the complete series
@@ -144,12 +162,16 @@ def fetch_weather_data(region, region_codes):
     except requests.RequestException as exc:
         raise ServiceUnavailableError('Weather service request failed.') from exc
 
+    if response.status_code != 200:
+        raise ServiceUnavailableError(
+            f'Weather service request failed with HTTP {response.status_code}.'
+        )
     try:
         root = ET.fromstring(response.content)
-    except ET.ParseError as exc:
+    except (ET.ParseError, TypeError, ValueError) as exc:
         raise ServiceUnavailableError('Weather service returned an invalid XML response.') from exc
     result_code = root.findtext('.//resultCode') or root.findtext('.//Result_Code')
-    if result_code and result_code not in {'00', '0', '200', 'NORMAL_SERVICE'}:
+    if not result_code or result_code not in {'00', '0', '200', 'NORMAL_SERVICE'}:
         raise ServiceUnavailableError('Weather service returned an API error.')
 
     columns = ['tm', 'avgRhm', 'minTa', 'maxTa', 'maxWs', 'avgTa', 'avgWs', 'sumRn', 'ddMes']
@@ -161,10 +183,15 @@ def fetch_weather_data(region, region_codes):
     if frame.empty:
         raise NotFoundError('No weather data was found.')
     try:
+        if frame[columns].isna().any().any():
+            raise ValueError('missing weather field')
         for column in columns[1:]:
             frame[column] = pd.to_numeric(frame[column], errors='coerce')
-        frame.fillna(0, inplace=True)
-        frame['tm'] = pd.to_datetime(frame['tm'])
+        frame['tm'] = pd.to_datetime(frame['tm'], errors='coerce')
+        if frame.isna().any().any() or frame['tm'].duplicated().any():
+            raise ValueError('invalid weather row')
+        if frame[columns[1:]].isin([float('inf'), float('-inf')]).any().any():
+            raise ValueError('non-finite weather value')
     except (KeyError, TypeError, ValueError) as exc:
         raise ServiceUnavailableError('Weather service returned malformed data.') from exc
-    return frame
+    return frame.sort_values('tm').reset_index(drop=True)

@@ -125,6 +125,13 @@ class SoilServiceTests(TestCase):
 
     @patch('soil.services.requests.get')
     @patch.dict(os.environ, {'KAKAO_REST_API_KEY': 'test-key'}, clear=True)
+    def test_malformed_kakao_document_is_unavailable(self, mock_get):
+        mock_get.return_value = Mock(status_code=200, json=lambda: {'documents': {'address': []}})
+        with self.assertRaises(ServiceUnavailableError):
+            search_addresses('서울 주소')
+
+    @patch('soil.services.requests.get')
+    @patch.dict(os.environ, {'KAKAO_REST_API_KEY': 'test-key'}, clear=True)
     def test_kakao_code_is_normalized_for_soil_v2(self, mock_get):
         mock_get.return_value = Mock(
             status_code=200,
@@ -335,7 +342,8 @@ class SoilServiceTests(TestCase):
         with self.assertRaises(ServiceUnavailableError):
             fetch_fertilizer(get_crop_names()[0], {}, '1234567890100100000')
         mock_get.return_value = Mock(
-            status_code=200, content=b'<response><body><items /></body></response>'
+            status_code=200,
+            content=b'<response><header><resultCode>00</resultCode></header><body><items /></body></response>',
         )
         with self.assertRaises(NotFoundError):
             fetch_fertilizer(get_crop_names()[0], {}, '1234567890100100000')
