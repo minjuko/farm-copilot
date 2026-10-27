@@ -828,7 +828,7 @@ Backend Test DB에서는 전체 Migration 적용 후 **138개 Test가 정상 통
 
 ## 9.2 Frontend
 
-아래 수치는 2026-09-03 당시 검증 결과이며 현재 결과는 9.4절에 기록합니다.
+아래 수치는 2026-09-03 당시 검증 결과입니다. 9.4절은 2026-10-20 기록이며, 최종 검증 결과는 9.5절을 기준으로 확인하세요.
 
 `frontend` 디렉터리에서 실행합니다.
 
@@ -857,7 +857,7 @@ Production Build는 `Compiled successfully`로 완료됐습니다.
 
 ## 9.3 2026-09-03 Audit에서 실행하지 않은 검증 (당시 기록)
 
-다음은 2026-09-03 Audit 당시 실행하지 않은 항목입니다. 이후 실행 여부는 9.4절 기록을 기준으로 합니다.
+다음은 2026-09-03 Audit 당시 실행하지 않은 항목입니다. 이후 실행 여부는 9.4–9.5절의 날짜별 기록을 기준으로 합니다.
 
 - Dependency 재설치 검증 (`pip install`, `npm ci`)
 - 기존 Local SQLite DB Migration 적용
@@ -875,6 +875,8 @@ Production Build는 `Compiled successfully`로 완료됐습니다.
 외부 API의 실제 Provider 호출은 2026-10-20 통합 검증에서 수행하지 않았습니다. Provider 계약과 credential은 공급자 공식 문서에서 별도로 확인해야 합니다.
 
 ## 9.4 2026-10-20 통합 검증 업데이트
+
+> 이 절은 당시 검증 기록입니다. 현재 테스트 수와 반복 가능한 Browser E2E 결과는 아래 9.5절을 참조하세요.
 
 | 검증 | 결과 |
 | --- | --- |
@@ -896,6 +898,25 @@ Production Build는 `Compiled successfully`로 완료됐습니다.
 Fresh Clone도 별도 scratch 경로에 생성해 manifest와 lockfile이 존재하고 `backend/best.pt`, `.env`, `frontend/node_modules`가 clone에 포함되지 않는 것을 확인했습니다. 별도 clone에서 의존성을 다시 설치하거나 서버를 띄우지는 않았으므로 Fresh Clone 전체 환경 설치 성공으로 해석하지 않습니다.
 
 2026-10-20에는 별도 Chrome 탭에서 React와 Django를 연결해 도구 이용 일회성 브라우저 흐름을 확인했습니다. 반복 실행 자동화 스위트는 아니며, 격리 설정과 재현 절차는 [AI detection operations](./AI_DETECTION_OPERATIONS.md#격리된-실제-브라우저-e2e)을 참고하세요. 검증 결과는 모델 정확도 또는 일반화 성능 평가가 아닙니다.
+
+## 9.5 FC10 최종 검증 (2026-10-28)
+
+아래 결과는 FC10 기준 HEAD `0413f06ddb3de38372af73a37d166605a412eb38`에서 재실행한 로컬 검사와 GitHub Actions #44 확인 결과입니다. 검사 경계는 Mock, 격리 Django, 실제 YOLO를 구분합니다.
+
+| 검증 | 결과 | 범위 |
+| --- | --- | --- |
+| Ruff lint / format | PASS | Backend 전체 |
+| Django `check` / 전체 tests / `pip check` | PASS / 278개 중 277 통과·1 skip / PASS | Django 테스트 DB, 실제 운영 DB 아님 |
+| Frontend `npm ci`, lint, Jest, build | 모두 PASS; 32 suites / 188 tests | lockfile 기반 재설치, React 테스트 |
+| Playwright Chromium | 42개 중 40 통과·2 skip | fixture 2 viewport + 격리 Django desktop; 모바일 Django 반복 2건 skip |
+| axe 검사 | 자동 위반 0건 | 로그인·커뮤니티 화면 |
+| 모바일 브라우저 | 320×640, 390×844 통과 | 에뮬레이션이며 실제 기기 아님 |
+| GitHub Actions | #44 Frontend·Backend·Browser E2E 모두 성공 | 공개 CI, 모델 파일 없이 실행 |
+| `npm audit` | 전체 31 (낮음 9·보통 6·높음 16), production 2 (보통) | CRA/개발 toolchain 다수 및 React Router 직접 의존성 |
+
+Playwright fixture 시나리오는 API 응답을 mock합니다. 별도 실제 Django 브라우저 시나리오는 `config.e2e_settings`가 만든 임시 SQLite·Media·Private Media에서 로그인, CSRF, 사용자 이미지 소유권과 보안 헤더만 확인하며 YOLO 추론은 하지 않습니다. 실제 YOLO opt-in 검증은 FC07의 로컬 기록을 참고하며 FC10에서는 재실행하지 않았습니다. 이 검증은 모델 정확도, 외부 농업 API, OpenAI, AWS, PostgreSQL, 배포 환경을 검증하지 않습니다.
+
+Playwright 설치와 시나리오 설명은 [Frontend E2E 문서](./FRONTEND_E2E.md), 최근 모델 실행 기록은 [Detection Model 문서](./DETECTION_MODEL.md#fc07-로컬-검증-기록-2026-10-27)를 참고하세요.
 
 ---
 
