@@ -43,7 +43,7 @@
 
 ## 검증된 결과와 경계
 
-2026-10-28 기준 로컬 검증과 Actions #44에서 확인한 결과:
+2026-10-28 기준 로컬 검증과 최종 문서 commit의 Actions #45에서 확인한 결과:
 
 - Frontend Jest: **32 suites, 188 tests 통과**
 - Backend Django: **278개 중 277 통과, 1 skip**
@@ -52,7 +52,7 @@
 - Playwright Chromium: **42개 중 40 통과, 2 skip**. Fixture 흐름과 실제 격리 Django 경계를 구분
 - axe 자동 검사: 로그인·커뮤니티 화면에서 자동 위반 0건
 - 320×640과 390×844 브라우저 viewport 검사 통과
-- GitHub Actions #44: Frontend, Backend, Browser E2E 모두 성공
+- GitHub Actions #45: Frontend, Backend, Browser E2E 모두 성공
 
 **Mock/fixture:** 프론트엔드 주요 입력·오류·결과 흐름과 API 응답 소비를 검사합니다. 실제 Django endpoint나 외부 API 검증으로 표현하지 않습니다.
 

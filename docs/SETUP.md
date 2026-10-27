@@ -901,7 +901,7 @@ Fresh Clone도 별도 scratch 경로에 생성해 manifest와 lockfile이 존재
 
 ## 9.5 FC10 최종 검증 (2026-10-28)
 
-아래 결과는 FC10 기준 HEAD `0413f06ddb3de38372af73a37d166605a412eb38`에서 재실행한 로컬 검사와 GitHub Actions #44 확인 결과입니다. 검사 경계는 Mock, 격리 Django, 실제 YOLO를 구분합니다.
+아래 로컬 검사는 FC10 기준 코드 HEAD `0413f06ddb3de38372af73a37d166605a412eb38`에서 재실행했습니다. 문서 변경을 포함한 최종 commit의 Actions #45에서도 전체 job이 성공했습니다. 검사 경계는 Mock, 격리 Django, 실제 YOLO를 구분합니다.
 
 | 검증 | 결과 | 범위 |
 | --- | --- | --- |
@@ -911,7 +911,7 @@ Fresh Clone도 별도 scratch 경로에 생성해 manifest와 lockfile이 존재
 | Playwright Chromium | 42개 중 40 통과·2 skip | fixture 2 viewport + 격리 Django desktop; 모바일 Django 반복 2건 skip |
 | axe 검사 | 자동 위반 0건 | 로그인·커뮤니티 화면 |
 | 모바일 브라우저 | 320×640, 390×844 통과 | 에뮬레이션이며 실제 기기 아님 |
-| GitHub Actions | #44 Frontend·Backend·Browser E2E 모두 성공 | 공개 CI, 모델 파일 없이 실행 |
+| GitHub Actions | #45 Frontend·Backend·Browser E2E 모두 성공 | 공개 CI, 모델 파일 없이 실행 |
 | `npm audit` | 전체 31 (낮음 9·보통 6·높음 16), production 2 (보통) | CRA/개발 toolchain 다수 및 React Router 직접 의존성 |
 
 Playwright fixture 시나리오는 API 응답을 mock합니다. 별도 실제 Django 브라우저 시나리오는 `config.e2e_settings`가 만든 임시 SQLite·Media·Private Media에서 로그인, CSRF, 사용자 이미지 소유권과 보안 헤더만 확인하며 YOLO 추론은 하지 않습니다. 실제 YOLO opt-in 검증은 FC07의 로컬 기록을 참고하며 FC10에서는 재실행하지 않았습니다. 이 검증은 모델 정확도, 외부 농업 API, OpenAI, AWS, PostgreSQL, 배포 환경을 검증하지 않습니다.
