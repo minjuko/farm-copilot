@@ -192,6 +192,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+DETECTION_IMAGE_ROOT = Path(
+    os.getenv('DETECTION_IMAGE_ROOT', str(BASE_DIR / 'private_media'))
+).resolve()
 
 STATICFILES_DIRS = [
     BASE_DIR / 'static',

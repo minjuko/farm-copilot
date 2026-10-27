@@ -9,10 +9,11 @@ from pathlib import Path
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.templatetags.static import static
+from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_GET, require_http_methods
 from PIL import Image, UnidentifiedImageError
 
 from common.decorators import login_required
@@ -27,6 +28,15 @@ from .artifact import EXPECTED_CLASSES
 from .models import Pest, PestDetection, PestModelClass
 
 logger = logging.getLogger(__name__)
+
+MAX_DETECTION_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_DETECTION_IMAGE_PIXELS = 20_000_000
+IMAGE_FORMATS_BY_EXTENSION = {
+    'jpg': ('image/jpeg', 'JPEG'),
+    'jpeg': ('image/jpeg', 'JPEG'),
+    'png': ('image/png', 'PNG'),
+    'webp': ('image/webp', 'WEBP'),
+}
 
 DEFAULT_MODEL_PATH = Path(settings.BASE_DIR) / 'best.pt'
 CONFIDENCE_THRESHOLD = 0.6
@@ -92,23 +102,28 @@ def validate_image_file(image_file):
         raise ValidationError('No image uploaded.')
     if image_file.size == 0:
         raise ValidationError('Uploaded image is empty.')
+    if image_file.size > MAX_DETECTION_UPLOAD_BYTES:
+        raise ValidationError('Image file must be 10 MiB or smaller.')
 
-    allowed_types = {'image/jpeg', 'image/png', 'image/webp'}
-    allowed_extensions = {'jpg', 'jpeg', 'png', 'webp'}
     extension = Path(image_file.name).suffix.lower().lstrip('.')
-    if image_file.content_type not in allowed_types or extension not in allowed_extensions:
+    expected_format = IMAGE_FORMATS_BY_EXTENSION.get(extension)
+    if not expected_format or image_file.content_type != expected_format[0]:
         raise ValidationError('Only JPEG, PNG, and WebP images are allowed.')
 
     try:
         with warnings.catch_warnings():
             warnings.simplefilter('error', Image.DecompressionBombWarning)
             with Image.open(image_file) as image:
-                if image.format not in {'JPEG', 'PNG', 'WEBP'}:
+                if image.format != expected_format[1]:
                     raise ValidationError('Only JPEG, PNG, and WebP images are allowed.')
+                if image.width * image.height > MAX_DETECTION_IMAGE_PIXELS:
+                    raise ValidationError('Image dimensions must not exceed 20 megapixels.')
                 image.verify()
 
         image_file.seek(0)
         with Image.open(image_file) as image:
+            if image.width * image.height > MAX_DETECTION_IMAGE_PIXELS:
+                raise ValidationError('Image dimensions must not exceed 20 megapixels.')
             image.load()
     except ValidationError:
         raise
@@ -126,10 +141,17 @@ def validate_image_file(image_file):
 
 def save_temp_image(image_file):
     extension = Path(image_file.name).suffix or '.img'
-    with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp_file:
-        for chunk in image_file.chunks():
-            temp_file.write(chunk)
-        return temp_file.name
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp_file:
+            temp_path = temp_file.name
+            for chunk in image_file.chunks():
+                temp_file.write(chunk)
+        return temp_path
+    except Exception:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
 
 
 def get_original_image_content(image_path):
@@ -151,23 +173,29 @@ def map_model_class_to_pest_id(model_class_id):
     return mapping.pest_id
 
 
-def image_url_or_none(image_field):
-    if not image_field:
+def detection_image_url_or_none(detection):
+    if not detection.image:
         return None
-    try:
-        return image_field.url
-    except (ValueError, OSError):
-        return None
+    return reverse('detect:detection_image', args=[detection.id])
 
 
 def delete_detection_image(image_field):
     """Best-effort cleanup for storage that is not covered by DB transactions."""
     if not image_field or not image_field.name:
         return
+    image_name = image_field.name
     try:
         image_field.delete(save=False)
     except Exception as exc:
         logger.warning('Failed to delete a detection image from storage: %s', exc)
+    if not settings.USE_S3:
+        media_root = Path(settings.MEDIA_ROOT).resolve()
+        legacy_path = (media_root / image_name).resolve()
+        if legacy_path.is_relative_to(media_root) and legacy_path.is_file():
+            try:
+                legacy_path.unlink()
+            except OSError:
+                logger.warning('Failed to remove a legacy public detection image.')
 
 
 def get_owned_detection(user, session_id):
@@ -229,7 +257,7 @@ def serialize_detection(detection):
         'information_source': pest.information_source,
         'information_source_url': pest.information_source_url,
         'confidence': detection.confidence,
-        'user_image_url': image_url_or_none(detection.image),
+        'user_image_url': detection_image_url_or_none(detection),
         'db_image_url': reference_image_url(pest),
         'reference_image_license': REFERENCE_IMAGE_LICENSE,
         'detection_date': timezone.localtime(detection.detection_date).strftime('%Y-%m-%d %H:%M'),
@@ -336,7 +364,10 @@ def upload_image_for_detection(request):
         raise InternalServerError('An unexpected error occurred.')
     finally:
         if temp_image_path and os.path.exists(temp_image_path):
-            os.remove(temp_image_path)
+            try:
+                os.remove(temp_image_path)
+            except OSError:
+                logger.warning('Failed to remove a temporary detection upload file.')
 
 
 @login_required
@@ -355,7 +386,7 @@ def list_detection_sessions(request):
                     '%Y-%m-%d %H:%M'
                 ),
                 'confidence': session.confidence,
-                'user_image_url': image_url_or_none(session.image),
+                'user_image_url': detection_image_url_or_none(session),
             }
             for session in sessions
         ]
@@ -377,6 +408,46 @@ def detection_session_details(request, session_id):
     except Exception as exc:
         logger.exception('Unhandled exception in session details: %s', exc)
         raise InternalServerError('An unexpected error occurred while fetching session details.')
+
+
+@login_required
+@require_GET
+def detection_image(request, session_id):
+    session = get_owned_detection(request.user, session_id)
+    if not session.image:
+        raise NotFoundError('Detection image not found')
+
+    image_file = None
+    try:
+        try:
+            image_file = session.image.open('rb')
+        except FileNotFoundError:
+            if settings.USE_S3:
+                raise
+            media_root = Path(settings.MEDIA_ROOT).resolve()
+            legacy_path = (media_root / session.image.name).resolve()
+            if not legacy_path.is_relative_to(media_root) or not legacy_path.is_file():
+                raise
+            image_file = legacy_path.open('rb')
+        with Image.open(image_file) as image:
+            content_type = Image.MIME.get(image.format)
+            if content_type not in {'image/jpeg', 'image/png', 'image/webp'}:
+                raise UnidentifiedImageError('Unsupported stored image format')
+        image_file.seek(0)
+    except (FileNotFoundError, UnidentifiedImageError, OSError, ValueError) as exc:
+        if image_file:
+            image_file.close()
+        raise NotFoundError('Detection image not found') from exc
+    except Exception as exc:
+        if image_file:
+            image_file.close()
+        logger.exception('Failed to open a stored detection image: %s', exc)
+        raise InternalServerError('Failed to retrieve detection image.') from exc
+
+    response = FileResponse(image_file, content_type=content_type)
+    response['Cache-Control'] = 'private, no-store, max-age=0'
+    response['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 
 @login_required

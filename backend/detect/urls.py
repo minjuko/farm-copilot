@@ -6,6 +6,11 @@ app_name = 'detect'
 
 urlpatterns = [
     path('upload/', views.upload_image_for_detection, name='upload_image'),
+    path(
+        'detection_image/<str:session_id>/',
+        views.detection_image,
+        name='detection_image',
+    ),
     path('list_detection_sessions/', views.list_detection_sessions, name='list_detection_sessions'),
     path(
         'detection_session_details/<str:session_id>/',

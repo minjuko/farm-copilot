@@ -35,6 +35,7 @@ backend/database/
 backend/prediction/data/raw/
 media/
 backend/media/
+backend/private_media/
 # Legacy runtime paths created by custom local storage classes
 backend/pest_detection/
 backend/post_board/

@@ -1,10 +1,12 @@
 import os
 import tempfile
 from io import BytesIO
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
@@ -102,11 +104,50 @@ class DetectionRuntimeTests(SimpleTestCase):
     def test_image_validation_rejects_invalid_and_empty_files(self):
         invalid = SimpleUploadedFile('crop.jpg', b'not-an-image', content_type='image/jpeg')
         empty = SimpleUploadedFile('crop.jpg', b'', content_type='image/jpeg')
+        unsupported = SimpleUploadedFile('crop.gif', b'GIF89a', content_type='image/gif')
 
         with self.assertRaises(ValidationError):
             views.validate_image_file(invalid)
         with self.assertRaises(ValidationError):
             views.validate_image_file(empty)
+        with self.assertRaises(ValidationError):
+            views.validate_image_file(unsupported)
+
+    def test_image_validation_rejects_extension_and_content_mismatches(self):
+        png = self.make_image('PNG')
+        mismatched = SimpleUploadedFile('crop.jpg', png.read(), content_type='image/jpeg')
+
+        with self.assertRaises(ValidationError):
+            views.validate_image_file(mismatched)
+
+    def test_upload_size_limit_accepts_exact_boundary_and_rejects_above_it(self):
+        accepted = self.make_image('JPEG')
+        accepted.size = views.MAX_DETECTION_UPLOAD_BYTES
+        views.validate_image_file(accepted)
+
+        rejected = self.make_image('JPEG')
+        rejected.size = views.MAX_DETECTION_UPLOAD_BYTES + 1
+        with self.assertRaisesRegex(ValidationError, '10 MiB'):
+            views.validate_image_file(rejected)
+
+    def test_image_pixel_limit_rejects_large_dimensions(self):
+        image_file = self.make_image('PNG')
+        with patch.object(views, 'MAX_DETECTION_IMAGE_PIXELS', 64):
+            views.validate_image_file(image_file)
+        with patch.object(views, 'MAX_DETECTION_IMAGE_PIXELS', 63):
+            with self.assertRaisesRegex(ValidationError, '20 megapixels'):
+                views.validate_image_file(image_file)
+
+    def test_detection_storage_is_private_and_uses_signed_url_defaults(self):
+        from common.storage_backends import PestDetectionStorage
+
+        self.assertIsNone(PestDetectionStorage.default_acl)
+        self.assertTrue(PestDetectionStorage.querystring_auth)
+        if not settings.USE_S3:
+            self.assertNotEqual(
+                os.path.abspath(PestDetectionStorage().location),
+                os.path.abspath(settings.MEDIA_ROOT),
+            )
 
     @patch.object(views.PestModelClass.objects, 'select_related')
     def test_unconfigured_model_classes_are_blocked(self, select_related):
@@ -392,6 +433,13 @@ class DetectionSessionEndpointTests(TestCase):
     def setUp(self):
         from accounts.models import User
 
+        self.storage = PestDetection._meta.get_field('image').storage
+        self.original_storage_location = self.storage.location
+        self.storage_temp = tempfile.TemporaryDirectory(prefix='detection-private-media-test-')
+        self.storage.location = self.storage_temp.name
+        self.addCleanup(self.storage_temp.cleanup)
+        self.addCleanup(setattr, self.storage, 'location', self.original_storage_location)
+
         self.user = User.objects.create_user(
             email='detect-session@example.com',
             username='detect-session',
@@ -405,11 +453,178 @@ class DetectionSessionEndpointTests(TestCase):
             confidence=87.5,
         )
 
+    def store_owned_image(self):
+        buffer = BytesIO()
+        Image.new('RGB', (8, 8), color='green').save(buffer, format='PNG')
+        self.detection.image.save('owned.png', ContentFile(buffer.getvalue()), save=True)
+        return self.detection.image.name, buffer.getvalue()
+
     def test_detail_uses_the_shared_success_contract(self):
         response = self.client.get(f'/detect/detection_session_details/{self.detection.id}/')
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), views.serialize_detection(self.detection))
+
+    def test_image_response_contract_uses_an_authenticated_endpoint_not_storage_url(self):
+        self.store_owned_image()
+        with patch.object(self.storage, 'url', side_effect=AssertionError('public URL requested')):
+            payload = views.serialize_detection(self.detection)
+
+        self.assertEqual(
+            payload['user_image_url'],
+            f'/detect/detection_image/{self.detection.id}/',
+        )
+        history = self.client.get('/detect/list_detection_sessions/')
+        self.assertEqual(history.json()[0]['user_image_url'], payload['user_image_url'])
+
+    def test_only_the_authenticated_owner_can_stream_their_image(self):
+        self.store_owned_image()
+        url = f'/detect/detection_image/{self.detection.id}/'
+
+        self.client.logout()
+        self.assertEqual(self.client.get(url).status_code, 401)
+
+        other_user = self.user.__class__.objects.create_user(
+            email='other-detect-session@example.com',
+            username='other-detect-session',
+            password='test-password',
+        )
+        self.client.force_login(other_user)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(
+            self.client.get(f'/detect/detection_session_details/{self.detection.id}/').status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.delete(
+                f'/detect/delete_detection_session/{self.detection.id}/'
+            ).status_code,
+            404,
+        )
+        self.assertEqual(self.client.get('/detect/list_detection_sessions/').json(), [])
+        self.assertTrue(PestDetection.objects.filter(id=self.detection.id).exists())
+
+        self.client.force_login(self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
+        self.assertEqual(response['Cache-Control'], 'private, no-store, max-age=0')
+        self.assertEqual(response['X-Content-Type-Options'], 'nosniff')
+        self.assertTrue(b''.join(response.streaming_content))
+        response.close()
+
+    def test_private_local_detection_image_is_not_served_from_media_url(self):
+        image_name, _content = self.store_owned_image()
+
+        self.assertTrue(os.path.isfile(self.storage.path(image_name)))
+        self.assertEqual(self.client.get(f'/media/{image_name}').status_code, 404)
+
+    def test_legacy_local_image_is_blocked_directly_but_remains_owner_accessible(self):
+        legacy_media = tempfile.TemporaryDirectory(prefix='detection-legacy-media-test-')
+        self.addCleanup(legacy_media.cleanup)
+        image_name = 'pest_detections/legacy.png'
+        image_path = Path(legacy_media.name) / image_name
+        image_path.parent.mkdir(parents=True)
+        buffer = BytesIO()
+        Image.new('RGB', (8, 8), color='green').save(buffer, format='PNG')
+        image_path.write_bytes(buffer.getvalue())
+        self.detection.image = image_name
+        self.detection.save(update_fields=['image'])
+
+        with override_settings(MEDIA_ROOT=legacy_media.name):
+            self.assertEqual(self.client.get(f'/media/{image_name}').status_code, 404)
+            response = self.client.get(f'/detect/detection_image/{self.detection.id}/')
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(b''.join(response.streaming_content))
+            response.close()
+
+            with self.captureOnCommitCallbacks(execute=True):
+                delete_response = self.client.delete(
+                    f'/detect/delete_detection_session/{self.detection.id}/'
+                )
+            self.assertEqual(delete_response.status_code, 200)
+            self.assertFalse(image_path.exists())
+
+    def test_session_delete_removes_the_file_and_image_endpoint_returns_404(self):
+        image_name, _content = self.store_owned_image()
+        image_path = self.storage.path(image_name)
+        self.assertTrue(os.path.isfile(image_path))
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.delete(f'/detect/delete_detection_session/{self.detection.id}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(os.path.exists(image_path))
+        self.assertEqual(
+            self.client.get(f'/detect/detection_image/{self.detection.id}/').status_code,
+            404,
+        )
+
+    @patch.object(views, 'process_image')
+    def test_successful_upload_persists_private_image_and_returns_compatible_fields(
+        self, process_image
+    ):
+        buffer = BytesIO()
+        Image.new('RGB', (8, 8), color='blue').save(buffer, format='PNG')
+        image_bytes = buffer.getvalue()
+        process_image.return_value = (
+            self.pest.id,
+            90.0,
+            ContentFile(image_bytes, name='annotated.png'),
+        )
+        upload = SimpleUploadedFile('crop.png', image_bytes, content_type='image/png')
+
+        response = self.client.post('/detect/upload/', {'image': upload})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['session_id'], PestDetection.objects.latest('id').id)
+        self.assertEqual(
+            payload['user_image_url'],
+            f'/detect/detection_image/{payload["session_id"]}/',
+        )
+        image_response = self.client.get(payload['user_image_url'])
+        self.assertEqual(image_response.status_code, 200)
+        self.assertEqual(image_response['Content-Type'], 'image/png')
+        self.assertTrue(b''.join(image_response.streaming_content))
+        image_response.close()
+
+    def test_upload_rejects_oversize_before_creating_an_inference_temp_file(self):
+        buffer = BytesIO()
+        Image.new('RGB', (8, 8), color='blue').save(buffer, format='PNG')
+        upload = SimpleUploadedFile('crop.png', buffer.getvalue(), content_type='image/png')
+
+        with patch.object(views, 'MAX_DETECTION_UPLOAD_BYTES', 1):
+            with patch.object(views, 'save_temp_image') as save_temp_image:
+                response = self.client.post('/detect/upload/', {'image': upload})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('10 MiB', response.json()['message'])
+        save_temp_image.assert_not_called()
+
+    @patch.object(views, 'process_image')
+    def test_database_failure_after_storage_save_removes_the_image(self, process_image):
+        buffer = BytesIO()
+        Image.new('RGB', (8, 8), color='blue').save(buffer, format='PNG')
+        content = buffer.getvalue()
+        process_image.return_value = (
+            self.pest.id,
+            90.0,
+            ContentFile(content, name='failed-save.png'),
+        )
+        original_save = PestDetection.save
+
+        def save_then_fail(detection, *args, **kwargs):
+            original_save(detection, *args, **kwargs)
+            raise OSError('simulated database failure')
+
+        upload = SimpleUploadedFile('crop.png', content, content_type='image/png')
+        with patch.object(PestDetection, 'save', autospec=True, side_effect=save_then_fail):
+            response = self.client.post('/detect/upload/', {'image': upload})
+
+        self.assertEqual(response.status_code, 500)
+        self.assertFalse(any(path.is_file() for path in Path(self.storage.location).rglob('*')))
+        self.assertEqual(PestDetection.objects.count(), 1)
 
     def test_malformed_session_ids_stay_on_the_not_found_boundary(self):
         detail = self.client.get('/detect/detection_session_details/not-a-number/')
