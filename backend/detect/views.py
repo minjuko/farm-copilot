@@ -24,7 +24,7 @@ from common.exceptions import (
     ValidationError,
 )
 
-from .artifact import EXPECTED_CLASSES
+from .artifact import EXPECTED_CLASSES, check_artifact_readiness
 from .models import Pest, PestDetection, PestModelClass
 
 logger = logging.getLogger(__name__)
@@ -71,29 +71,12 @@ def validate_model_contract(model):
 
 
 def get_yolo_model():
-    global _yolo_model
-
-    if _yolo_model is not None:
-        return _yolo_model
-
-    if not MODEL_PATH.exists():
+    readiness = check_artifact_readiness(MODEL_PATH)
+    if not readiness['ready'] or _yolo_model is None:
         raise ServiceUnavailableError(
-            'Image detection model is not available in this public repository.'
+            'Image detection model failed integrity, runtime, or inference readiness checks.'
         )
-
-    try:
-        yolo_class = import_module('ultralytics').YOLO
-        model = yolo_class(str(MODEL_PATH))
-        validate_model_contract(model)
-        _yolo_model = model
-    except ServiceUnavailableError:
-        raise
-    except Exception as exc:
-        logger.warning('Image detection runtime is unavailable: %s', exc)
-        raise ServiceUnavailableError(
-            'Image detection runtime is not installed or failed to initialize.'
-        ) from exc
-
+    validate_model_contract(_yolo_model)
     return _yolo_model
 
 
