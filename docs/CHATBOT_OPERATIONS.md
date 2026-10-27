@@ -1,5 +1,7 @@
 # 챗봇 운영·개인정보 경계
 
+이 문서는 현재 코드의 계약을 설명합니다. 아래의 로컬 Chroma index 수량은 FC08 당시 개발 PC에서만 확인한 값이며 공개 clone의 기본 상태나 외부 서비스 정상 상태를 뜻하지 않습니다.
+
 ## 기능과 외부 서비스 경계
 
 `CHATBOT_ENABLED` 기본값은 `false`입니다. 챗봇을 활성화하려면 운영자가 명시적으로 켜고 `OPENAI_API_KEY`, 선택 AI 런타임, 로컬 Chroma DB와 manifest를 제공해야 합니다. 질문과 최근 대화는 LangChain retrieval chain을 거쳐 OpenAI의 `ChatOpenAI`로 전송됩니다. Index 생성 명령도 `OPENAI_API_KEY`가 있어야 임베딩 API를 호출합니다. 이 저장소의 기본 테스트는 Mock을 사용하며 유료 호출을 하지 않습니다.
@@ -10,7 +12,7 @@
 
 ## RAG 데이터와 재현성
 
-Index 생성 입력은 `backend/chatbot/chatbot_source.csv`이며 `python manage.py build_chatbot_index --validate-only`는 파일 구조만 검증합니다. 실제 인덱싱에는 OpenAI embedding 요청이 발생하므로 운영자가 별도 실행을 승인해야 합니다. Index DB와 manifest는 `.gitignore` 대상입니다. 현재 로컬 manifest에는 8개 문서, `text-embedding-3-small`, `agriculture-knowledge`가 기록되어 있고 소스 CSV 해시도 일치했습니다. 로컬 Chroma가 같은 컬렉션을 열고 8개 레코드를 반환했지만, 이 확인은 검색 품질 또는 OpenAI 응답 검증이 아닙니다.
+Index 생성 입력은 `backend/chatbot/chatbot_source.csv`이며 `python manage.py build_chatbot_index --validate-only`는 파일 구조만 검증합니다. 실제 인덱싱에는 OpenAI embedding 요청이 발생하므로 운영자가 별도 실행을 승인해야 합니다. Index DB와 manifest는 `.gitignore` 대상입니다. FC08 당시 로컬 manifest에는 8개 문서, `text-embedding-3-small`, `agriculture-knowledge`가 기록돼 있었고 소스 CSV hash도 일치했습니다. 그 로컬 Chroma가 같은 collection에서 8개 record를 반환했지만 검색 품질 또는 OpenAI 응답 검증은 아닙니다. 로컬 index는 Git에 포함되지 않으므로 새 clone에 이 상태가 있다고 가정하지 않습니다.
 
 현재 runtime은 manifest의 source hash 형식만 검사합니다. 원본 CSV와 hash를 매 요청마다 대조하지 않으며, manifest만으로 임베딩 차원·컬렉션 내 모든 벡터·문서 metadata의 무결성을 확인하지 않습니다. 로컬 DB와 manifest가 있어 재구성 입력은 확인 가능하지만, 생성 시점의 API 응답과 임베딩 결과를 bitwise 재현할 수는 없습니다.
 
