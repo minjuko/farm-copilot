@@ -167,12 +167,27 @@ class PredictionRuntimeTests(TestCase):
             fetch_weather_data('서울', {'서울': ['1101', '108']})
 
     @patch('prediction.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_WEATHER_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_weather_http_error_and_missing_measurements_are_unavailable(self, mock_get):
+        mock_get.return_value = Mock(status_code=503, content=b'<error/>')
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_weather_data('서울', {'서울': ['1101', '108']})
+
+        mock_get.return_value = Mock(
+            status_code=200,
+            content=b'<response><header><resultCode>00</resultCode></header><body><items><item>'
+            b'<tm>2026-01-01</tm><avgRhm>50</avgRhm></item></items></body></response>',
+        )
+        with self.assertRaises(ServiceUnavailableError):
+            fetch_weather_data('서울', {'서울': ['1101', '108']})
+
+    @patch('prediction.services.requests.get')
     @patch.dict(os.environ, {'DATA_GO_KR_WEATHER_SERVICE_KEY': 'encoded%2Bkey'}, clear=True)
     def test_weather_service_key_is_url_decoded(self, mock_get):
         mock_get.return_value = Mock(
             status_code=200,
             content=(
-                b'<response><body><items><item>'
+                b'<response><header><resultCode>00</resultCode></header><body><items><item>'
                 b'<tm>2026-01-01</tm><avgRhm>50</avgRhm><minTa>1</minTa>'
                 b'<maxTa>5</maxTa><maxWs>2</maxWs><avgTa>3</avgTa>'
                 b'<avgWs>1</avgWs><sumRn>0</sumRn><ddMes>0</ddMes>'
@@ -314,6 +329,51 @@ class PredictionRuntimeTests(TestCase):
         with self.assertRaises(NotFoundError):
             fetch_market_prices('감자', '서울', '20260101', '20260102', self._market_codes(), {})
 
+    def test_market_response_requires_header_and_body_contract(self):
+        with (
+            patch('prediction.services.requests.get') as mock_get,
+            patch.dict(os.environ, {'DATA_GO_KR_MARKET_SERVICE_KEY': 'test-key'}, clear=True),
+        ):
+            mock_get.return_value = Mock(status_code=200, json=lambda: {'response': {}})
+            with self.assertRaises(ServiceUnavailableError):
+                fetch_market_prices(
+                    '감자', '서울', '20260101', '20260102', self._market_codes(), {}
+                )
+
+    @patch('prediction.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_MARKET_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_market_http_auth_and_quota_errors_are_unavailable(self, mock_get):
+        for status_code in (401, 429, 503):
+            with self.subTest(status_code=status_code):
+                mock_get.return_value = Mock(status_code=status_code)
+                with self.assertRaises(ServiceUnavailableError):
+                    fetch_market_prices(
+                        '감자', '서울', '20260101', '20260102', self._market_codes(), {}
+                    )
+
+    @patch('prediction.services.requests.get')
+    @patch.dict(os.environ, {'DATA_GO_KR_MARKET_SERVICE_KEY': 'test-key'}, clear=True)
+    def test_market_deduplicates_identical_rows_before_daily_average(self, mock_get):
+        rows = [
+            {'exmn_ymd': '20260101', 'exmn_dd_cnvs_prc': price, 'item_nm': '감자'}
+            for price in ('100', '100', '200')
+        ]
+        mock_get.return_value = Mock(
+            status_code=200,
+            json=lambda: {
+                'response': {
+                    'header': {'resultCode': '00'},
+                    'body': {'totalCount': len(rows), 'items': {'item': rows}},
+                }
+            },
+        )
+
+        frame = fetch_market_prices(
+            '감자', '서울', '20260101', '20260101', self._market_codes(), {}
+        )
+
+        self.assertEqual(frame['price'].tolist(), [150.0])
+
     @patch('prediction.services.requests.get')
     @patch.dict(os.environ, {'DATA_GO_KR_MARKET_SERVICE_KEY': 'test-key'}, clear=True)
     def test_market_api_error_timeout_and_invalid_price_are_controlled(self, mock_get):
@@ -340,7 +400,7 @@ class PredictionRuntimeTests(TestCase):
                 }
             },
         )
-        with self.assertRaises(NotFoundError):
+        with self.assertRaises(ServiceUnavailableError):
             fetch_market_prices('감자', '서울', '20260101', '20260102', self._market_codes(), {})
 
     def test_runtime_crop_csv_and_income_calculation(self):
@@ -397,6 +457,14 @@ class PredictionRuntimeTests(TestCase):
         )
         self.assertEqual(prediction_input.iloc[0]['price_lag_1'], frame.iloc[-1]['price'])
 
+    def test_missing_market_price_is_not_forward_filled(self):
+        frame = self._prediction_frame()
+        frame.loc[40, 'price'] = None
+        features, targets, _ = _build_price_dataset(frame)
+        self.assertLess(len(targets), len(frame) - 30)
+        self.assertTrue(np.isfinite(features.to_numpy()).all())
+        self.assertTrue(np.isfinite(targets.to_numpy()).all())
+
     def test_price_prediction_is_finite_non_negative_and_does_not_mutate_input(self):
         frame = self._prediction_frame()
         original = frame.copy(deep=True)
@@ -411,7 +479,7 @@ class PredictionRuntimeTests(TestCase):
     @patch(
         'prediction.views.fetch_market_prices', side_effect=ServiceUnavailableError('unavailable')
     )
-    def test_session_details_survive_market_chart_outage(self, _mock_market):
+    def test_session_details_report_market_chart_outage(self, _mock_market):
         session = PredictionSession.objects.create(
             user=self.user,
             session_id='runtime-session',
@@ -430,15 +498,12 @@ class PredictionRuntimeTests(TestCase):
         )
         self.client.force_login(self.user)
 
-        with self.assertLogs('prediction.views', level='WARNING'):
-            response = self.client.get(
-                reverse('prediction:prediction_session_details', args=[session.session_id])
-            )
+        response = self.client.get(
+            reverse('prediction:prediction_session_details', args=[session.session_id])
+        )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['results'][0]['crop_chart_data'], [])
-        self.assertEqual(response.json()['results'][0]['crop_ratio'], 1)
-        self.assertEqual(response.json()['results'][0]['allocated_area'], 100)
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json()['code'], 2001)
 
 
 class PredictionCsrfBoundaryTests(TestCase):

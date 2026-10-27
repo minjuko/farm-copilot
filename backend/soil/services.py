@@ -48,6 +48,25 @@ def _xml_text(root, name):
     return element.text if element is not None else None
 
 
+def _kakao_documents(response):
+    if response.status_code != 200:
+        raise ServiceUnavailableError('Address search service request failed.')
+    try:
+        payload = response.json()
+    except (requests.RequestException, ValueError, TypeError) as exc:
+        raise ServiceUnavailableError(
+            'Address search service returned an invalid response.'
+        ) from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get('documents'), list):
+        raise ServiceUnavailableError('Address search service returned a malformed response.')
+    documents = payload['documents']
+    if not documents:
+        raise NotFoundError('No address search result was found.')
+    if any(not isinstance(document, dict) for document in documents):
+        raise ServiceUnavailableError('Address search service returned malformed address data.')
+    return documents
+
+
 def _parse_xml(response, service_name):
     if response.status_code != 200:
         raise ServiceUnavailableError(
@@ -122,25 +141,19 @@ def search_addresses(address):
     except requests.RequestException as exc:
         raise ServiceUnavailableError('Address search service request failed.') from exc
 
-    if response.status_code != 200:
-        raise ServiceUnavailableError('Address search service request failed.')
-    try:
-        documents = response.json().get('documents', [])
-    except (requests.RequestException, ValueError, AttributeError) as exc:
-        raise ServiceUnavailableError(
-            'Address search service returned an invalid response.'
-        ) from exc
-    if not documents:
-        raise NotFoundError('No address search result was found.')
+    documents = _kakao_documents(response)
 
     results = []
     seen = set()
     for document in documents:
         parcel = document.get('address') or {}
         road = document.get('road_address') or {}
+        if not isinstance(parcel, dict) or not isinstance(road, dict):
+            raise ServiceUnavailableError('Address search service returned malformed address data.')
         parcel_name = str(parcel.get('address_name') or '').strip()
         road_name = str(road.get('address_name') or '').strip()
-        if not parcel_name or not parcel.get('b_code'):
+        b_code = str(parcel.get('b_code') or '')
+        if not parcel_name or len(b_code) != 10 or not b_code.isdigit():
             continue
         identity = (parcel_name, road_name)
         if identity in seen:
@@ -151,7 +164,7 @@ def search_addresses(address):
                 'address_name': parcel_name,
                 'road_address_name': road_name,
                 'display_name': road_name or parcel_name,
-                'b_code': str(parcel['b_code'])[:10],
+                'b_code': b_code,
             }
         )
         if len(results) >= MAX_ADDRESS_RESULTS:
@@ -174,20 +187,14 @@ def _find_address_document(address):
     except requests.RequestException as exc:
         raise ServiceUnavailableError('Address search service request failed.') from exc
 
-    if response.status_code != 200:
-        raise ServiceUnavailableError('Address search service request failed.')
-    try:
-        documents = response.json().get('documents', [])
-    except (requests.RequestException, ValueError, AttributeError) as exc:
-        raise ServiceUnavailableError(
-            'Address search service returned an invalid response.'
-        ) from exc
-    if not documents:
-        raise NotFoundError('No address search result was found.')
+    documents = _kakao_documents(response)
 
     for document in documents:
         parcel = document.get('address') or {}
-        if parcel.get('b_code'):
+        if not isinstance(parcel, dict):
+            raise ServiceUnavailableError('Address search service returned malformed address data.')
+        code = str(parcel.get('b_code') or '')
+        if len(code) == 10 and code.isdigit():
             return parcel
     raise NotFoundError('No legal district code was found for the address.')
 
@@ -254,7 +261,6 @@ def fetch_soil_exam(stdg_code):
 
     root = _parse_xml(response, 'Soil examination service')
     result_code = _xml_text(root, 'Result_Code')
-    result_message = _xml_text(root, 'Result_Msg')
     if result_code is None:
         raise ServiceUnavailableError('Soil examination service returned an invalid response.')
     if result_code != '200':
@@ -262,9 +268,7 @@ def fetch_soil_exam(stdg_code):
             raise ValidationError('Soil examination request parameters are invalid.')
         if result_code == '301':
             raise NotFoundError('No soil examination data was found for the address.')
-        raise ServiceUnavailableError(
-            f'Soil examination service failed: {result_code} / {result_message or ""}'
-        )
+        raise ServiceUnavailableError('Soil examination service returned an API error.')
 
     items = root.find('.//items')
     if items is None:
@@ -277,6 +281,8 @@ def fetch_soil_exam(stdg_code):
     ]
     if not soil_records:
         raise NotFoundError('Soil examination data was empty.')
+    if any(not str(record.get('PNU_Nm') or '').strip() for record in soil_records):
+        raise ServiceUnavailableError('Soil examination service returned incomplete parcel data.')
     return _latest_soil_record_per_address(soil_records)
 
 
@@ -304,7 +310,7 @@ def fetch_fertilizer(crop_name, soil_values, pnu_code=None):
         or _xml_text(root, 'Result_Code')
         or _xml_text(root, 'result_Code')
     )
-    if result_code and result_code not in {'00', '0', '200', 'NORMAL_CODE'}:
+    if not result_code or result_code not in {'00', '0', '200', 'NORMAL_CODE'}:
         raise ServiceUnavailableError('Fertilizer service returned an API error.')
     if _xml_text(root, 'returnAuthMsg') or _xml_text(root, 'errMsg'):
         raise ServiceUnavailableError('Fertilizer service returned an API error.')
@@ -330,6 +336,11 @@ def fetch_fertilizer(crop_name, soil_values, pnu_code=None):
     ]
     if not fertilizer_records:
         raise NotFoundError('No fertilizer recommendation data was found.')
+    required_fields = {'crop_Code', 'crop_Nm'}
+    if any(
+        any(record[field] is None for field in required_fields) for record in fertilizer_records
+    ):
+        raise ServiceUnavailableError('Fertilizer service returned incomplete recommendation data.')
     filtered_params = {
         key: value
         for key, value in soil_values.items()

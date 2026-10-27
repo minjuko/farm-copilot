@@ -113,7 +113,7 @@ def _build_price_dataset(merged_df):
 
     frame = merged_df.copy().sort_values('tm').reset_index(drop=True)
     frame['tm'] = pd.to_datetime(frame['tm'], errors='coerce')
-    frame['observed_price'] = pd.to_numeric(frame['price'], errors='coerce').ffill()
+    frame['observed_price'] = pd.to_numeric(frame['price'], errors='coerce')
     frame = frame.dropna(subset=['tm', 'observed_price'])
     frame['year'] = frame['tm'].dt.year
     frame['month_sin'] = np.sin(2 * np.pi * frame['tm'].dt.month / 12)
@@ -134,8 +134,11 @@ def _build_price_dataset(merged_df):
     excluded = {'tm', 'price', 'observed_price', 'target_price', 'itemname'}
     feature_columns = [column for column in frame.columns if column not in excluded]
     frame[feature_columns] = frame[feature_columns].apply(pd.to_numeric, errors='coerce')
-    target_features = frame.iloc[[-1]][feature_columns].dropna(axis=1, how='all')
-    feature_columns = target_features.columns.tolist()
+    if not feature_columns:
+        raise ValidationError('Not enough aligned market and weather data for prediction.')
+    target_features = frame.iloc[[-1]][feature_columns]
+    if target_features.isna().any().any():
+        raise ValidationError('Latest market and weather data is incomplete for prediction.')
     training = frame.dropna(subset=feature_columns + ['target_price'])
     if len(training) < 10 or len(feature_columns) == 0:
         raise ValidationError('Not enough aligned market and weather data for prediction.')
@@ -159,9 +162,10 @@ def predict_prices(merged_frame):
     predicted_targets = model.predict(features_test)
     r2_value = float(r2_score(targets_test, predicted_targets))
     rmse = float(np.sqrt(mean_squared_error(targets_test, predicted_targets)))
-    if not np.isfinite(r2_value):
-        r2_value = 0.0
-    predicted_price = max(0, int(round(float(model.predict(prediction_input)[0]))))
+    predicted_value = float(model.predict(prediction_input)[0])
+    if not np.isfinite([r2_value, rmse, predicted_value]).all():
+        raise ValidationError('Prediction result is not a finite number.')
+    predicted_price = max(0, int(round(predicted_value)))
     return predicted_price, r2_value, rmse
 
 
@@ -202,7 +206,12 @@ def predict_income(request):
             raise ValidationError('작물을 하나 이상 선택해야 합니다.')
         if len(set(crop_names)) != len(crop_names):
             raise ValidationError('같은 작물은 중복해서 선택할 수 없습니다.')
-        if land_area <= 0 or any(ratio <= 0 for ratio in crop_ratios):
+        if (
+            not np.isfinite(land_area)
+            or not np.isfinite(crop_ratios).all()
+            or land_area <= 0
+            or any(ratio <= 0 for ratio in crop_ratios)
+        ):
             raise ValidationError('면적과 작물 비율은 0보다 커야 합니다.')
         if not np.isclose(sum(crop_ratios), 1.0, rtol=0, atol=1e-9):
             logger.info('작물 비율의 합은 1이 되어야합니다.')
@@ -385,7 +394,7 @@ def prediction_session_details(request, session_id):
                     crop_chart_data_parsed = json.loads(market_json)
                 else:
                     crop_chart_data_parsed = []
-            except (NotFoundError, ServiceUnavailableError) as exc:
+            except NotFoundError as exc:
                 logger.warning(
                     'Market chart data unavailable for prediction session %s: %s',
                     session.session_id,
