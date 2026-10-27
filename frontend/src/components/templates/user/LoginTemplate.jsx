@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import styled from 'styled-components';
 import { loginUser } from "../../../apis/user";
@@ -60,7 +60,8 @@ const Input = styled.input`
   border: 1px solid ${color("border")};
   border-radius: ${radius("sm")};
   &:focus {
-    outline: none;
+    outline: 3px solid ${color("primary")};
+    outline-offset: 2px;
     border-color: ${color("primary")};
   }
 `;
@@ -98,7 +99,7 @@ const StyledLink = styled(RouterLink)`
   font-size: 16px;
   font-weight: 500;
   margin-right: 16px;
-  color: ${color("primary")};
+  color: #267457;
   text-decoration: none;
   &:hover {
     text-decoration: underline;
@@ -106,6 +107,7 @@ const StyledLink = styled(RouterLink)`
 `;
 
 const LoginTemplate = () => {
+  const submitButtonRef = useRef(null);
   const { setIsLoading, isLoading } = useLoading();
   const { establishSession, refreshAuth } = useAuth();
   const [formData, setFormData] = useState({
@@ -188,6 +190,7 @@ const LoginTemplate = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    window.requestAnimationFrame(() => submitButtonRef.current?.focus());
   };
 
   return (
@@ -221,7 +224,7 @@ const LoginTemplate = () => {
           {passwordError && <ErrorMessage>{passwordError}</ErrorMessage>}
         </InputGroup>
         {loginError && <ErrorMessage role="alert">{loginError}</ErrorMessage>}
-        <Button type="submit" disabled={isButtonDisabled || isLoading}>
+        <Button ref={submitButtonRef} type="submit" disabled={isButtonDisabled || isLoading}>
           {isLoading ? "로그인 중..." : "로그인"}
         </Button>
         <LinksContainer>

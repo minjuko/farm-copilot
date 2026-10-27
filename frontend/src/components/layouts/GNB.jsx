@@ -89,7 +89,7 @@ export const GNB = () => {
   };
 
   return (
-    <Nav>
+    <Nav aria-label="주요 메뉴">
       <Wrapper>
         <MenuLink to="/main" className={currentPage === "/main" ? "active" : ""}>
           <IconWrapper $isActive={currentPage === "/main"}>
