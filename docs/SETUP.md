@@ -901,17 +901,22 @@ Fresh Clone도 별도 scratch 경로에 생성해 manifest와 lockfile이 존재
 
 # 10. Production 관련 참고
 
-Production 환경에서는 코드 기준으로 다음 설정을 검토해야 합니다.
+`DJANGO_DEBUG=false`이면 Django 설정 로딩 중 운영 보안 경계를 검증합니다. Secret key, host, HTTPS 및 Secure cookie, HSTS, SameSite, origin, DB, S3 bucket 설정이 불완전하거나 위험하면 설정값을 출력하지 않고 시작을 거부합니다. 개발과 CI는 기존 `DEBUG=true`, localhost, SQLite 구성을 유지합니다.
 
-- PostgreSQL
-- HTTPS 보안 설정
-- SMTP
-- Persistent Media Storage
-- 필요 시 AWS S3
-- Production Origin에 맞는 CORS · CSRF 설정
-- Production용 Cookie 보안 설정
+배포 전에는 `python manage.py check_deployment_config`도 실행하세요. 이 명령은 Django 설정에서 확인할 수 있는 항목을 검사합니다. 프록시가 전달 헤더를 덮어쓰는지, 파일 시스템이 영속적인지, S3 bucket policy가 public access를 차단하는지는 배포 환경에서 별도로 확인해야 합니다.
 
-운영 배포 전에는 이 문서의 Production 설정 항목과 `check_deployment_config` 명령을 확인하세요. 저장소에 별도 `DEPLOYMENT.md`는 없습니다.
+설정 정책은 특정 도메인이나 인프라를 강제하지 않습니다.
+
+- `DJANGO_ALLOWED_HOSTS`에는 배포에서 실제로 수신하는 host를 지정하며 `*`와 localhost는 운영 모드에서 거부합니다.
+- CORS/CSRF origin은 같은 origin 배포라면 비워둘 수 있습니다. 지정하는 경우 운영 모드에서 명시적인 HTTPS origin만 허용합니다. `FRONTEND_BASE_URL`은 비밀번호 재설정 링크 등에 사용되므로 운영 모드에서는 HTTPS URL이 필요합니다.
+- `SESSION_COOKIE_SAMESITE`와 `CSRF_COOKIE_SAMESITE`는 `Strict`, `Lax`, `None`을 지원합니다. `None`은 해당 Secure cookie가 켜져 있을 때만 허용합니다.
+- HTTPS redirect와 Secure cookie는 운영 모드에서 필수입니다. HSTS는 양수 기간을 요구하지만 subdomain 적용과 preload는 자동으로 켜지 않습니다. preload를 명시하면 Django가 1년 이상 및 subdomain 포함 설정을 함께 요구합니다.
+- `DJANGO_BEHIND_HTTPS_PROXY=true`는 요청의 `X-Forwarded-Proto`를 신뢰합니다. 실제 proxy가 이 헤더를 덮어쓰고 Django에 직접 접근할 수 없게 막았을 때만 사용하세요. 애플리케이션 설정만으로 proxy 동작은 확인할 수 없습니다.
+- PostgreSQL은 DB 이름과 host가 필요합니다. 인증은 비밀번호 외의 libpq/호스트 인증도 사용할 수 있습니다. SQLite도 운영 설정에서 명시적인 파일 경로로 사용할 수 있지만 `:memory:`는 거부합니다. 파일의 영속성은 애플리케이션이 확인할 수 없습니다.
+- S3 사용 시 bucket 이름이 필요합니다. 애플리케이션은 ACL을 `None`으로 설정하며 진단 이미지는 인증된 Django endpoint에서 스트리밍합니다. AWS access key/secret은 필수가 아니며 실행 역할의 credential chain을 사용할 수 있습니다. bucket-level public access 정책은 AWS에 접근하지 않고는 검증할 수 없습니다.
+- 로컬 storage는 지원하지만 `check_deployment_config --allow-local-storage`를 사용할 때 해당 호스트의 media/static volume이 영속적인지 운영자가 확인해야 합니다.
+
+예시 변수와 안전한 기본값은 [`backend/.env.production.example`](../backend/.env.production.example)을 참고하세요. 이 파일의 도메인과 자격 증명 문자열은 예시 placeholder이므로 실제 배포값이 아닙니다. 저장소에 별도 `DEPLOYMENT.md`는 없습니다.
 
 > **현재 코드 기준 WSGI Module은 `config.wsgi:application`입니다.**
 >
