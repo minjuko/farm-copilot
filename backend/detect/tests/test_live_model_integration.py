@@ -26,6 +26,14 @@ class LiveModelDetectionIntegrationTests(TestCase):
         self.media_override.enable()
         self.addCleanup(self.media_override.disable)
         self.addCleanup(self.media_dir.cleanup)
+        self.private_storage_dir = tempfile.TemporaryDirectory(
+            prefix='farm-copilot-live-private-media-'
+        )
+        self.image_storage = PestDetection._meta.get_field('image').storage
+        self.original_storage_location = self.image_storage.location
+        self.image_storage.location = self.private_storage_dir.name
+        self.addCleanup(self.private_storage_dir.cleanup)
+        self.addCleanup(setattr, self.image_storage, 'location', self.original_storage_location)
 
         call_command('seed_detection_catalog', verbosity=0)
         self.user = User.objects.create_user(

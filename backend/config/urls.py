@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponseNotFound
 from django.shortcuts import render
 from django.urls import include, path
 
@@ -11,7 +12,16 @@ def index(request):
     return render(request, 'index.html')
 
 
+def deny_legacy_detection_media(request, filename):
+    return HttpResponseNotFound()
+
+
 urlpatterns = [
+    path(
+        'media/pest_detections/<path:filename>',
+        deny_legacy_detection_media,
+        name='deny_legacy_detection_media',
+    ),
     path('', index),
     path('api/capabilities/', capabilities, name='capabilities'),
     path('admin/', admin.site.urls),
