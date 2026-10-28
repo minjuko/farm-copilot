@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml)
 
-이 서비스는 2024년 KT AIVLE School 5기 Big Project에서 6명이 함께 개발했습니다. 당시 프로젝트명은 **꾼꾼농사꾼**이며 Collaboration상을 받았습니다. 이 저장소는 팀 프로젝트 코드와 2026년 개인적으로 수행한 실행 복구·보안·테스트·문서 개선을 함께 보존합니다. 두 작업의 범위는 아래와 [포트폴리오 근거 문서](docs/FC10_PORTFOLIO_EVIDENCE.md)에 구분해 기록했습니다.
+2024년 KT AIVLE School 5기 6인 팀 프로젝트로, Collaboration상을 수상했습니다. 팀 당시 프론트엔드 담당과 이후 개인적으로 진행한 실행·보안·테스트 개선을 구분해 기록합니다.
 
 ## 프로젝트 개요
 
@@ -18,18 +18,8 @@
 
 역할 설명은 당시 프로젝트 자료에 기록된 담당 범위입니다. 백엔드와 AI 모델 구현은 팀 차원의 기능이며, 이 문서는 이를 개인 개발 기여로 주장하지 않습니다.
 
-## 주요 기능
+## 주요 기능 및 화면
 
-| 기능 | 흐름과 현재 경계 |
-| --- | --- |
-| 농작물 수익 분석 | 작물·지역·재배 조건 입력 후 가격·기상 자료를 사용해 결과와 이력을 확인합니다. Provider 자격 증명과 연결 상태에 따라 사용할 수 있으며 실제 운영 API 연동은 이번 검증에서 하지 않았습니다. |
-| 병해충 진단 | 이미지 업로드, YOLO 결과와 사용자별 이력을 제공합니다. 모델 runtime과 체크포인트가 있어야 진단할 수 있습니다. 공개 clone 기본 CI는 모델을 내려받거나 추론하지 않습니다. |
-| 토양검정·비료 처방 | 주소와 필지를 선택하고 토양검정 결과 및 작물별 처방을 조회합니다. 외부 서비스 자격 증명이 필요합니다. |
-| 농업 커뮤니티 | 게시글과 댓글을 작성·조회·수정·삭제합니다. |
-| 회원·마이페이지 | 회원가입, 세션 로그인, 계정과 사용자 활동을 관리합니다. |
-| 농업 챗봇 | RAG 상담 UI와 API가 있습니다. 기본 비활성화이며 운영자 설정, OpenAI 키와 로컬 Chroma 인덱스가 필요합니다. 외부 LLM 호출은 사용자 질문을 전달할 수 있습니다. |
-
-## 화면
 
 <table>
   <tr>
@@ -52,7 +42,20 @@
 
 이미지는 팀 프로젝트 최종 시연 자료를 바탕으로 구성했습니다.
 
-## 기술 구성
+
+### 주요 기능
+
+
+| 기능 | 흐름과 현재 경계 |
+| --- | --- |
+| 농작물 수익 분석 | 작물·지역·재배 조건 입력 → 수익 예측 결과·이력 확인 |
+| 병해충 진단 | 이미지 업로드 → YOLO 결과·진단 이력 확인 (모델 파일 필요) |
+| 토양검정·비료 처방 | 주소·필지 선택 → 토양검정 및 비료 처방 조회 |
+| 농업 커뮤니티 | 게시글과 댓글을 작성·조회·수정·삭제합니다. |
+| 회원·마이페이지 | 회원가입, 세션 로그인, 계정과 사용자 활동을 관리합니다. |
+| 농업 챗봇 | RAG 상담·이력 화면 (기본 비활성화, 별도 설정 필요) |
+
+## 기술 스택
 
 | 영역 | 현재 코드에서 확인한 기술 |
 | --- | --- |
@@ -65,20 +68,16 @@
 | 외부 자료 연동 코드 | Kakao 주소, aT 가격, 기상청 ASOS, 농촌진흥청 토양검정·비료 처방 API |
 | 자동화 | Jest, React Testing Library, Playwright Chromium, axe-core, Ruff, GitHub Actions |
 
-서버 endpoint는 Django view와 `JsonResponse`를 사용합니다. Django REST Framework는 dependency/settings에 있으나 현재 앱에서 DRF view·serializer·router를 사용하지 않아 활성 API 기술로 나열하지 않았습니다. 외부 자료 Provider와 PostgreSQL/S3는 코드의 연동·설정 지원을 확인한 것이며 실제 운영 연결을 의미하지 않습니다.
+서버 API는 Django JSON views를 사용하며, 외부 Provider와 선택 저장소의 운영 연결은 별도 검증이 필요합니다.
 
-## 아키텍처
+## 담당 역할 및 핵심 구현
 
-```text
-React Browser
-  └─ Axios (session cookie + CSRF)
-       └─ Django JSON views
-            ├─ SQLite / filesystem (local default)
-            ├─ configured PostgreSQL / S3 (not live-verified)
-            └─ optional YOLO, agriculture providers, RAG/OpenAI
-```
+- **팀 당시 프론트엔드:** 공통 UI·인증·마이페이지·커뮤니티 및 수익 분석·병해충·토양검정 입력과 결과 화면을 API에 연결했습니다.
+- **개인 개선 — 보안:** 진단 이미지를 비공개 저장하고 세션 인증·소유권 검증을 보강했습니다.
+- **개인 개선 — 안정성:** 외부 API 응답 계약과 운영 설정, YOLO·챗봇 준비 상태 및 오류 경계를 검증했습니다.
+- **개인 개선 — 품질:** Jest·Django·Playwright·axe 및 GitHub Actions 기반 회귀 검증을 보강했습니다.
 
-진단 이미지는 비공개 저장소에 보관하며 로그인 사용자만 인증 Django 이미지 endpoint로 조회합니다. 목록·상세·삭제는 세션 소유자로 제한됩니다. 로그인 및 사용자 이미지 흐름은 격리 Django 테스트로 확인했습니다. 상세 구성은 [아키텍처 문서](docs/ARCHITECTURE.md)를 참고하세요.
+구조와 인증 흐름은 [아키텍처 문서](docs/ARCHITECTURE.md)를 참고하세요.
 
 ## 실행 방법
 
@@ -109,9 +108,9 @@ npm start
 
 `.env.example`은 값이 들어 있는 `.env`를 생성하지 않습니다. 챗봇, YOLO, 외부 농업 API는 기본 설치·실행과 별도이며 Setup 문서의 선택 기능 안내를 확인하세요.
 
-## 검증 결과
+## 테스트 및 검증
 
-FC10 최종 검증은 2026-10-28에 로컬에서 재실행했습니다. 최종 문서 commit의 GitHub Actions #45에서도 Frontend·Backend·Browser E2E가 모두 성공했습니다.
+FC10 최종 검증은 2026-10-28에 로컬에서 재실행했습니다. 최종 GitHub Actions #46에서도 Frontend·Backend·Browser E2E가 모두 성공했습니다.
 
 | 검사 | 결과 | 검증 경계 |
 | --- | --- | --- |
@@ -129,11 +128,11 @@ Playwright fixture는 실제 서버 E2E가 아니며 실제 Django 검증은 전
 ## 알려진 한계와 보안 위험
 
 - **모델 성능:** YOLO 체크포인트의 실제 CPU 실행은 FC07에서 한 참고 이미지로 확인했지만 정확도·일반화 성능은 검증하지 않았습니다. ID 2와 4의 원천 라벨 관계도 미해결입니다. 자세한 내용은 [모델 현황](docs/DETECTION_MODEL.md)을 참고하세요.
-- **공개 Git 이력:** 현재 tree는 체크포인트를 추적하지 않지만 과거 이력에 87,631,411 byte `best.pt` blob이 남아 있습니다. 공개 배포 허용 여부는 확인되지 않았습니다. 과거 `.env` 커밋에도 OpenAI 키 형식 및 SMTP·DB 자격 증명처럼 보이는 값이 있어 노출된 것으로 취급해야 합니다. 값은 문서에 싣지 않았고, 이력 재작성은 하지 않았습니다. 조치 경계는 [공개 저장소 감사](docs/FC10_PORTFOLIO_EVIDENCE.md#공개-저장소-위험)에 기록했습니다.
-- **공급망:** 현재 npm audit은 전체 31건(낮음 9, 보통 6, 높음 16), production dependency 2건(보통)입니다. 다수는 CRA 5 toolchain의 전이 개발 의존성이고, production 2건은 React Router 6 계열입니다. 이번 문서 감사에서 강제 업그레이드는 하지 않았습니다.
+- **공개 Git 이력:** 과거 자격 증명으로 보이는 값과 모델 가중치의 공개 이력 위험이 남아 있습니다. 사용 중일 수 있는 자격 증명은 폐기·교체하고 모델 재배포 권리를 확인해야 합니다. [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md#공개-저장소-위험)
+- **의존성:** npm audit 전체 31건, production dependency 2건이 남아 있습니다. 세부 위험은 [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md)을 참고하세요.
 - **미검증 운영 경계:** 실제 PostgreSQL·S3 bucket 정책·외부 농업 API·OpenAI·배포 환경, 실제 모바일 기기와 스크린리더는 검증하지 않았습니다.
 
-## 상세 문서
+## 관련 문서
 
 | 문서 | 근거와 절차 |
 | --- | --- |
@@ -143,4 +142,4 @@ Playwright fixture는 실제 서버 E2E가 아니며 실제 Django 검증은 전
 | [AI detection operations](docs/AI_DETECTION_OPERATIONS.md) | artifact readiness, 비공개 이미지, 격리 테스트 |
 | [Chatbot operations](docs/CHATBOT_OPERATIONS.md) | RAG readiness, 개인정보, 비용·장애 경계 |
 | [Frontend E2E](docs/FRONTEND_E2E.md) | fixture/Django 테스트 구분, axe, 모바일 에뮬레이션 |
-| [Portfolio evidence](docs/FC10_PORTFOLIO_EVIDENCE.md) | 팀 프로젝트와 개인 개선, FC01–FC10 검증 근거 |
+| [Repository 검증 근거](docs/FC10_PORTFOLIO_EVIDENCE.md) | 팀 기여·개인 개선 및 FC01–FC10 검증 기록 |
