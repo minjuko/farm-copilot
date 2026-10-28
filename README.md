@@ -79,9 +79,9 @@
 
 ```powershell
 cd backend
-py -3.11 -m venv .venv
+py -3.11 -m venv.venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
+Copy-Item.env.example.env
 ```
 
 `.env`에 로컬 전용 `DJANGO_SECRET_KEY`, SQLite, localhost origin을 설정한 뒤:
@@ -96,7 +96,7 @@ Copy-Item .env.example .env
 ```powershell
 cd frontend
 npm ci
-Copy-Item .env.example .env
+Copy-Item.env.example.env
 npm start
 ```
 
