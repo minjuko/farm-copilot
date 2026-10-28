@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml)
 
-2024년 KT AIVLE School 5기 6인 팀 프로젝트로, Collaboration상을 수상했습니다. 프론트엔드 개발에 참여했으며, 이후 실행·보안·테스트를 개인 개선했습니다.
+2024년 KT AIVLE School 5기 8인 팀 프로젝트로, Collaboration상을 수상했습니다. 프론트엔드 개발에 참여했으며, 이후 실행·보안·테스트를 개인 개선했습니다.
 
 ## 프로젝트 개요
 
 | 항목 | 내용 |
 | --- | --- |
 | 팀 프로젝트 기간 | 2024.06.17–2024.07.30 |
-| 팀 구성 | 6명 — 프론트엔드 2 · 백엔드 2 · AI/Server 2 |
+| 팀 구성 | 8명 — 프론트엔드 4 · 백엔드·AI 4 |
 | 담당 역할 | 프론트엔드 — 공통 UI, 인증·커뮤니티, 주요 기능 화면과 API 연결 |
 | 수상 | KT AIVLE School 5기 Big Project Collaboration상 |
 | 원본 저장소 | [프론트엔드](https://github.com/kt-bigproject28/kunkunnongsakun) · [백엔드](https://github.com/kt-bigproject28/bigproject28) |
