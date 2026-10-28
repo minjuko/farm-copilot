@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml)
 
-2024년 KT AIVLE School 5기 6인 팀 프로젝트로, Collaboration상을 수상했습니다. 팀 당시 프론트엔드 담당과 이후 개인적으로 진행한 실행·보안·테스트 개선을 구분해 기록합니다.
+2024년 KT AIVLE School 5기 6인 팀 프로젝트로, Collaboration상을 수상했습니다. 프론트엔드 개발에 참여했으며, 이후 실행·보안·테스트를 개인 개선했습니다.
 
 ## 프로젝트 개요
 
@@ -12,14 +12,11 @@
 | --- | --- |
 | 팀 프로젝트 기간 | 2024.06.17–2024.07.30 |
 | 팀 구성 | 6명 — 프론트엔드 2 · 백엔드 2 · AI/Server 2 |
-| 프로젝트 자료에 기록된 본인 역할 | 프론트엔드 — 공통 UI, 인증·커뮤니티, 주요 기능 화면과 API 연결 |
+| 담당 역할 | 프론트엔드 — 공통 UI, 인증·커뮤니티, 주요 기능 화면과 API 연결 |
 | 수상 | KT AIVLE School 5기 Big Project Collaboration상 |
 | 원본 저장소 | [프론트엔드](https://github.com/kt-bigproject28/kunkunnongsakun) · [백엔드](https://github.com/kt-bigproject28/bigproject28) |
 
-역할 설명은 당시 프로젝트 자료에 기록된 담당 범위입니다. 백엔드와 AI 모델 구현은 팀 차원의 기능이며, 이 문서는 이를 개인 개발 기여로 주장하지 않습니다.
-
 ## 주요 기능 및 화면
-
 
 <table>
   <tr>
@@ -42,9 +39,7 @@
 
 이미지는 팀 프로젝트 최종 시연 자료를 바탕으로 구성했습니다.
 
-
 ### 주요 기능
-
 
 | 기능 | 흐름과 현재 경계 |
 | --- | --- |
@@ -57,7 +52,7 @@
 
 ## 기술 스택
 
-| 영역 | 현재 코드에서 확인한 기술 |
+| 영역 | 기술 |
 | --- | --- |
 | 웹 화면 | React 18, JavaScript, React Router 6, Axios, styled-components, Chart.js, Create React App (`react-scripts` 5) |
 | 서버 API | Python 3.11 환경, Django 5 JSON views, 세션·CSRF 인증 |
@@ -68,11 +63,10 @@
 | 외부 자료 연동 코드 | Kakao 주소, aT 가격, 기상청 ASOS, 농촌진흥청 토양검정·비료 처방 API |
 | 자동화 | Jest, React Testing Library, Playwright Chromium, axe-core, Ruff, GitHub Actions |
 
-서버 API는 Django JSON views를 사용하며, 외부 Provider와 선택 저장소의 운영 연결은 별도 검증이 필요합니다.
 
 ## 담당 역할 및 핵심 구현
 
-- **팀 당시 프론트엔드:** 공통 UI·인증·마이페이지·커뮤니티 및 수익 분석·병해충·토양검정 입력과 결과 화면을 API에 연결했습니다.
+- **담당 역할:** 공통 UI·인증·마이페이지·커뮤니티 및 수익 분석·병해충·토양검정 입력과 결과 화면을 API에 연결했습니다.
 - **개인 개선 — 보안:** 진단 이미지를 비공개 저장하고 세션 인증·소유권 검증을 보강했습니다.
 - **개인 개선 — 안정성:** 외부 API 응답 계약과 운영 설정, YOLO·챗봇 준비 상태 및 오류 경계를 검증했습니다.
 - **개인 개선 — 품질:** Jest·Django·Playwright·axe 및 GitHub Actions 기반 회귀 검증을 보강했습니다.
@@ -123,14 +117,14 @@ FC10 최종 검증은 2026-10-28에 로컬에서 재실행했습니다. 최종 G
 | GitHub Actions | [실행 내역](https://github.com/minjuko/farm-copilot/actions)에서 Frontend · Backend · Browser E2E 성공 확인 | 공개 CI |
 | npm audit | 31건; production dependency 2건 | 세부 내용은 아래 알려진 한계 참고 |
 
-Playwright fixture는 실제 서버 E2E가 아니며 실제 Django 검증은 전용 임시 SQLite·Media·Private Media를 사용합니다. 경계와 각 흐름은 [브라우저 E2E 문서](docs/FRONTEND_E2E.md)에 구분했습니다.
+Playwright에는 fixture 기반 화면 테스트와 격리 Django 인증·소유권 테스트가 포함되며, 운영 서비스 검증은 아닙니다.
 
 ## 알려진 한계와 보안 위험
 
 - **모델 성능:** YOLO 체크포인트의 실제 CPU 실행은 FC07에서 한 참고 이미지로 확인했지만 정확도·일반화 성능은 검증하지 않았습니다. ID 2와 4의 원천 라벨 관계도 미해결입니다. 자세한 내용은 [모델 현황](docs/DETECTION_MODEL.md)을 참고하세요.
 - **공개 Git 이력:** 과거 자격 증명으로 보이는 값과 모델 가중치의 공개 이력 위험이 남아 있습니다. 사용 중일 수 있는 자격 증명은 폐기·교체하고 모델 재배포 권리를 확인해야 합니다. [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md#공개-저장소-위험)
 - **의존성:** npm audit 전체 31건, production dependency 2건이 남아 있습니다. 세부 위험은 [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md)을 참고하세요.
-- **미검증 운영 경계:** 실제 PostgreSQL·S3 bucket 정책·외부 농업 API·OpenAI·배포 환경, 실제 모바일 기기와 스크린리더는 검증하지 않았습니다.
+- **운영 검증:** PostgreSQL·S3·외부 농업 API·OpenAI·실기기 연동은 검증하지 않았습니다.
 
 ## 관련 문서
 
