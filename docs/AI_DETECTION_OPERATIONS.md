@@ -63,7 +63,7 @@ RUN_LIVE_DETECTION_INTEGRATION=1 ./.venv/bin/python manage.py test detect.tests.
 
 이 opt-in 테스트는 capabilities에서 artifact를 사용할 수 있는 상태, 테스트 전용 경로로 모델을 바꿨을 때의 `model_missing`, 정상 경로 복구, 로그인 업로드, DB 저장, 이력 목록·상세 조회 및 다른 사용자의 상세 접근 차단을 검사한다. 본인만 인증된 `/detect/detection_image/<id>/` 경로로 이미지를 읽을 수 있는지와 private/no-store 응답 헤더도 확인한다. 다른 사용자의 이력에는 해당 진단이 없고 이미지 endpoint는 404를 반환해야 한다. Django test runner의 test database에만 catalog seed를 실행한다. 실제 Checkpoint를 변경하지 않고, 출처 참고 이미지 한 건의 결과를 모델 성능 점수로 해석하지 않는다. 기본 전체 테스트에서는 opt-in 조건이 없으면 skip된다.
 
-FC07 로컬 검증(2026-10-27): 승인 체크포인트 사전검사와 CPU smoke inference 통과, `RUN_LIVE_DETECTION_INTEGRATION=1`의 실제 이미지 업로드·저장·소유자별 이력 및 private image endpoint 통합 테스트 1개 통과. 테스트 전용 DB와 임시 저장소를 사용했다. 실행시간과 환경 정보, 정확도 검증 범위는 [모델 현황 문서](DETECTION_MODEL.md#fc07-로컬-검증-기록-2026-10-27)에 기록했다. 이 결과는 로컬 증거이며 모델 없는 공개 clone의 기본 CI에는 체크포인트를 포함하지 않는다.
+FC07 로컬 검증(2026-10-27): 승인 체크포인트 사전검사와 CPU smoke inference 통과, `RUN_LIVE_DETECTION_INTEGRATION=1`의 실제 이미지 업로드·저장·소유자별 이력 및 private image endpoint 통합 테스트 1개 통과. 테스트 전용 DB와 임시 저장소를 사용했다. 이 결과는 로컬 증거이며 정확도 검증이 아니고, 모델 없는 공개 clone의 기본 CI에는 체크포인트를 포함하지 않는다.
 
 ## 격리된 실제 브라우저 E2E
 
