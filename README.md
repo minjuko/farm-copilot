@@ -121,9 +121,9 @@ Playwright에는 fixture 기반 화면 테스트와 격리 Django 인증·소유
 
 ## 알려진 한계와 보안 위험
 
-- **모델 성능:** YOLO 체크포인트의 실제 CPU 실행은 FC07에서 한 참고 이미지로 확인했지만 정확도·일반화 성능은 검증하지 않았습니다. ID 2와 4의 원천 라벨 관계도 미해결입니다. 자세한 내용은 [모델 현황](docs/DETECTION_MODEL.md)을 참고하세요.
-- **공개 Git 이력:** 과거 commit의 `best.pt`는 AI Hub 데이터셋을 바탕으로 팀이 제작했고 공개·재배포가 허용된 것으로 팀 확인을 받았습니다. 과거 `.env`에 자격 증명으로 보이는 값이 있었으며, 관련 값은 모두 폐기·교체했습니다. 이력 현황은 [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md#공개-저장소-위험)을 참고하세요.
-- **의존성:** npm audit 전체 31건, production dependency 2건이 남아 있습니다. 세부 위험은 [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md)을 참고하세요.
+- **모델 검증 범위:** FC07에서 체크포인트 CPU 실행을 참고 이미지 1장으로 확인했으며, 정확도와 일반화 성능은 검증하지 않았습니다.
+- **공개 Git 이력:** 과거 commit에 모델 가중치와 `.env` 값이 남아 있습니다. 모델 공개는 팀 확인을 받았고, 과거 자격 증명은 모두 폐기·교체했습니다.
+- **의존성:** 2026-10-28 기준 npm audit에서 전체 31건, 운영 의존성 2건이 확인됐습니다.
 - **운영 검증:** PostgreSQL·S3·외부 농업 API·OpenAI·실기기 연동은 검증하지 않았습니다.
 
 ## 관련 문서
@@ -132,8 +132,6 @@ Playwright에는 fixture 기반 화면 테스트와 격리 Django 인증·소유
 | --- | --- |
 | [Local Setup](docs/SETUP.md) | 로컬 실행, 환경변수, 선택 기능 및 최종 검증 |
 | [Architecture](docs/ARCHITECTURE.md) | 라우트, 세션 인증, API 및 데이터 흐름 |
-| [Detection model](docs/DETECTION_MODEL.md) | YOLO 계약, 매핑, 학습 provenance와 공개 이력 한계 |
 | [AI detection operations](docs/AI_DETECTION_OPERATIONS.md) | artifact readiness, 비공개 이미지, 격리 테스트 |
 | [Chatbot operations](docs/CHATBOT_OPERATIONS.md) | RAG readiness, 개인정보, 비용·장애 경계 |
 | [Frontend E2E](docs/FRONTEND_E2E.md) | fixture/Django 테스트 구분, axe, 모바일 에뮬레이션 |
-| [Repository 검증 근거](docs/FC10_PORTFOLIO_EVIDENCE.md) | 팀 기여·개인 개선 및 FC01–FC10 검증 기록 |
