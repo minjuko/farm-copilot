@@ -85,3 +85,11 @@ docs/PORTFOLIO_EVIDENCE.md
 docs/AI_HUB_525_*
 request/
 response/
+
+# Local-only research documents with unresolved dataset provenance
+docs/DETECTION_MODEL.md
+docs/FC10_PORTFOLIO_EVIDENCE.md
+backend/data_preparation/AUDIT.md
+backend/evaluation/README.md
+backend/evaluation/DATASET_DESIGN.md
+backend/evaluation/PROVENANCE.md
