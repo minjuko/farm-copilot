@@ -47,7 +47,7 @@ flowchart LR
 
 진단 목록·상세·삭제와 이미지 조회는 로그인 사용자 소유권으로 제한됩니다. 인증 이미지 응답은 private/no-store와 nosniff 헤더를 사용합니다. S3 구성에서 object ACL은 비공개(None)를 요청하지만 bucket policy와 외부 CDN·proxy 동작은 검증하지 않았습니다.
 
-Checkpoint에는 6개 출력 ID가 있고 fixture에서는 5개 Pest code를 사용합니다. ID 2와 4가 같은 Pest로 매핑된 이유는 원천 학습자료가 없어 미해결입니다. 0.60 confidence threshold는 분류 정확도나 calibrated probability를 의미하지 않습니다. [모델 문서](./DETECTION_MODEL.md)와 [운영 문서](./AI_DETECTION_OPERATIONS.md)에 artifact와 provenance 경계를 기록했습니다.
+Checkpoint에는 6개 출력 ID가 있고 fixture에서는 5개 Pest code를 사용합니다. 현재 fixture는 ID 2와 4를 같은 Pest code에 연결합니다. 0.60 confidence threshold는 분류 정확도나 calibrated probability를 의미하지 않습니다. 체크포인트 설정과 요청 흐름은 [AI 진단 운영 문서](./AI_DETECTION_OPERATIONS.md)에 설명합니다.
 
 ### 챗봇·RAG
 
