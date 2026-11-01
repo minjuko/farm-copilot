@@ -1,6 +1,6 @@
 # 농업코파일럿 — 꾼꾼농사꾼
 
-> 초보 농업인의 작물 선택과 영농 판단을 돕기 위해 수익 분석, 병해충 진단, 토양검정, 커뮤니티와 상담 화면을 제공하는 웹 서비스입니다.
+> AI와 공공데이터를 활용해 초보 농업인을 지원하는 서비스입니다.
 
 [![CI](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/minjuko/farm-copilot/actions/workflows/ci.yml)
 
