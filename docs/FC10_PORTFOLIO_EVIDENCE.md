@@ -69,10 +69,10 @@
 최종 현재 tree에서 `.env`, 모델 파일, 사용자 업로드 media와 Chroma 인덱스는 추적되지 않고 ignore 대상입니다. 하지만 공개 Git 이력은 별개입니다.
 
 - 2024년 commit `deb17cc`의 `best.pt` blob은 87,631,411 bytes이며 FC07 로컬 체크포인트와 hash가 일치합니다. FC10 점검일(2026-10-28)에는 공개 허가가 미확인 상태였으나, 2026-11-01 팀이 AI Hub 데이터 기반으로 팀에서 제작했고 공개·재배포가 허용된 모델임을 확인했습니다. 정확한 AI Hub 데이터셋 ID·버전의 provenance는 별도 미확정입니다.
-- 과거 commit의 `.env`에는 실제 키로 보이는 OpenAI key 형식과 SMTP·DB credential field 값이 포함됐습니다. 값 자체는 기록하지 않았고 현재 유효 여부를 공급자에 확인하지 않았습니다. 이미 노출된 것으로 취급하고, 사용 중일 수 있는 credential은 소유자가 폐기·교체해야 합니다.
-- 새 commit에서 파일을 지워도 기존 blob은 사라지지 않습니다. 공개 이력 정리는 history rewrite와 force update가 필요하고, fork·clone·기존 사본을 원격으로 회수할 수 없습니다. FC10은 사용자 지시대로 이력 재작성, credential 변경, Repository 공개 범위 변경을 하지 않았습니다.
+- 과거 commit의 `.env`에는 실제 키로 보이는 OpenAI key 형식과 SMTP·DB credential field 값이 포함됐습니다. 값 자체는 기록하지 않습니다. 2026-11-01 사용자 확인에 따라 관련 credential은 모두 폐기·교체 완료됐습니다.
+- 새 commit에서 파일을 지워도 기존 blob은 사라지지 않습니다. 공개 이력 정리는 history rewrite와 force update가 필요하고, fork·clone·기존 사본을 원격으로 회수할 수 없습니다. FC10은 사용자 지시대로 이력 재작성과 Repository 공개 범위 변경을 하지 않았습니다. credential 폐기·교체는 2026-11-01 후속 조치로 완료됐습니다.
 
-모델 공개 권한은 2026-11-01 팀 확인으로 해소됐습니다. 과거 `.env`의 credential이 현재도 유효한지와 폐기·교체했는지는 별도 확인이 필요합니다. 이를 정리하기 위한 history rewrite는 commit SHA 변경과 기존 clone·fork 영향이 있으므로 credential 상태를 확인한 뒤 별도 판단해야 합니다.
+모델 공개 권한은 2026-11-01 팀 확인으로 해소됐습니다. 같은 날 사용자 확인에 따라 과거 `.env`의 관련 credential도 모두 폐기·교체됐습니다. 폐기된 값은 과거 Git 이력에 남을 수 있으며 새 credential은 문서나 Git에 기록하지 않습니다. History rewrite는 credential 비활성화를 위한 필수 조치가 아니라 이력 정리 선택지이며, commit SHA 변경과 기존 clone·fork 영향이 있으므로 별도로 판단합니다.
 
 ## 포트폴리오에 사용할 수 있는 요약 초안
 
