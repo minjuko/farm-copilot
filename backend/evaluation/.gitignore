@@ -2,9 +2,6 @@
 *
 !.gitignore
 !*.py
-!README.md
-!PROVENANCE.md
-!DATASET_DESIGN.md
 !VALIDATION.md
 !evaluation_config.example.json
 !dataset_manifest.example.csv
