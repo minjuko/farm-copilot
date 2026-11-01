@@ -557,7 +557,7 @@ YOLO_AUGMENTED_INFERENCE=true
 
 ### 계약·Mapping·검증 안내
 
-API 응답, threshold, confidence의 의미, 클래스 매핑, 소유권 검사 및 오류 처리는 [AI 진단 운영 문서](./AI_DETECTION_OPERATIONS.md)를 기준으로 확인합니다. 모델 artifact와 클래스 계약의 상세 목록은 [진단 모델 문서](./DETECTION_MODEL.md)에 있습니다. 이 설정 안내에서는 계약 내용을 중복해서 관리하지 않습니다.
+API 응답, threshold, confidence의 의미, 클래스 매핑, 소유권 검사 및 오류 처리는 [AI 진단 운영 문서](./AI_DETECTION_OPERATIONS.md)를 기준으로 확인합니다. 이 설정 안내에서는 계약 내용을 중복해서 관리하지 않습니다.
 
 ---
 
@@ -916,7 +916,7 @@ Fresh Clone도 별도 scratch 경로에 생성해 manifest와 lockfile이 존재
 
 Playwright fixture 시나리오는 API 응답을 mock합니다. 별도 실제 Django 브라우저 시나리오는 `config.e2e_settings`가 만든 임시 SQLite·Media·Private Media에서 로그인, CSRF, 사용자 이미지 소유권과 보안 헤더만 확인하며 YOLO 추론은 하지 않습니다. 실제 YOLO opt-in 검증은 FC07의 로컬 기록을 참고하며 FC10에서는 재실행하지 않았습니다. 이 검증은 모델 정확도, 외부 농업 API, OpenAI, AWS, PostgreSQL, 배포 환경을 검증하지 않습니다.
 
-Playwright 설치와 시나리오 설명은 [Frontend E2E 문서](./FRONTEND_E2E.md), 최근 모델 실행 기록은 [Detection Model 문서](./DETECTION_MODEL.md#fc07-로컬-검증-기록-2026-10-27)를 참고하세요.
+Playwright 설치와 시나리오 설명은 [Frontend E2E 문서](./FRONTEND_E2E.md)를 참고하세요.
 
 ---
 
