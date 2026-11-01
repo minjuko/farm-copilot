@@ -122,7 +122,7 @@ Playwright에는 fixture 기반 화면 테스트와 격리 Django 인증·소유
 ## 알려진 한계와 보안 위험
 
 - **모델 성능:** YOLO 체크포인트의 실제 CPU 실행은 FC07에서 한 참고 이미지로 확인했지만 정확도·일반화 성능은 검증하지 않았습니다. ID 2와 4의 원천 라벨 관계도 미해결입니다. 자세한 내용은 [모델 현황](docs/DETECTION_MODEL.md)을 참고하세요.
-- **공개 Git 이력:** 과거 자격 증명으로 보이는 값과 모델 가중치의 공개 이력 위험이 남아 있습니다. 사용 중일 수 있는 자격 증명은 폐기·교체하고 모델 재배포 권리를 확인해야 합니다. [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md#공개-저장소-위험)
+- **공개 Git 이력:** 과거 commit의 `best.pt`는 AI Hub 데이터셋을 바탕으로 팀이 제작했고 공개·재배포가 허용된 것으로 팀 확인을 받았습니다. 다만 과거 `.env`에 자격 증명으로 보이는 값이 있어 실제 사용 가능성이 있는 키는 폐기·교체해야 합니다. 이력 현황은 [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md#공개-저장소-위험)을 참고하세요.
 - **의존성:** npm audit 전체 31건, production dependency 2건이 남아 있습니다. 세부 위험은 [감사 기록](docs/FC10_PORTFOLIO_EVIDENCE.md)을 참고하세요.
 - **운영 검증:** PostgreSQL·S3·외부 농업 API·OpenAI·실기기 연동은 검증하지 않았습니다.
 
