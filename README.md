@@ -119,6 +119,8 @@ FC10 최종 검증은 2026-10-28에 로컬에서 재실행했습니다. 최종 G
 
 Playwright에는 fixture 기반 화면 테스트와 격리 Django 인증·소유권 테스트가 포함되며, 운영 서비스 검증은 아닙니다.
 
+2026-11-09 병해충 탐지 예외 처리·사용자별 접근 감사를 추가로 수행했습니다. 상세 점검 범위와 탐지 전용 Django 59개·React 34개 테스트 결과는 [감사 기술문서](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md)를 참고하세요.
+
 ## 알려진 한계와 보안 위험
 
 - **모델 검증 범위:** FC07에서 체크포인트 CPU 실행을 참고 이미지 1장으로 확인했으며, 정확도와 일반화 성능은 검증하지 않았습니다.
@@ -133,5 +135,6 @@ Playwright에는 fixture 기반 화면 테스트와 격리 Django 인증·소유
 | [Local Setup](docs/SETUP.md) | 로컬 실행, 환경변수, 선택 기능 및 최종 검증 |
 | [Architecture](docs/ARCHITECTURE.md) | 라우트, 세션 인증, API 및 데이터 흐름 |
 | [AI detection operations](docs/AI_DETECTION_OPERATIONS.md) | artifact readiness, 비공개 이미지, 격리 테스트 |
+| [병해충 탐지 감사](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md) | 예외 처리, 사용자별 권한, 2026-11-09 검증 범위 |
 | [Chatbot operations](docs/CHATBOT_OPERATIONS.md) | RAG readiness, 개인정보, 비용·장애 경계 |
 | [Frontend E2E](docs/FRONTEND_E2E.md) | fixture/Django 테스트 구분, axe, 모바일 에뮬레이션 |
