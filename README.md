@@ -104,22 +104,14 @@ npm start
 
 ## 테스트 및 검증
 
-FC10 최종 검증은 2026-10-28에 로컬에서 재실행했습니다. 최종 GitHub Actions #46에서도 Frontend·Backend·Browser E2E가 모두 성공했습니다.
+2026-11-09 개인 후속 검증 기준으로 React Jest **191개(32 suites)**, Django **284개 통과·1개 skip(총 285개)**를 확인했습니다. GitHub Actions [run #74](https://github.com/minjuko/farm-copilot/actions/runs/42618994134)에서 Frontend·Backend·Browser E2E가 모두 성공했습니다.
 
-| 검사 | 결과 | 검증 경계 |
-| --- | --- | --- |
-| Frontend Jest | 32 suites, 188 tests 통과 | UI·API 모듈 단위/컴포넌트 테스트 |
-| Backend Django | 278개 중 277 통과, 1 skip | 기본은 mock 기반, 모델 opt-in 테스트는 기본 skip |
-| Ruff lint·format, Django check, `pip check` | 통과 | 정적 검사 및 격리 테스트 DB |
-| Playwright Chromium | 42개 중 40 통과, 2 skip | fixture 흐름 + 격리 Django session/CSRF/소유권; 실제 YOLO 아님 |
-| axe 자동 검사 | 로그인·커뮤니티에서 자동 위반 0건 | 스크린리더 평가를 대체하지 않음 |
-| 모바일 viewport | 320×640, 390×844 통과 | 브라우저 에뮬레이션, 실제 기기 아님 |
-| GitHub Actions | [실행 내역](https://github.com/minjuko/farm-copilot/actions)에서 Frontend · Backend · Browser E2E 성공 확인 | 공개 CI |
-| npm audit | 31건; production dependency 2건 | 세부 내용은 아래 알려진 한계 참고 |
+- **프론트엔드:** 토양검정의 오래된 성공·실패 응답 차단, 진단 결과·오류 상태 등 회귀 검증
+- **백엔드:** 예측 입력 검증, 세션 소유권, 진단 이력 및 이미지 접근 제어 검증
+- **브라우저:** 기존 Chromium E2E 40개 통과·2개 skip 기록. fixture와 격리 Django 환경 기반이며 실제 모델 추론·운영 API 검증은 아닙니다.
+- **정적 검사:** Ruff lint·format, Django check, ESLint, 프론트엔드 production build 통과
 
-Playwright에는 fixture 기반 화면 테스트와 격리 Django 인증·소유권 테스트가 포함되며, 운영 서비스 검증은 아닙니다.
-
-2026-11-09 병해충 탐지 예외 처리·사용자별 접근 감사를 추가로 수행했습니다. 상세 점검 범위와 탐지 전용 Django 59개·React 34개 테스트 결과는 [감사 기술문서](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md)를 참고하세요.
+상세 재현 조건과 미검증 범위는 [예측·토양검정 감사](docs/PREDICTION_SOIL_AUDIT_2026-11-09.md), [병해충 탐지 감사](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md), [브라우저 E2E](docs/FRONTEND_E2E.md)에 정리했습니다.
 
 ## 알려진 한계와 보안 위험
 
