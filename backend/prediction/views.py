@@ -187,19 +187,45 @@ def convert_values(value):
 def predict_income(request):
     try:
         payload = json.loads(request.body)
+        if not isinstance(payload, dict):
+            raise ValidationError('요청 본문은 JSON 객체여야 합니다.')
+
+        required_fields = {'land_area', 'crop_names', 'crop_ratios', 'region'}
+        missing_fields = required_fields.difference(payload)
+        if missing_fields:
+            raise ValidationError('필수 입력값이 누락되었습니다.')
+
         session_id = payload.get('session_id') or str(uuid.uuid4())
         session_name = payload.get('session_name', 'Default Prediction Session')
-        land_area = float(payload['land_area'])
+        if not isinstance(session_id, str) or len(session_id) > 36:
+            raise ValidationError('세션 식별자 형식이 올바르지 않습니다.')
+        if not isinstance(session_name, str) or len(session_name) > 255:
+            raise ValidationError('세션 이름 형식이 올바르지 않습니다.')
+        try:
+            if isinstance(payload['land_area'], bool):
+                raise ValueError
+            land_area = float(payload['land_area'])
+        except (TypeError, ValueError, OverflowError):
+            raise ValidationError('재배 면적은 숫자로 입력해야 합니다.')
 
         if isinstance(payload['crop_names'], list):
             crop_names = payload['crop_names']
         elif isinstance(payload['crop_names'], str):
             crop_names = payload['crop_names'].split(',')
         else:
-            logger.error('Invalid format for crop_names')
-            return JsonResponse({'error': 'Invalid format for crop_names'}, status=400)
+            raise ValidationError('작물 이름 형식이 올바르지 않습니다.')
+        if any(not isinstance(name, str) for name in crop_names):
+            raise ValidationError('작물 이름은 문자열이어야 합니다.')
+        crop_names = [name.strip() for name in crop_names]
 
-        crop_ratios = [float(ratio) for ratio in payload['crop_ratios']]
+        if not isinstance(payload['crop_ratios'], list):
+            raise ValidationError('작물 비율은 목록으로 입력해야 합니다.')
+        try:
+            if any(isinstance(ratio, bool) for ratio in payload['crop_ratios']):
+                raise ValueError
+            crop_ratios = [float(ratio) for ratio in payload['crop_ratios']]
+        except (TypeError, ValueError, OverflowError):
+            raise ValidationError('작물 비율은 숫자로 입력해야 합니다.')
         if len(crop_names) != len(crop_ratios):
             raise ValidationError('작물과 비율의 개수가 일치해야 합니다.')
         if not crop_names or any(not name.strip() for name in crop_names):
@@ -216,13 +242,20 @@ def predict_income(request):
         if not np.isclose(sum(crop_ratios), 1.0, rtol=0, atol=1e-9):
             logger.info('작물 비율의 합은 1이 되어야합니다.')
             raise ValidationError('작물 비율의 합은 1이 되어야합니다.')
-        if len(str(session_id)) > 36:
-            raise ValidationError('세션 식별자가 너무 깁니다.')
         if PredictionSession.objects.filter(user=request.user, session_id=session_id).exists():
             raise ValidationError('이미 존재하는 예측 세션입니다.')
 
         region = payload['region']
+        if not isinstance(region, str) or region not in REGION_CODES:
+            raise ValidationError('지원하지 않는 지역입니다.')
         profitability_frame = read_csv_data()
+        market_codes = pd.read_csv(CROP_MARKET_CODES_PATH, encoding='utf-8')
+        supported_crops = set(market_codes['품목명'].dropna().astype(str))
+        supported_crops.intersection_update(
+            profitability_frame['작물명'].dropna().astype(str)
+        )
+        if any(crop_name not in supported_crops for crop_name in crop_names):
+            raise ValidationError('지원하지 않는 작물입니다.')
         weather_frame = fetch_weather_data(region)
         if weather_frame is None or weather_frame.empty:
             logger.error('날씨데이터를 불러오는 과정에서 오류가 발생했습니다.')
@@ -472,6 +505,8 @@ def update_session_name(request, session_id):
         return JsonResponse({'status': 'error', 'message': str(exc)}, status=400)
     except NotFoundError as exc:
         return JsonResponse({'status': 'error', 'message': str(exc)}, status=404)
+    except PredictionSession.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Session not found'}, status=404)
     except Exception as exc:
         logger.exception('Error updating session name: %s', exc)
         raise InternalServerError('Failed to update session name', code=500)

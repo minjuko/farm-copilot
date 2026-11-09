@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { fetchCapabilities } from "../../../apis/capabilities";
 import {
@@ -8,6 +8,8 @@ import {
   searchSoilAddresses,
 } from "../../../apis/predict";
 import SoilTemplate from "./SoilTemplate";
+
+const mockSetIsLoading = jest.fn();
 
 jest.mock("../../../apis/capabilities", () => ({
   fetchCapabilities: jest.fn(),
@@ -20,7 +22,7 @@ jest.mock("../../../apis/predict", () => ({
   searchSoilAddresses: jest.fn(),
 }));
 jest.mock("../../../LoadingContext", () => ({
-  useLoading: () => ({ setIsLoading: jest.fn() }),
+  useLoading: () => ({ setIsLoading: mockSetIsLoading }),
 }));
 jest.mock("../../atoms/CustomModal", () => ({ isOpen, content, onRequestClose }) => (
   isOpen ? <div role="alert">{content}<button onClick={onRequestClose}>닫기</button></div> : null
@@ -117,6 +119,90 @@ test("shows a genuine empty soil result and allows another search", async () => 
 
   await waitFor(() => expect(getSoilExamData).toHaveBeenCalledTimes(2));
   await waitFor(() => expect(screen.getByLabelText("상세 주소 선택")).toBeEnabled());
+});
+
+test("discards a soil lookup response after the selected crop changes", async () => {
+  let resolveSoilLookup;
+  getSoilExamData.mockImplementationOnce(() => new Promise((resolve) => {
+    resolveSoilLookup = resolve;
+  }));
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <SoilTemplate />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByLabelText("작물 이름"));
+  fireEvent.click(await screen.findByRole("option", { name: "pepper" }));
+  fireEvent.change(screen.getByLabelText("주소"), { target: { value: "sample address" } });
+  const searchButton = screen.getByRole("button", { name: /주소 검색/ });
+  await waitFor(() => expect(searchButton).toBeEnabled());
+  fireEvent.click(searchButton);
+  await waitFor(() => expect(getSoilExamData).toHaveBeenCalledWith("pepper", "selected parcel 1-2"));
+
+  fireEvent.click(screen.getByLabelText("작물 이름"));
+  fireEvent.click(await screen.findByRole("option", { name: "tomato" }));
+  resolveSoilLookup({ data: { soil_data: [soilSample] } });
+
+  await waitFor(() => expect(screen.getByLabelText("상세 주소 선택")).toBeDisabled());
+  expect(getSoilFertilizerInfo).not.toHaveBeenCalled();
+});
+
+test("discards a stale soil lookup failure after the selected crop changes", async () => {
+  let rejectSoilLookup;
+  getSoilExamData.mockImplementationOnce(() => new Promise((_resolve, reject) => {
+    rejectSoilLookup = reject;
+  }));
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <SoilTemplate />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByLabelText("작물 이름"));
+  fireEvent.click(await screen.findByRole("option", { name: "pepper" }));
+  fireEvent.change(screen.getByLabelText("주소"), { target: { value: "sample address" } });
+  const searchButton = screen.getByRole("button", { name: /주소 검색/ });
+  await waitFor(() => expect(searchButton).toBeEnabled());
+  fireEvent.click(searchButton);
+  await waitFor(() => expect(getSoilExamData).toHaveBeenCalledWith("pepper", "selected parcel 1-2"));
+
+  fireEvent.click(screen.getByLabelText("작물 이름"));
+  fireEvent.click(await screen.findByRole("option", { name: "tomato" }));
+  await act(async () => {
+    rejectSoilLookup({ response: { status: 503 } });
+  });
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("상세 주소 선택")).toBeDisabled();
+});
+
+test("does not update loading state when a soil lookup resolves after unmount", async () => {
+  let resolveSoilLookup;
+  getSoilExamData.mockImplementationOnce(() => new Promise((resolve) => {
+    resolveSoilLookup = resolve;
+  }));
+  const { unmount } = render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <SoilTemplate />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByLabelText("작물 이름"));
+  fireEvent.click(await screen.findByRole("option", { name: "pepper" }));
+  fireEvent.change(screen.getByLabelText("주소"), { target: { value: "sample address" } });
+  const searchButton = screen.getByRole("button", { name: /주소 검색/ });
+  await waitFor(() => expect(searchButton).toBeEnabled());
+  fireEvent.click(searchButton);
+  await waitFor(() => expect(getSoilExamData).toHaveBeenCalledWith("pepper", "selected parcel 1-2"));
+  const loadingCallsBeforeUnmount = mockSetIsLoading.mock.calls.length;
+
+  unmount();
+  await act(async () => {
+    resolveSoilLookup({ data: { soil_data: [soilSample] } });
+  });
+
+  expect(mockSetIsLoading).toHaveBeenCalledTimes(loadingCallsBeforeUnmount);
 });
 
 test("shows an external soil lookup error without a sample", async () => {

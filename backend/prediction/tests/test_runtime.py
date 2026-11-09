@@ -140,6 +140,87 @@ class PredictionRuntimeTests(TestCase):
         self.assertEqual(response.status_code, 400)
         mock_weather.assert_not_called()
 
+    @patch('prediction.views.fetch_weather_data')
+    def test_prediction_rejects_malformed_and_unsupported_inputs_before_external_calls(
+        self, mock_weather
+    ):
+        self.client.force_login(self.user)
+        valid_payload = {
+            'crop_names': ['감자'],
+            'crop_ratios': [1],
+            'land_area': 100,
+            'region': '서울',
+        }
+        invalid_payloads = [
+            [],
+            {key: value for key, value in valid_payload.items() if key != 'crop_ratios'},
+            {**valid_payload, 'crop_names': [123]},
+            {**valid_payload, 'crop_ratios': 'not-a-list'},
+            {**valid_payload, 'crop_ratios': ['not-a-number']},
+            {**valid_payload, 'session_id': ['not-a-string']},
+            {**valid_payload, 'session_name': ['not-a-string']},
+            {**valid_payload, 'session_name': 'x' * 256},
+            {**valid_payload, 'crop_names': ['not-a-supported-crop']},
+            {**valid_payload, 'region': 'not-a-supported-region'},
+        ]
+
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                response = self.client.post(
+                    reverse('prediction:predict_income'),
+                    data=json.dumps(payload),
+                    content_type='application/json',
+                )
+
+                self.assertEqual(response.status_code, 400, response.content.decode())
+                self.assertEqual(response.json()['status'], 'error')
+                self.assertEqual(response.json()['code'], 1001)
+
+        mock_weather.assert_not_called()
+        self.assertFalse(PredictionSession.objects.filter(user=self.user).exists())
+
+    @patch('prediction.views.predict_prices', return_value=(1200, 0.75, 85.0))
+    @patch('prediction.views.fetch_market_prices')
+    @patch('prediction.views.fetch_weather_data')
+    @patch('prediction.views.fetch_crop_data', return_value=(1000, {'income': 1000}, 2025))
+    def test_valid_prediction_request_preserves_response_and_persists_results(
+        self, _mock_crop, mock_weather, mock_market, _mock_predict
+    ):
+        self.client.force_login(self.user)
+        day = pd.Timestamp('2026-01-01')
+        mock_weather.return_value = pd.DataFrame(
+            [{'tm': day, 'avgRhm': 50, 'minTa': 1, 'maxTa': 5, 'maxWs': 2,
+              'avgTa': 3, 'avgWs': 1, 'sumRn': 0, 'ddMes': 0}]
+        )
+        mock_market.return_value = pd.DataFrame(
+            [{'tm': day, 'price': 1200, 'itemname': '감자'}]
+        )
+
+        response = self.client.post(
+            reverse('prediction:predict_income'),
+            data=json.dumps(
+                {
+                    'session_id': 'normal-session',
+                    'session_name': 'normal request',
+                    'crop_names': ['감자'],
+                    'crop_ratios': [1],
+                    'land_area': 100,
+                    'region': '서울',
+                }
+            ),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        self.assertEqual(
+            set(response.json()), {'session_id', 'total_income', 'results', 'r2_scores'}
+        )
+        self.assertEqual(response.json()['session_id'], 'normal-session')
+        self.assertEqual(response.json()['results'][0]['crop_name'], '감자')
+        session = PredictionSession.objects.get(user=self.user, session_id='normal-session')
+        self.assertEqual(session.total_income, 1000)
+        self.assertEqual(session.results.count(), 1)
+
     @patch('prediction.services.requests.get', side_effect=requests.Timeout)
     @patch.dict(os.environ, {'DATA_GO_KR_WEATHER_SERVICE_KEY': 'test-key'}, clear=True)
     def test_weather_timeout_is_controlled(self, _mock_get):
@@ -504,6 +585,72 @@ class PredictionRuntimeTests(TestCase):
 
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()['code'], 2001)
+
+
+class PredictionSessionOwnershipTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email='prediction-owner@example.com',
+            username='prediction-owner',
+            password='test-password',
+        )
+        self.other_user = User.objects.create_user(
+            email='prediction-other@example.com',
+            username='prediction-other',
+            password='test-password',
+        )
+        self.session = PredictionSession.objects.create(
+            user=self.owner,
+            session_id='owner-session',
+            session_name='private session',
+            crop_names='감자',
+            land_area=100,
+            region='서울',
+        )
+        self.client.force_login(self.other_user)
+
+    def test_other_user_cannot_list_read_rename_or_delete_prediction_session(self):
+        list_response = self.client.get(reverse('prediction:list_prediction_sessions'))
+        detail_response = self.client.get(
+            reverse('prediction:prediction_session_details', args=[self.session.session_id])
+        )
+        rename_response = self.client.patch(
+            reverse('prediction:update_session_name', args=[self.session.session_id]),
+            data=json.dumps({'session_name': 'changed'}),
+            content_type='application/json',
+        )
+        delete_response = self.client.delete(
+            reverse('prediction:delete_prediction_session', args=[self.session.session_id])
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(list_response.json(), [])
+        self.assertEqual(detail_response.status_code, 404)
+        self.assertEqual(rename_response.status_code, 404)
+        self.assertEqual(delete_response.status_code, 404)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.session_name, 'private session')
+        self.assertTrue(PredictionSession.objects.filter(pk=self.session.pk).exists())
+
+    def test_unauthenticated_user_cannot_read_prediction_sessions(self):
+        self.client.logout()
+
+        response = self.client.get(reverse('prediction:list_prediction_sessions'))
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_owner_can_rename_prediction_session(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.patch(
+            reverse('prediction:update_session_name', args=[self.session.session_id]),
+            data=json.dumps({'session_name': 'renamed by owner'}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.session_name, 'renamed by owner')
 
 
 class PredictionCsrfBoundaryTests(TestCase):

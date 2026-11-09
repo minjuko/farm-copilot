@@ -40,6 +40,8 @@ export const useSoilAnalysis = () => {
   });
   const soilRequestInFlight = useRef(false);
   const fertilizerRequestInFlight = useRef(false);
+  const soilLookupVersion = useRef(0);
+  const isMounted = useRef(true);
   const toastTimer = useRef(null);
 
   const resultSetters = {
@@ -62,6 +64,14 @@ export const useSoilAnalysis = () => {
 
   useEffect(() => () => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
+  }, []);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      soilLookupVersion.current += 1;
+    };
   }, []);
 
   useEffect(() => {
@@ -89,16 +99,19 @@ export const useSoilAnalysis = () => {
   }, []);
 
   const changeCropName = (value) => {
+    soilLookupVersion.current += 1;
     setCropName(value);
     resetResultState(resultSetters);
   };
 
   const selectCrop = (value) => {
+    soilLookupVersion.current += 1;
     setCropName(value);
     resetResultState(resultSetters);
   };
 
   const changeAddress = (value) => {
+    soilLookupVersion.current += 1;
     setAddress(value);
     setBackendAddress("");
     setAddressResults([]);
@@ -111,9 +124,11 @@ export const useSoilAnalysis = () => {
       showToast("주소를 입력해주세요.");
       return;
     }
+    const lookupVersion = soilLookupVersion.current;
     try {
       setIsAddressSearching(true);
       const response = await searchSoilAddresses(address.trim());
+      if (lookupVersion !== soilLookupVersion.current) return;
       const addressResults = response?.data?.results;
       if (!Array.isArray(addressResults) || addressResults.length === 0) {
         setAddressResults([]);
@@ -129,13 +144,14 @@ export const useSoilAnalysis = () => {
         await fetchSoilExamData(resolvedAddress);
       }
     } catch (requestError) {
+      if (lookupVersion !== soilLookupVersion.current) return;
       setAddressResults([]);
       showError(getApiErrorMessage(
         requestError,
         "주소 검색 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요."
       ));
     } finally {
-      setIsAddressSearching(false);
+      if (isMounted.current) setIsAddressSearching(false);
     }
   };
 
@@ -150,12 +166,14 @@ export const useSoilAnalysis = () => {
       return;
     }
 
+    const lookupVersion = soilLookupVersion.current;
     try {
       soilRequestInFlight.current = true;
       setIsSoilLoading(true);
       setIsLoading(true);
       resetResultState(resultSetters);
       const response = await getSoilExamData(cropName, selectedAddress.trim());
+      if (lookupVersion !== soilLookupVersion.current) return;
       const soilItems = response?.data?.soil_data;
       if (!Array.isArray(soilItems) || soilItems.length === 0) {
         showError("현재 주소에 해당하는 데이터가 없습니다.");
@@ -165,6 +183,7 @@ export const useSoilAnalysis = () => {
       setBackendAddress(selectedAddress.trim());
       setError(null);
     } catch (requestError) {
+      if (lookupVersion !== soilLookupVersion.current) return;
       setSoilData([]);
       showError(getApiErrorMessage(
         requestError,
@@ -172,8 +191,10 @@ export const useSoilAnalysis = () => {
       ));
     } finally {
       soilRequestInFlight.current = false;
-      setIsSoilLoading(false);
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsSoilLoading(false);
+        setIsLoading(false);
+      }
     }
   };
 
@@ -207,6 +228,7 @@ export const useSoilAnalysis = () => {
       setIsFertilizerLoading(true);
       setIsLoading(true);
       const response = await getSoilFertilizerInfo(payload);
+      if (!isMounted.current) return;
       const fertilizerItems = response?.data?.data;
       if (!Array.isArray(fertilizerItems) || fertilizerItems.length === 0) {
         setIsFertilizerUnavailable(true);
@@ -215,6 +237,7 @@ export const useSoilAnalysis = () => {
       setFertilizerData(fertilizerItems);
       setError(null);
     } catch (requestError) {
+      if (!isMounted.current) return;
       if (isFertilizerNotFound(requestError)) {
         setIsFertilizerUnavailable(true);
       } else {
@@ -226,8 +249,10 @@ export const useSoilAnalysis = () => {
       setFertilizerData(null);
     } finally {
       fertilizerRequestInFlight.current = false;
-      setIsFertilizerLoading(false);
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsFertilizerLoading(false);
+        setIsLoading(false);
+      }
     }
   };
 

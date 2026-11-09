@@ -514,6 +514,35 @@ class SoilEndpointTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+    def test_soil_history_lists_only_authenticated_users_records(self):
+        CropData.objects.create(
+            user_id=self.user.id,
+            session_id='my-analysis',
+            crop_name='pepper',
+        )
+        other_user = User.objects.create_user(
+            email='soil-list-other@example.com',
+            username='soil-list-other',
+            password='test-password',
+        )
+        CropData.objects.create(
+            user_id=other_user.id,
+            session_id='other-analysis',
+            crop_name='tomato',
+        )
+
+        response = self.client.get(reverse('soil:get_crop_data_by_user'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([row['session_id'] for row in response.json()], ['my-analysis'])
+
+    def test_unauthenticated_user_cannot_read_soil_history(self):
+        self.client.logout()
+
+        response = self.client.get(reverse('soil:get_crop_data_by_user'))
+
+        self.assertEqual(response.status_code, 401)
+
 
 class SoilCsrfBoundaryTests(TestCase):
     def setUp(self):
