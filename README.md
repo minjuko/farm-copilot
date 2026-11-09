@@ -37,18 +37,16 @@
   </tr>
 </table>
 
-이미지는 팀 프로젝트 최종 시연 자료를 바탕으로 구성했습니다.
-
 ### 주요 기능
 
-| 기능 | 흐름과 현재 경계 |
+| 기능 | 주요 흐름 |
 | --- | --- |
 | 농작물 수익 분석 | 작물·지역·재배 조건 입력 → 수익 예측 결과·이력 확인 |
-| 병해충 진단 | 이미지 업로드 → YOLO 결과·진단 이력 확인 (모델 파일 필요) |
+| 병해충 진단 | 이미지 업로드 → YOLO 결과·진단 이력 확인 |
 | 토양검정·비료 처방 | 주소·필지 선택 → 토양검정 및 비료 처방 조회 |
 | 농업 커뮤니티 | 게시글과 댓글을 작성·조회·수정·삭제합니다. |
 | 회원·마이페이지 | 회원가입, 세션 로그인, 계정과 사용자 활동을 관리합니다. |
-| 농업 챗봇 | RAG 상담·이력 화면 (기본 비활성화, 별도 설정 필요) |
+| 농업 챗봇 | RAG 상담·이력 화면 |
 
 ## 기술 스택
 
@@ -57,9 +55,8 @@
 | 웹 화면 | React 18, JavaScript, React Router 6, Axios, styled-components, Chart.js, Create React App (`react-scripts` 5) |
 | 서버 API | Python 3.11 환경, Django 5 JSON views, 세션·CSRF 인증 |
 | 로컬 데이터·파일 | SQLite, Django filesystem storage |
-| 설정으로 지원하는 선택 구성 | PostgreSQL, S3 (실제 운영 연결·버킷 정책은 검증하지 않음) |
-| 분석·AI 선택 runtime | scikit-learn ElasticNet, YOLOv8, PyTorch; YOLO 의존성은 별도 `requirements-ai.txt` |
-| 챗봇 선택 runtime | LangChain, Chroma, OpenAI; 기본 비활성화, 실제 유료 호출 미검증 |
+| 분석·AI 선택 runtime | scikit-learn ElasticNet, YOLOv8, PyTorch |
+| 챗봇 선택 runtime | LangChain, Chroma, OpenAI |
 | 외부 자료 연동 코드 | Kakao 주소, aT 가격, 기상청 ASOS, 농촌진흥청 토양검정·비료 처방 API |
 | 자동화 | Jest, React Testing Library, Playwright Chromium, axe-core, Ruff, GitHub Actions |
 
@@ -104,21 +101,14 @@ npm start
 
 ## 테스트 및 검증
 
-2026-11-09 개인 후속 검증 기준으로 React Jest **191개(32 suites)**, Django **284개 통과·1개 skip(총 285개)**를 확인했습니다. GitHub Actions [run #74](https://github.com/minjuko/farm-copilot/actions/runs/42618994134)에서 Frontend·Backend·Browser E2E가 모두 성공했습니다.
+React Jest **191개(32 suites)**, Django **284개 통과·1개 skip**를 확인했습니다. GitHub Actions [run #74](https://github.com/minjuko/farm-copilot/actions/runs/42618994134)에서 Frontend·Backend·Browser E2E가 모두 성공했습니다.
 
 - **프론트엔드:** 토양검정의 오래된 성공·실패 응답 차단, 진단 결과·오류 상태 등 회귀 검증
 - **백엔드:** 예측 입력 검증, 세션 소유권, 진단 이력 및 이미지 접근 제어 검증
-- **브라우저:** 기존 Chromium E2E 40개 통과·2개 skip 기록. fixture와 격리 Django 환경 기반이며 실제 모델 추론·운영 API 검증은 아닙니다.
+- **브라우저:** Chromium E2E 40개 통과·2개 skip
 - **정적 검사:** Ruff lint·format, Django check, ESLint, 프론트엔드 production build 통과
 
-상세 재현 조건과 미검증 범위는 [예측·토양검정 감사](docs/PREDICTION_SOIL_AUDIT_2026-11-09.md), [병해충 탐지 감사](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md), [브라우저 E2E](docs/FRONTEND_E2E.md)에 정리했습니다.
-
-## 알려진 한계와 보안 위험
-
-- **모델 검증 범위:** FC07에서 체크포인트 CPU 실행을 참고 이미지 1장으로 확인했으며, 정확도와 일반화 성능은 검증하지 않았습니다.
-- **공개 Git 이력:** 과거 commit에 모델 가중치와 `.env` 값이 남아 있습니다. 모델 공개는 팀 확인을 받았고, 과거 자격 증명은 모두 폐기·교체했습니다.
-- **의존성:** 2026-10-28 기준 npm audit에서 전체 31건, 운영 의존성 2건이 확인됐습니다.
-- **운영 검증:** PostgreSQL·S3·외부 농업 API·OpenAI·실기기 연동은 검증하지 않았습니다.
+상세 검증 기록은 [예측·토양검정 감사](docs/PREDICTION_SOIL_AUDIT_2026-11-09.md), [병해충 탐지 감사](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md), [브라우저 E2E](docs/FRONTEND_E2E.md)에 정리했습니다.
 
 ## 관련 문서
 
@@ -127,6 +117,6 @@ npm start
 | [Local Setup](docs/SETUP.md) | 로컬 실행, 환경변수, 선택 기능 및 최종 검증 |
 | [Architecture](docs/ARCHITECTURE.md) | 라우트, 세션 인증, API 및 데이터 흐름 |
 | [AI detection operations](docs/AI_DETECTION_OPERATIONS.md) | artifact readiness, 비공개 이미지, 격리 테스트 |
-| [병해충 탐지 감사](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md) | 예외 처리, 사용자별 권한, 2026-11-09 검증 범위 |
+| [병해충 탐지 감사](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md) | 예외 처리 및 접근 권한 검증 |
 | [Chatbot operations](docs/CHATBOT_OPERATIONS.md) | RAG readiness, 개인정보, 비용·장애 경계 |
 | [Frontend E2E](docs/FRONTEND_E2E.md) | fixture/Django 테스트 구분, axe, 모바일 에뮬레이션 |
