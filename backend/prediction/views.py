@@ -251,9 +251,7 @@ def predict_income(request):
         profitability_frame = read_csv_data()
         market_codes = pd.read_csv(CROP_MARKET_CODES_PATH, encoding='utf-8')
         supported_crops = set(market_codes['품목명'].dropna().astype(str))
-        supported_crops.intersection_update(
-            profitability_frame['작물명'].dropna().astype(str)
-        )
+        supported_crops.intersection_update(profitability_frame['작물명'].dropna().astype(str))
         if any(crop_name not in supported_crops for crop_name in crop_names):
             raise ValidationError('지원하지 않는 작물입니다.')
         weather_frame = fetch_weather_data(region)

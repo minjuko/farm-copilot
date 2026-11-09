@@ -189,12 +189,21 @@ class PredictionRuntimeTests(TestCase):
         self.client.force_login(self.user)
         day = pd.Timestamp('2026-01-01')
         mock_weather.return_value = pd.DataFrame(
-            [{'tm': day, 'avgRhm': 50, 'minTa': 1, 'maxTa': 5, 'maxWs': 2,
-              'avgTa': 3, 'avgWs': 1, 'sumRn': 0, 'ddMes': 0}]
+            [
+                {
+                    'tm': day,
+                    'avgRhm': 50,
+                    'minTa': 1,
+                    'maxTa': 5,
+                    'maxWs': 2,
+                    'avgTa': 3,
+                    'avgWs': 1,
+                    'sumRn': 0,
+                    'ddMes': 0,
+                }
+            ]
         )
-        mock_market.return_value = pd.DataFrame(
-            [{'tm': day, 'price': 1200, 'itemname': '감자'}]
-        )
+        mock_market.return_value = pd.DataFrame([{'tm': day, 'price': 1200, 'itemname': '감자'}])
 
         response = self.client.post(
             reverse('prediction:predict_income'),
