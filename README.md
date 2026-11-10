@@ -94,7 +94,7 @@ Copy-Item .env.example .env
 ```powershell
 cd frontend
 npm ci
-Copy-Item.env.example.env
+Copy-Item .env.example .env
 npm start
 ```
 
@@ -110,6 +110,10 @@ React Jest **191개(32 suites)**, Django **284개 통과·1개 skip**를 확인�
 - **정적 검사:** Ruff lint·format, Django check, ESLint, 프론트엔드 production build 통과
 
 상세 검증 기록은 [예측·토양검정 감사](docs/PREDICTION_SOIL_AUDIT_2026-11-09.md), [병해충 탐지 감사](docs/DETECTION_FAILURE_AND_ACCESS_AUDIT_2026-11-09.md), [브라우저 E2E](docs/FRONTEND_E2E.md)에 정리했습니다.
+
+## 공개 Git 이력의 자격증명 안내
+
+과거 공개 Git 이력의 로그에서 AWS Access Key ID 형식 문자열이 확인됐습니다. 사용자 확인에 따르면 프로젝트에서 사용한 AWS 키는 폐기·만료됐고 API 키도 교체됐습니다. 다만 감사에서 발견한 문자열과 폐기·교체한 키의 일치 여부는 검증하지 않아 **개별 키 상태는 미확인**입니다. 해당 로그가 포함된 이력에서는 짝을 이루는 Secret Access Key 값을 확인하지 못했습니다.
 
 ## 관련 문서
 

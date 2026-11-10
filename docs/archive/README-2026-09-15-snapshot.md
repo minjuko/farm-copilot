@@ -176,7 +176,7 @@ npm start
 REACT_APP_API_BASE_URL=http://localhost:8000
 ```
 
-환경변수, 운영 Database·Storage, AI Artifact, 외부 API 설정은 [Local Setup Guide](./docs/SETUP.md)를 참고해 주세요.
+환경변수, 운영 Database·Storage, AI Artifact, 외부 API 설정은 [Local Setup Guide](../SETUP.md)를 참고해 주세요.
 
 ## 검증 명령
 
@@ -202,8 +202,8 @@ python -m pip check
 
 | 문서 | 내용 |
 | --- | --- |
-| [Local Setup Guide](./docs/SETUP.md) | Local 실행 · 환경변수 · Database · AI Artifact · 외부 API · Storage |
-| [원본 README](./docs/archive/README-2024-original.md) | 2024년 원본 팀 저장소 README |
+| [Local Setup Guide](../SETUP.md) | Local 실행 · 환경변수 · Database · AI Artifact · 외부 API · Storage |
+| [원본 README](README-2024-original.md) | 2024년 원본 팀 저장소 README |
 | [상세 기술문서](https://app.notion.com/p/3d1622cea8638005938aca8f9f7d905c) | 요구사항 · 설계 · 핵심 구현 · 문제 해결 · 개인 기여 |
 
 ## 현재 운영 상태

@@ -51,6 +51,6 @@ try {
 }
 ```
 
-실제 모델 평가는 수집·검수된 로컬 manifest와 데이터 경로를 지정한 뒤
-[README 실행 절차](README.md)를 따른다. 결과의 metric scope는 서비스 매핑의 이미지
+실제 모델 평가는 수집·검수된 로컬 manifest와 데이터 경로를 지정해야 한다. CLI 옵션은
+이 디렉터리에서 `python evaluate.py --help`로 확인한다. 결과의 metric scope는 서비스 매핑의 이미지
 단위 평가다. mAP와 6개 원시 클래스의 의미 성능은 포함하지 않는다.
