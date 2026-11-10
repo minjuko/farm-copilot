@@ -63,7 +63,8 @@
 
 ## 담당 역할 및 핵심 구현
 
-- **담당 역할:** 공통 UI·인증·마이페이지·커뮤니티 및 수익 분석·병해충·토양검정 입력과 결과 화면을 API에 연결했습니다.
+- **팀 프로젝트 당시 담당:** 공통 UI·인증·마이페이지·커뮤니티와 병해충 진단·토양검정 화면 및 API 연동에 참여했습니다.
+- **수익 분석 관련 기여:** 수익 예측 기능은 다른 팀원이 먼저 구현했으며, 이후 개인 개선 과정에서 관련 화면·API 연동과 검증을 보완했습니다.
 - **개인 개선 — 보안:** 진단 이미지를 비공개 저장하고 세션 인증·소유권 검증을 보강했습니다.
 - **개인 개선 — 안정성:** 외부 API 응답 계약과 운영 설정, YOLO·챗봇 준비 상태 및 오류 경계를 검증했습니다.
 - **개인 개선 — 품질:** Jest·Django·Playwright·axe 및 GitHub Actions 기반 회귀 검증을 보강했습니다.
@@ -76,9 +77,9 @@
 
 ```powershell
 cd backend
-py -3.11 -m venv.venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item.env.example.env
+Copy-Item .env.example .env
 ```
 
 `.env`에 로컬 전용 `DJANGO_SECRET_KEY`, SQLite, localhost origin을 설정한 뒤:
