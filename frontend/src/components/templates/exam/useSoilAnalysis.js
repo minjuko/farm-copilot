@@ -41,6 +41,7 @@ export const useSoilAnalysis = () => {
   const soilRequestInFlight = useRef(false);
   const fertilizerRequestInFlight = useRef(false);
   const soilLookupVersion = useRef(0);
+  const fertilizerLookupVersion = useRef(0);
   const isMounted = useRef(true);
   const toastTimer = useRef(null);
 
@@ -100,18 +101,21 @@ export const useSoilAnalysis = () => {
 
   const changeCropName = (value) => {
     soilLookupVersion.current += 1;
+    fertilizerLookupVersion.current += 1;
     setCropName(value);
     resetResultState(resultSetters);
   };
 
   const selectCrop = (value) => {
     soilLookupVersion.current += 1;
+    fertilizerLookupVersion.current += 1;
     setCropName(value);
     resetResultState(resultSetters);
   };
 
   const changeAddress = (value) => {
     soilLookupVersion.current += 1;
+    fertilizerLookupVersion.current += 1;
     setAddress(value);
     setBackendAddress("");
     setAddressResults([]);
@@ -223,12 +227,13 @@ export const useSoilAnalysis = () => {
       return;
     }
 
+    const lookupVersion = fertilizerLookupVersion.current;
     try {
       fertilizerRequestInFlight.current = true;
       setIsFertilizerLoading(true);
       setIsLoading(true);
       const response = await getSoilFertilizerInfo(payload);
-      if (!isMounted.current) return;
+      if (!isMounted.current || lookupVersion !== fertilizerLookupVersion.current) return;
       const fertilizerItems = response?.data?.data;
       if (!Array.isArray(fertilizerItems) || fertilizerItems.length === 0) {
         setIsFertilizerUnavailable(true);
@@ -237,7 +242,7 @@ export const useSoilAnalysis = () => {
       setFertilizerData(fertilizerItems);
       setError(null);
     } catch (requestError) {
-      if (!isMounted.current) return;
+      if (!isMounted.current || lookupVersion !== fertilizerLookupVersion.current) return;
       if (isFertilizerNotFound(requestError)) {
         setIsFertilizerUnavailable(true);
       } else {

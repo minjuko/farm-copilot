@@ -38,6 +38,40 @@ const soilSample = {
   ACID: "6.5",
 };
 
+const deferred = () => {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
+
+const beginFertilizerRequest = async (request) => {
+  getSoilFertilizerInfo.mockImplementationOnce(() => request.promise);
+  render(
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <SoilTemplate />
+    </MemoryRouter>
+  );
+
+  fireEvent.click(screen.getByLabelText("작물 이름"));
+  fireEvent.click(await screen.findByRole("option", { name: "pepper" }));
+  fireEvent.change(screen.getByLabelText("주소"), { target: { value: "old address" } });
+  const searchButton = screen.getByRole("button", { name: /주소 검색/ });
+  await waitFor(() => expect(searchButton).toBeEnabled());
+  fireEvent.click(searchButton);
+  fireEvent.click(await screen.findByRole("button", { name: "selected parcel 1-2" }));
+
+  const sampleSelect = screen.getByLabelText("상세 주소 선택");
+  await waitFor(() => expect(sampleSelect).toBeEnabled());
+  fireEvent.change(sampleSelect, { target: { value: "0" } });
+  await waitFor(() => expect(getSoilFertilizerInfo).toHaveBeenCalledTimes(1));
+  expect(screen.getByLabelText("작물 이름")).toBeEnabled();
+  expect(screen.getByLabelText("주소")).toBeEnabled();
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   fetchCapabilities.mockResolvedValue({ data: { soil: { status: "live", available: true } } });
@@ -94,6 +128,57 @@ test("connects crop, address, soil sample, and fertilizer steps through the anal
     crop_code: "pepper",
     PNU_Nm: "selected parcel 1-2",
   }));
+});
+
+test("does not show a late fertilizer recommendation after the address changes", async () => {
+  const request = deferred();
+  await beginFertilizerRequest(request);
+
+  fireEvent.change(screen.getByLabelText("주소"), { target: { value: "new address" } });
+  await act(async () => {
+    request.resolve({ data: { data: [{ pre_Fert_N: "stale" }] } });
+    await request.promise;
+  });
+
+  expect(screen.queryByTestId("soil-results")).not.toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+test("does not show a late fertilizer failure after the crop changes", async () => {
+  const request = deferred();
+  await beginFertilizerRequest(request);
+
+  fireEvent.change(screen.getByLabelText("작물 이름"), { target: { value: "tomato" } });
+  await act(async () => {
+    request.reject({ response: { status: 503 } });
+    await request.promise.catch(() => undefined);
+  });
+
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.queryByTestId("soil-results")).not.toBeInTheDocument();
+  expect(mockSetIsLoading).toHaveBeenLastCalledWith(false);
+
+  const searchButton = screen.getByRole("button", { name: /주소 검색/ });
+  fireEvent.click(searchButton);
+  fireEvent.click(await screen.findByRole("button", { name: "selected parcel 1-2" }));
+  const sampleSelect = screen.getByLabelText("상세 주소 선택");
+  await waitFor(() => expect(sampleSelect).toBeEnabled());
+  fireEvent.change(sampleSelect, { target: { value: "0" } });
+
+  await waitFor(() => expect(screen.getByTestId("soil-results")).toHaveTextContent("tomato:10"));
+});
+
+test("shows an error for a failure on the current fertilizer request", async () => {
+  const request = deferred();
+  await beginFertilizerRequest(request);
+
+  await act(async () => {
+    request.reject({ response: { status: 503 } });
+    await request.promise.catch(() => undefined);
+  });
+
+  expect(screen.getByRole("alert")).toBeInTheDocument();
+  expect(mockSetIsLoading).toHaveBeenLastCalledWith(false);
 });
 
 test("shows a genuine empty soil result and allows another search", async () => {
